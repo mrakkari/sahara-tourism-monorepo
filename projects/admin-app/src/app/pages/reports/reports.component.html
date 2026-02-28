@@ -1,0 +1,116 @@
+<div class="reports-container stagger-in">
+  <header class="page-header">
+    <div>
+      <h1>📊 Business Analytics</h1>
+      <p class="subtitle">Real-time performance metrics and insights</p>
+    </div>
+    <div class="actions">
+      <button class="btn-glass">📅 Last 30 Days</button>
+      <button class="btn-glass-primary">⬇ Export Report</button>
+    </div>
+  </header>
+
+  <!-- Key Stats Grid -->
+  <div class="stats-grid">
+    <lib-stat-card 
+      icon="💰" 
+      [value]="totalRevenue + ' TND'" 
+      label="Total Revenue" 
+      [trend]="12" 
+      trendPeriod="last month">
+    </lib-stat-card>
+    
+    <lib-stat-card 
+      icon="📋" 
+      [value]="totalReservations" 
+      label="Total Reservations" 
+      [trend]="8" 
+      trendPeriod="last month">
+    </lib-stat-card>
+    
+    <lib-stat-card 
+      icon="⏳" 
+      [value]="getPendingCount()" 
+      label="Pending Approval" 
+      [trend]="-2" 
+      trendPeriod="last week">
+    </lib-stat-card>
+    
+    <lib-stat-card 
+      icon="🤝" 
+      [value]="activePartners" 
+      label="Active Partners" 
+      [trend]="5" 
+      trendPeriod="last month">
+    </lib-stat-card>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="charts-grid">
+    <lib-glass-card class="chart-card">
+      <h3 class="card-title">📈 Revenue Trend</h3>
+      <div class="chart-wrapper">
+        <canvas baseChart
+          [data]="lineChartData"
+          [options]="lineChartOptions"
+          [type]="'line'">
+        </canvas>
+      </div>
+    </lib-glass-card>
+
+    <lib-glass-card class="chart-card">
+      <h3 class="card-title">🥧 Reservation Status</h3>
+      <div class="chart-wrapper">
+        <canvas baseChart
+          [data]="pieChartData"
+          [options]="pieChartOptions"
+          [type]="'doughnut'">
+        </canvas>
+      </div>
+    </lib-glass-card>
+  </div>
+
+  <!-- Top Partners Table -->
+  <lib-glass-card>
+    <div class="table-header">
+      <h3 class="card-title">🏆 Top Performing Partners</h3>
+      <button class="btn-link">View All Partners →</button>
+    </div>
+    
+    <div class="table-responsive">
+      <table class="glass-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Partner Name</th>
+            <th>Performance</th>
+            <th>Reservations</th>
+            <th>Revenue</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let partner of topPartners; let i = index">
+            <td>
+              <div class="rank-badge" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">
+                #{{ i + 1 }}
+              </div>
+            </td>
+            <td class="partner-cell">
+              <div class="partner-avatar">{{ partner.name.charAt(0) }}</div>
+              <span class="partner-name">{{ partner.name }}</span>
+            </td>
+            <td>
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="partner.percentage"></div>
+              </div>
+            </td>
+            <td class="font-bold">{{ partner.count }}</td>
+            <td class="revenue-text">{{ partner.revenue | number }} TND</td>
+            <td><span class="status-pill active">Active</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </lib-glass-card>
+</div>

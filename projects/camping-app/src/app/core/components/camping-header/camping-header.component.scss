@@ -1,0 +1,170 @@
+@import '../../../styles/variables';
+@import '../../../styles/animations';
+
+.camping-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  box-shadow: $shadow-md;
+}
+
+.navbar {
+  padding: 0;
+}
+
+.nav-container {
+  max-width: $wide;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+  transition: transform $transition-normal;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.logo-icon {
+  font-size: 2.5rem;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-title {
+  font-family: $font-heading;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: $camping-primary;
+}
+
+.logo-subtitle {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.nav-menu {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 2rem;
+
+  @media (min-width: $desktop) {
+    display: flex;
+  }
+
+  &.active {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 2rem;
+    box-shadow: $shadow-lg;
+
+    @media (min-width: $desktop) {
+      position: static;
+      flex-direction: row;
+      background: transparent;
+      padding: 0;
+      box-shadow: none;
+    }
+  }
+}
+
+.nav-link {
+  color: $camping-primary;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  border-bottom: 2px solid transparent;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: $camping-secondary;
+    border-bottom-color: $camping-secondary;
+  }
+
+  &.active {
+    color: $sahara-orange;
+    border-bottom-color: $sahara-orange;
+  }
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-public-site {
+  display: none;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, $sahara-orange, $sahara-terracotta);
+  color: white;
+  text-decoration: none;
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all $transition-normal;
+
+  @media (min-width: $tablet) {
+    display: block;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+}
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+
+  @media (min-width: $desktop) {
+    display: none;
+  }
+
+  span {
+    width: 25px;
+    height: 3px;
+    background: $camping-primary;
+    transition: all $transition-normal;
+    border-radius: 3px;
+  }
+
+  &.active {
+    span:nth-child(1) {
+      transform: rotate(45deg) translate(6px, 6px);
+    }
+    span:nth-child(2) {
+      opacity: 0;
+    }
+    span:nth-child(3) {
+      transform: rotate(-45deg) translate(6px, -6px);
+    }
+  }
+}

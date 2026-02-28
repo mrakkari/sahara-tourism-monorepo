@@ -1,0 +1,158 @@
+<div class="detail-page stagger-in" *ngIf="reservation">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <button class="btn-back" routerLink="/">
+        ← Back
+      </button>
+      <div class="title-group">
+        <h1>Réservation</h1>
+        <lib-status-badge [status]="reservation.status"></lib-status-badge>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-glass" [routerLink]="['/invoice', reservation.id]">
+        📄 View Invoice
+      </button>
+      <ng-container *ngIf="reservation.status === 'pending'">
+        <button class="btn-danger" (click)="rejectReservation()">Reject</button>
+        <button class="btn-primary" (click)="confirmReservation()">Confirm Reservation</button>
+      </ng-container>
+    </div>
+  </header>
+
+  <div class="detail-grid">
+    <!-- Left Column: Main Info -->
+    <div class="main-info">
+      <!-- Tour & Stay -->
+      <lib-glass-card class="section-card" [gradient]="true">
+        <div class="card-header">
+          <h3>🗺️ Itinerary Details</h3>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Tour Type</span>
+            <span class="value">{{ getTourLabel() }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Duration</span>
+            <span class="value">{{ calculateDuration() }} Nights</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Check-in</span>
+            <span class="value">{{ formatDate(reservation.checkInDate) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Check-out</span>
+            <span class="value">{{ formatDate(reservation.checkOutDate) }}</span>
+          </div>
+        </div>
+        
+        <div class="special-req" *ngIf="reservation.groupInfo.specialRequests">
+          <span class="req-label">⚠️ Special Requests</span>
+          <p class="req-text">{{ reservation.groupInfo.specialRequests }}</p>
+        </div>
+      </lib-glass-card>
+
+      <!-- Participants -->
+      <lib-glass-card class="section-card">
+        <div class="card-header">
+          <h3>👥 Guest List ({{ reservation.numberOfPeople }})</h3>
+        </div>
+        <div class="guests-list">
+          <div *ngFor="let guest of guestList; let i = index" class="guest-row">
+            <div class="guest-avatar">{{ guest.name.charAt(0) }}</div>
+            <div class="guest-details">
+              <span class="guest-name">{{ guest.name }}</span>
+              <span class="guest-meta">{{ guest.age }} ans • {{ guest.isAdult ? 'Adulte' : 'Enfant' }}</span>
+            </div>
+            <div class="guest-badge" *ngIf="i === 0">Principal</div>
+          </div>
+        </div>
+      </lib-glass-card>
+    </div>
+
+    <!-- Right Column: Payment & Partner -->
+    <div class="sidebar-info">
+      <!-- Payment Summary -->
+      <lib-glass-card class="section-card">
+        <div class="card-header">
+          <h3>💰 Payment</h3>
+          <span class="payment-status" [class]="reservation.payment.paymentStatus">
+            {{ reservation.payment.paymentStatus | titlecase }}
+          </span>
+        </div>
+        
+        <div class="price-breakdown">
+          <div class="price-row total">
+            <span>Total</span>
+            <span>{{ reservation.payment.totalAmount }} TND</span>
+          </div>
+          <div class="price-row paid">
+            <span>Paid</span>
+            <span>{{ reservation.payment.paidAmount }} TND</span>
+          </div>
+          <div class="price-row remaining" *ngIf="getRemaining() > 0">
+            <span>Remaining</span>
+            <span>{{ getRemaining() }} TND</span>
+          </div>
+        </div>
+
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="fill" [style.width.%]="getPaymentProgress()"></div>
+          </div>
+          <span class="progress-text">{{ getPaymentProgress() | number:'1.0-0' }}% Paid</span>
+        </div>
+
+        <div class="transactions" *ngIf="reservation.payment.transactions.length">
+          <h4>Recent Transactions</h4>
+          <div *ngFor="let t of reservation.payment.transactions" class="txn-item">
+            <span class="txn-method">{{ t.method }}</span>
+            <span class="txn-amount">+{{ t.amount }} TND</span>
+          </div>
+        </div>
+      </lib-glass-card>
+
+      <!-- Partner Info -->
+      <lib-glass-card class="section-card">
+        <div class="card-header">
+          <h3>🤝 Partner</h3>
+        </div>
+        <div class="partner-info">
+          <div class="partner-icon">🏢</div>
+          <div class="partner-details">
+            <span class="partner-name">{{ reservation.partnerName }}</span>
+            <span class="partner-id">ID: {{ reservation.partnerId || 'N/A' }}</span>
+          </div>
+        </div>
+        <div class="meta-dates">
+          <div class="meta-row">
+            <span>Created</span>
+            <span>{{ formatDateTime(reservation.createdAt) }}</span>
+          </div>
+        </div>
+      </lib-glass-card>
+      
+      <!-- Extras -->
+      <lib-glass-card class="section-card" *ngIf="reservation.extras && reservation.extras.length > 0">
+        <div class="card-header">
+          <h3>🎯 Extras</h3>
+        </div>
+        <div class="extras-list">
+          <div *ngFor="let extra of reservation.extras" class="extra-row">
+            <span class="extra-qty">{{ extra.quantity }}x</span>
+            <span class="extra-name">{{ extra.name }}</span>
+            <span class="extra-price">{{ extra.totalPrice }} TND</span>
+          </div>
+        </div>
+      </lib-glass-card>
+    </div>
+  </div>
+</div>
+
+<!-- Not Found State -->
+<div *ngIf="!reservation" class="not-found">
+  <button routerLink="/" class="btn-back">← Back to Dashboard</button>
+  <h2>Reservation not found</h2>
+</div>

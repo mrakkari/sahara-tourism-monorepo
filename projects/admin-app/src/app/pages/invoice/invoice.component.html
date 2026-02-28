@@ -1,0 +1,112 @@
+<div class="invoice-container" *ngIf="invoice && reservation">
+  <div class="invoice-actions">
+    <button class="btn-back" routerLink="/">← Back</button>
+    <button class="btn-print" (click)="printInvoice()">🖨️ Print</button>
+  </div>
+
+  <div class="invoice-paper">
+    <div class="invoice-header">
+      <div class="company-info">
+        <h1>🏜️ Sahara Tourism System</h1>
+        <p>Desert Adventure Specialists</p>
+        <p>Douz, Tunisia</p>
+      </div>
+      <div class="invoice-meta">
+        <h2>INVOICE</h2>
+        <div><strong>Invoice #:</strong> {{ invoice.invoiceNumber }}</div>
+        <div><strong>Date:</strong> {{ formatDate(invoice.issueDate) }}</div>
+      </div>
+    </div>
+
+    <div class="invoice-parties">
+      <div class="party">
+        <h3>Bill To:</h3>
+        <div class="party-details">
+          <strong>{{ invoice.partnerName }}</strong>
+          <div>Partner/Agency</div>
+        </div>
+      </div>
+      <div class="party">
+        <h3>Reservation Details:</h3>
+        <div class="party-details">
+          <div><strong>ID:</strong> {{ reservation.id.slice(0, 12) }}</div>
+          <div><strong>Check-in:</strong> {{ formatDate(reservation.checkInDate) }}</div>
+          <div><strong>Check-out:</strong> {{ formatDate(reservation.checkOutDate) }}</div>
+          <div><strong>People:</strong> {{ reservation.numberOfPeople }}</div>
+        </div>
+      </div>
+    </div>
+
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>{{ getTourLabel(reservation.groupInfo.tourType) }}</strong>
+            <div class="item-description">
+              {{ reservation.adults }} Adults, {{ reservation.children }} Children
+            </div>
+          </td>
+          <td>{{ calculateDuration() }} nights</td>
+          <td>{{ (invoice.baseAmount / calculateDuration()).toFixed(2) }} TND</td>
+          <td>{{ invoice.baseAmount }} TND</td>
+        </tr>
+
+        <tr *ngFor="let extra of reservation.extras">
+          <td>
+            <strong>{{ extra.name }}</strong>
+            <div class="item-description">{{ extra.description || 'On-site extra' }}</div>
+          </td>
+          <td>{{ extra.quantity }}</td>
+          <td>{{ extra.unitPrice }} TND</td>
+          <td>{{ extra.totalPrice }} TND</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="subtotal-row">
+          <td colspan="3"><strong>Subtotal:</strong></td>
+          <td><strong>{{ invoice.totalAmount }} TND</strong></td>
+        </tr>
+        <tr *ngIf="invoice.paidAmount > 0" class="payment-row">
+          <td colspan="3">Payments Received:</td>
+          <td class="payment-amount">-{{ invoice.paidAmount }} TND</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="3"><strong>Balance Due:</strong></td>
+          <td><strong>{{ invoice.remainingAmount }} TND</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="payment-history" *ngIf="reservation.payment.transactions.length > 0">
+      <h3>Payment History</h3>
+      <div class="payment-list">
+        <div *ngFor="let transaction of reservation.payment.transactions" class="payment-item">
+          <span>{{ formatDate(transaction.date) }}</span>
+          <span>{{ transaction.method }}</span>
+          <span class="paid-amount">{{ transaction.amount }} TND</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-footer">
+      <div class="payment-instructions">
+        <h4>Payment Instructions:</h4>
+        <p>• Payments can be made via Flouci mobile payment</p>
+        <p>• On-site cash payment accepted</p>
+        <p>• Please reference invoice number in all payments</p>
+      </div>
+      <div class="invoice-notes">
+        <p><em>Thank you for your business!</em></p>
+        <p>For questions, contact: infosahara-tourism.tn</p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,79 @@
+<div class="payments-dashboard">
+  <header class="page-header">
+    <h1 class="text-gradient">Historique des Paiements</h1>
+    <p class="subtitle">Suivi des transactions effectuées sur place (Campement)</p>
+  </header>
+
+  <div class="summary-grid">
+    <div class="summary-card total glass-panel">
+      <div class="header-row">
+        <span class="l">Chiffre d'Affaire Local</span>
+        <span class="i">💰</span>
+      </div>
+      <div class="v">{{ getTotalOnsitePayments() }} <small>TND</small></div>
+      <div class="sub-line">Total cumulé des paiements directs</div>
+    </div>
+
+    <div class="summary-card count glass-panel">
+      <div class="header-row">
+        <span class="l">Transactions</span>
+        <span class="i">🧾</span>
+      </div>
+      <div class="v">{{ getOnsiteTransactionsCount() }}</div>
+      <div class="sub-line">Nombre d'opérations enregistrées</div>
+    </div>
+  </div>
+
+  <div class="transactions-section glass-panel">
+    <div class="section-header">
+      <h2>Dernières Opérations</h2>
+    </div>
+
+    <div class="transaction-list" [@staggerAnimation]="pagedTransactions.length">
+      <div *ngFor="let item of pagedTransactions" class="transaction-item">
+        <div class="method-icon" [title]="item.transaction.method">
+          💵
+        </div>
+        <div class="item-main">
+          <div class="partner">{{ item.partnerName }}</div>
+          <div class="description">{{ item.transaction.description }}</div>
+          <div class="date">{{ formatDateTime(item.transaction.date) }}</div>
+        </div>
+        <div class="item-amount">
+          +{{ item.transaction.amount }} <small>TND</small>
+        </div>
+      </div>
+
+      <div *ngIf="transactionList.length === 0" class="empty-state">
+        <span class="icon">🔍</span>
+        <p>Aucune transaction enregistrée pour le moment.</p>
+      </div>
+    </div>
+
+    <div class="paginator-wrapper" *ngIf="transactionList.length > 0">
+      <div class="pagination">
+        <button 
+          class="pagination-btn" 
+          [disabled]="currentPage === 1"
+          (click)="goToPage(currentPage - 1)"
+        >
+          ← Précédent
+        </button>
+        
+        <div class="pagination-info">
+          <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+          <span class="separator">|</span>
+          <span>{{ transactionList.length }} résultats</span>
+        </div>
+        
+        <button 
+          class="pagination-btn" 
+          [disabled]="currentPage === totalPages"
+          (click)="goToPage(currentPage + 1)"
+        >
+          Suivant →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,284 @@
+<div class="factures-page container">
+    <div class="page-header">
+        <h1>💰 Factures & Paiements</h1>
+        <p class="subtitle">Gérez vos factures et suivez vos paiements</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar glass-panel">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()"
+                placeholder="Rechercher par numéro, référence ou groupe...">
+        </div>
+
+        <div class="filter-group">
+            <select [(ngModel)]="paymentStatusFilter" (change)="applyFilters()" class="filter-select">
+                <option value="all">Tous les statuts de paiement</option>
+                <option value="paid">Payée</option>
+                <option value="partial">Partiellement payée</option>
+                <option value="unpaid">Non payée</option>
+            </select>
+
+            <select [(ngModel)]="sortBy" (change)="applyFilters()" class="filter-select">
+                <option value="date">Trier par date</option>
+                <option value="amount">Trier par montant</option>
+            </select>
+
+            <button class="btn-icon" (click)="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; applyFilters()"
+                title="Inverser l'ordre">
+                <span *ngIf="sortOrder === 'asc'">↑</span>
+                <span *ngIf="sortOrder === 'desc'">↓</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+        <div class="spinner"></div>
+        <p>Chargement des factures...</p>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container glass-panel" *ngIf="!loading">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>N° Facture</th>
+                        <th>Groupe</th>
+                        <th>Date Facture</th>
+                        <th>Date Échéance</th>
+                        <th>Montant</th>
+                        <th>Paiement</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let inv of paginatedInvoices" class="table-row" [class.overdue-row]="isOverdue(inv)">
+                        <td class="invoice-number">
+                            <div class="invoice-info">
+                                <span class="number">{{ inv.invoiceNumber }}</span>
+                                <span class="ref">Réf: {{ inv.reservationReference }}</span>
+                            </div>
+                        </td>
+                        <td class="group-name">
+                            <div class="group-info">
+                                <span class="name">{{ inv.groupLeaderName }}</span>
+                                <span class="id">#{{ inv.reservationId }}</span>
+                            </div>
+                        </td>
+                        <td class="date-cell">
+                            <div class="date-info">
+                                <span class="date">{{ inv.invoiceDate | date:'dd/MM/yyyy' }}</span>
+                            </div>
+                        </td>
+                        <td class="date-cell">
+                            <div class="date-info" [class.overdue]="isOverdue(inv)">
+                                <span class="date">{{ inv.dueDate | date:'dd/MM/yyyy' }}</span>
+                                <span class="overdue-badge" *ngIf="isOverdue(inv)">⚠️ En retard</span>
+                            </div>
+                        </td>
+                        <td class="amount-cell">
+                            <div class="amount-info">
+                                <span class="total">{{ inv.totalAmount | number:'1.2-2' }} TND</span>
+                                <span class="remaining" *ngIf="inv.remainingAmount > 0">Reste: {{ inv.remainingAmount | number:'1.2-2' }} TND</span>
+                            </div>
+                        </td>
+                        <td class="payment-cell">
+                            <div class="payment-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" [style.width.%]="getPaymentPercentage(inv)"
+                                        [class.full]="inv.paymentStatus === 'paid'"
+                                        [class.partial]="inv.paymentStatus === 'partial'"
+                                        [class.none]="inv.paymentStatus === 'unpaid'">
+                                    </div>
+                                </div>
+                                <span class="percentage">{{ getPaymentPercentage(inv) }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge" [ngClass]="getPaymentStatusClass(inv.paymentStatus)">
+                                {{ getPaymentStatusLabel(inv.paymentStatus) }}
+                            </span>
+                        </td>
+                        <td class="actions-cell">
+                            <button class="btn-action btn-details" (click)="viewDetails(inv)" title="Voir les détails">
+                                <i class="fas fa-eye"></i>
+                                Détails
+                            </button>
+                            <button class="btn-action btn-download" (click)="downloadInvoice(inv)" title="Télécharger PDF">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="paginatedInvoices.length === 0">
+                        <td colspan="8" class="empty-state">
+                            <div class="empty-message">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>Aucune facture trouvée</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container" *ngIf="filteredInvoices.length > 0">
+            <div class="pagination-info">
+                Affichage de {{ ((currentPage - 1) * itemsPerPage) + 1 }} 
+                à {{ Math.min(currentPage * itemsPerPage, filteredInvoices.length) }} 
+                sur {{ filteredInvoices.length }} factures
+            </div>
+            
+            <div class="pagination-controls">
+                <button class="pagination-btn" 
+                        [disabled]="currentPage === 1" 
+                        (click)="previousPage()"
+                        title="Page précédente">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+
+                <button *ngFor="let page of getPageNumbers()" 
+                        class="pagination-btn page-number" 
+                        [class.active]="page === currentPage"
+                        [disabled]="page === -1"
+                        (click)="page !== -1 && goToPage(page)">
+                    <span *ngIf="page === -1">...</span>
+                    <span *ngIf="page !== -1">{{ page }}</span>
+                </button>
+
+                <button class="pagination-btn" 
+                        [disabled]="currentPage === totalPages" 
+                        (click)="nextPage()"
+                        title="Page suivante">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal-backdrop" *ngIf="selectedInvoice" (click)="closeDetails()">
+        <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h2>📄 Détails de la Facture</h2>
+                <button class="close-btn" (click)="closeDetails()">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Invoice Information -->
+                <div class="section">
+                    <h3>📋 Informations Facture</h3>
+                    <div class="detail-row">
+                        <strong>Numéro:</strong>
+                        <span class="invoice-badge">{{ selectedInvoice.invoiceNumber }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Référence réservation:</strong>
+                        <span>{{ selectedInvoice.reservationReference }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Date d'émission:</strong>
+                        <span>{{ selectedInvoice.invoiceDate | date:'fullDate' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Date d'échéance:</strong>
+                        <span [class.text-danger]="isOverdue(selectedInvoice)">
+                            {{ selectedInvoice.dueDate | date:'fullDate' }}
+                            <span *ngIf="isOverdue(selectedInvoice)" class="overdue-text"> (EN RETARD)</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Group Information -->
+                <div class="section">
+                    <h3>👥 Informations Groupe</h3>
+                    <div class="detail-row">
+                        <strong>Nom du groupe:</strong>
+                        <span>{{ selectedInvoice.groupLeaderName }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>ID Réservation:</strong>
+                        <span>#{{ selectedInvoice.reservationId }}</span>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Invoice Items -->
+                <div class="section">
+                    <h3>📦 Détails des Articles</h3>
+                    <div class="items-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Quantité</th>
+                                    <th>Prix Unitaire</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let item of selectedInvoice.items">
+                                    <td><strong>{{ item.description }}</strong></td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.unitPrice | number:'1.2-2' }} TND</td>
+                                    <td class="item-total">{{ item.total | number:'1.2-2' }} TND</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Payment Information -->
+                <div class="section">
+                    <h3>💰 Informations de Paiement</h3>
+                    <div class="detail-row">
+                        <strong>Montant total:</strong>
+                        <span>{{ selectedInvoice.totalAmount | number:'1.2-2' }} TND</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Montant payé:</strong>
+                        <span class="paid-amount">{{ selectedInvoice.paidAmount | number:'1.2-2' }} TND</span>
+                    </div>
+                    <div class="detail-row highlight" *ngIf="selectedInvoice.remainingAmount > 0">
+                        <strong>Montant restant:</strong>
+                        <span class="remaining-amount">{{ selectedInvoice.remainingAmount | number:'1.2-2' }} TND</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Statut paiement:</strong>
+                        <span class="status-badge" [ngClass]="getPaymentStatusClass(selectedInvoice.paymentStatus)">
+                            {{ getPaymentStatusLabel(selectedInvoice.paymentStatus) }}
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Progression:</strong>
+                        <div class="modal-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" [style.width.%]="getPaymentPercentage(selectedInvoice)"
+                                    [class.full]="selectedInvoice.paymentStatus === 'paid'"
+                                    [class.partial]="selectedInvoice.paymentStatus === 'partial'"
+                                    [class.none]="selectedInvoice.paymentStatus === 'unpaid'">
+                                </div>
+                            </div>
+                            <span class="percentage">{{ getPaymentPercentage(selectedInvoice) }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-download-modal" (click)="downloadInvoice(selectedInvoice)">
+                    <i class="fas fa-download"></i>
+                    Télécharger PDF
+                </button>
+                <button class="btn-close-modal" (click)="closeDetails()">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>

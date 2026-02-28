@@ -1,0 +1,99 @@
+<div class="arrivals-dashboard">
+  <header class="page-header">
+    <h1 class="text-gradient">Gestion des Arrivées</h1>
+    <p class="subtitle">Planification et accueil des voyageurs</p>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat-glass arrived">
+      <div class="stat-content">
+        <span class="v">{{ getArrivedCount() }}</span>
+        <span class="l">Déjà au Camp</span>
+      </div>
+      <div class="stat-icon">✅</div>
+    </div>
+    <div class="stat-glass expected">
+      <div class="stat-content">
+        <span class="v">{{ getPendingArrivalsTodayCount() }}</span>
+        <span class="l">Attendus Aujourd'hui</span>
+      </div>
+      <div class="stat-icon">🕒</div>
+    </div>
+    <div class="stat-glass total">
+      <div class="stat-content">
+        <span class="v">{{ filteredReservations.length }}</span>
+        <span class="l">Total Filtré</span>
+      </div>
+      <div class="stat-icon">📋</div>
+    </div>
+  </div>
+
+  <div class="controls-card glass-panel">
+    <div class="filters-grid">
+      <div class="filter-item">
+        <label>Période</label>
+        <div class="date-picker-wrapper">
+          <input type="date" [(ngModel)]="filterDateString" (change)="onDateChange()" class="premium-input">
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <label>Statut</label>
+        <div class="select-wrapper">
+          <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="premium-select">
+            <option value="pending">⏳ Attendus (En attente)</option>
+            <option value="arrived">✅ Enregistrés (Arrivés)</option>
+            <option value="all">🌐 Tous les groupes</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="btn-reset" (click)="resetToToday()">Aujourd'hui</button>
+    </div>
+  </div>
+
+  <div class="arrivals-list" [@staggerList]="pagedReservations.length">
+    <app-glass-card *ngFor="let reservation of pagedReservations" 
+                    class="arrival-card" 
+                    [class.is-arrived]="reservation.status === 'arrived'">
+      <div class="arrival-inner">
+        <div class="main-info">
+          <div class="title-row">
+            <h3>{{ reservation.partnerName }}</h3>
+            <app-status-badge [status]="reservation.status"></app-status-badge>
+          </div>
+          <div class="meta-grid">
+            <div class="meta-item"><span class="icon">👥</span> {{ reservation.numberOfPeople }} Pers.</div>
+            <div class="meta-item"><span class="icon">📅</span> {{ formatDate(reservation.checkInDate) }}</div>
+            <div class="meta-item"><span class="icon">⛺</span> {{ reservation.groupInfo.tourType || 'Standard' }}</div>
+            <div class="meta-item id">#{{ reservation.id.slice(0,8).toUpperCase() }}</div>
+          </div>
+        </div>
+        
+        <div class="actions">
+          <button *ngIf="reservation.status !== 'arrived'" class="btn-checkin" (click)="markArrived(reservation.id)">
+            Check-In ✅
+          </button>
+          <div *ngIf="reservation.status === 'arrived'" class="check-done">
+            <span class="check-icon">✨</span>
+            <span class="check-text">Déjà installé</span>
+          </div>
+        </div>
+      </div>
+    </app-glass-card>
+
+    <div *ngIf="pagedReservations.length === 0" class="empty-placeholder glass-panel">
+      <div class="icon">🏜️</div>
+      <h3>Aucune arrivée trouvée</h3>
+      <p>Ajustez vos filtres pour voir d'autres dates.</p>
+    </div>
+  </div>
+
+  <div class="pagination-bar glass-panel">
+    <mat-paginator [length]="filteredReservations.length"
+                   [pageSize]="pageSize"
+                   [pageSizeOptions]="[5, 10, 20]"
+                   (page)="onPageChange($event)">
+    </mat-paginator>
+  </div>
+</div>

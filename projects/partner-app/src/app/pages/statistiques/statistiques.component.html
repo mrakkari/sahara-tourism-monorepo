@@ -1,0 +1,159 @@
+<div class="statistiques-page">
+    <div class="page-header">
+        <h1>
+            <svg class="dashboard-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            Tableau de Bord
+        </h1>
+        <div class="period-filter">
+            <label for="period">Période:</label>
+            <select id="period" [(ngModel)]="selectedPeriod" (change)="onPeriodChange()" class="period-select">
+                <option *ngFor="let period of periods" [value]="period.value">
+                    {{ period.label }}
+                </option>
+            </select>
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Chargement des statistiques...</p>
+    </div>
+
+    <div *ngIf="!loading && statistics" class="stats-container">
+        <!-- Period Indicator -->
+        <div class="period-indicator">
+            <span class="period-badge">{{ getPeriodLabel() }}</span>
+        </div>
+
+        <!-- Key Metrics - Highlighted Section -->
+        <section class="key-metrics">
+            <div class="metric-card primary">
+                <div class="metric-header">
+                    <span class="metric-icon">💰</span>
+                    <span class="metric-label">Montant Impayé</span>
+                </div>
+                <div class="metric-value">{{ statistics.unpaidAmount | number:'1.2-2' }} €</div>
+                <div class="metric-footer">À recouvrer</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">📊</span>
+                    <span class="metric-label">Réservations Totales</span>
+                </div>
+                <div class="metric-value">{{ statistics.totalReservations }}</div>
+                <div class="metric-footer">
+                    <span class="metric-detail success">{{ statistics.approvedReservations }} confirmées</span>
+                    <span class="metric-detail warning">{{ statistics.pendingReservations }} en attente</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">👥</span>
+                    <span class="metric-label">Total Participants</span>
+                </div>
+                <div class="metric-value">{{ statistics.totalParticipants }}</div>
+                <div class="metric-footer">
+                    <span class="metric-detail">{{ statistics.totalAdults }} adultes</span>
+                    <span class="metric-detail">{{ statistics.totalChildren }} enfants</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Secondary Stats Grid -->
+        <section class="secondary-stats">
+            <div class="stat-box confirmed">
+                <div class="stat-icon-wrapper">
+                    <span class="stat-icon">✅</span>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-number">{{ statistics.approvedReservations }}</div>
+                    <div class="stat-label">Confirmées</div>
+                </div>
+            </div>
+
+            <div class="stat-box pending">
+                <div class="stat-icon-wrapper">
+                    <span class="stat-icon">⏳</span>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-number">{{ statistics.pendingReservations }}</div>
+                    <div class="stat-label">En Attente</div>
+                </div>
+            </div>
+
+            <div class="stat-box rejected">
+                <div class="stat-icon-wrapper">
+                    <span class="stat-icon">❌</span>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-number">{{ statistics.rejectedReservations }}</div>
+                    <div class="stat-label">Rejetées</div>
+                </div>
+            </div>
+
+            <div class="stat-box average">
+                <div class="stat-icon-wrapper">
+                    <span class="stat-icon">📈</span>
+                </div>
+                <div class="stat-info">
+                    <div class="stat-number">{{ statistics.averageGroupSize | number:'1.1-1' }}</div>
+                    <div class="stat-label">Taille Moy. Groupe</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tour Type Distribution -->
+        <section class="stats-section">
+            <h2>🗺️ Distribution par Type de Tour</h2>
+            <div class="tour-distribution">
+                <div *ngFor="let tour of statistics.tourTypeDistribution" class="tour-item">
+                    <div class="tour-info">
+                        <span class="tour-name">{{ tour.tourType }}</span>
+                        <span class="tour-stats">{{ tour.count }} réservations • {{ tour.revenue | number:'1.2-2' }} €</span>
+                    </div>
+                    <div class="tour-bar">
+                        <div class="tour-bar-fill" [style.width.%]="tour.percentage"></div>
+                    </div>
+                    <span class="tour-percentage">{{ tour.percentage | number:'1.1-1' }}%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Performing Tours -->
+        <section class="stats-section">
+            <h2>🏆 Top 5 Tours Performants</h2>
+            <div class="top-tours-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Tour</th>
+                            <th>Réservations</th>
+                            <th>Revenu</th>
+                            <th>Taille Moy. Groupe</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let tour of statistics.topPerformingTours; let i = index">
+                            <td>
+                                <span class="rank" [class.rank-gold]="i === 0" [class.rank-silver]="i === 1" [class.rank-bronze]="i === 2">
+                                    {{ i + 1 }}
+                                </span>
+                            </td>
+                            <td><strong>{{ tour.tourType }}</strong></td>
+                            <td>{{ tour.reservations }}</td>
+                            <td class="revenue">{{ tour.revenue | number:'1.2-2' }} €</td>
+                            <td>{{ tour.averageGroupSize | number:'1.1-1' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>

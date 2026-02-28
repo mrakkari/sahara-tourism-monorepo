@@ -1,0 +1,70 @@
+<div class="my-reservations-container">
+  <div class="header-section">
+    <h1>📋 My Reservations</h1>
+    <div class="points-badge" *ngIf="reservations.length > 0">
+      🏆 {{ getTotalLoyaltyPoints() }} Points
+    </div>
+  </div>
+
+  <div *ngIf="reservations.length === 0" class="empty-state">
+    <div class="empty-icon">🏜️</div>
+    <h2>No Reservations Yet</h2>
+    <p>Create your first Sahara desert reservation to get started!</p>
+    <button class="btn-primary" routerLink="/create-reservation">Create Reservation</button>
+  </div>
+
+  <div *ngIf="reservations.length > 0" class="reservations-grid">
+    <div *ngFor="let reservation of reservations" class="reservation-card">
+      <div class="card-header" [class]="'status-' + reservation.status">
+        <h3>{{ reservation.partnerName }}</h3>
+        <span class="status-badge" [class]="'badge-' + reservation.status">
+          {{ getStatusLabel(reservation.status) }}
+        </span>
+      </div>
+
+      <div class="card-body">
+        <div class="info-row">
+          <span class="label">👥 People:</span>
+          <span>{{ reservation.adults }} adults, {{ reservation.children }} children</span>
+        </div>
+        <div class="info-row">
+          <span class="label">📅 Check-in:</span>
+          <span>{{ formatDate(reservation.checkInDate) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">📅 Check-out:</span>
+          <span>{{ formatDate(reservation.checkOutDate) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">🏜️ Tour:</span>
+          <span>{{ getTourLabel(reservation.groupInfo.tourType) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">💰 Total:</span>
+          <span class="price">{{ reservation.payment.totalAmount }} TND</span>
+        </div>
+        <div class="info-row">
+          <span class="label">💳 Paid:</span>
+          <span [class]="'payment-' + reservation.payment.paymentStatus">
+            {{ reservation.payment.paidAmount }} TND ({{ getPaymentStatusLabel(reservation.payment.paymentStatus) }})
+          </span>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="getPaymentProgress(reservation)"></div>
+        </div>
+        <div class="actions">
+          <button 
+            *ngIf="reservation.status === 'confirmed' && reservation.payment.paymentStatus !== 'completed'" 
+            class="btn-pay" 
+            [routerLink]="['/payment', reservation.id]">
+            💳 Make Payment
+          </button>
+          <span class="reservation-id">ID: {{ reservation.id }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

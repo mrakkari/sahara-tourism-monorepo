@@ -1,0 +1,110 @@
+<div class="nouveau-page">
+    <header class="page-header">
+        <div class="header-left">
+            <button class="btn-back" routerLink="/">
+                ← Retour
+            </button>
+            <h1>Nouvelle Réservation</h1>
+        </div>
+    </header>
+
+    <form [formGroup]="reservationForm" (ngSubmit)="onSubmit()" class="reservation-form">
+        <div class="form-grid">
+
+            <!-- Section: Partner Info -->
+            <app-glass-card class="form-section">
+                <h2 class="section-title">👤 Partenaire</h2>
+                <div class="form-group">
+                    <label for="partnerName">Nom du partenaire / groupe *</label>
+                    <input type="text" id="partnerName" formControlName="partnerName" class="form-input"
+                        placeholder="Ex: Sahara Adventures Ltd">
+                </div>
+            </app-glass-card>
+
+            <!-- Section: Group Details -->
+            <app-glass-card class="form-section">
+                <h2 class="section-title">👥 Groupe</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="adults">Adultes *</label>
+                        <input type="number" id="adults" formControlName="adults" class="form-input" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="children">Enfants</label>
+                        <input type="number" id="children" formControlName="children" class="form-input" min="0">
+                    </div>
+                    <div class="form-group total-display">
+                        <span class="total-label">Total</span>
+                        <span class="total-value">{{ totalPeople }} personnes</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="tourType">Type d'expérience *</label>
+                    <select id="tourType" formControlName="tourType" class="form-select">
+                        <option *ngFor="let tour of tourTypes" [value]="tour.value">{{ tour.label }}</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="specialRequests">Demandes spéciales</label>
+                    <textarea id="specialRequests" formControlName="specialRequests" class="form-textarea" rows="3"
+                        placeholder="Régime alimentaire, besoins spéciaux..."></textarea>
+                </div>
+            </app-glass-card>
+
+            <!-- Section: Dates -->
+            <app-glass-card class="form-section">
+                <h2 class="section-title">📅 Dates de séjour</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="checkInDate">Arrivée *</label>
+                        <input type="date" id="checkInDate" formControlName="checkInDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="checkOutDate">Départ *</label>
+                        <input type="date" id="checkOutDate" formControlName="checkOutDate" class="form-input">
+                    </div>
+                </div>
+            </app-glass-card>
+
+            <!-- Section: Payment -->
+            <app-glass-card class="form-section payment-section">
+                <h2 class="section-title">💰 Tarification</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pricePerPerson">Prix / personne (TND) *</label>
+                        <input type="number" id="pricePerPerson" formControlName="pricePerPerson" class="form-input"
+                            min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="depositAmount">Acompte reçu (TND)</label>
+                        <input type="number" id="depositAmount" formControlName="depositAmount" class="form-input"
+                            min="0">
+                    </div>
+                </div>
+
+                <div class="payment-summary">
+                    <div class="summary-row">
+                        <span>Total estimé</span>
+                        <strong>{{ estimatedTotal }} TND</strong>
+                    </div>
+                    <div class="summary-row remaining">
+                        <span>Reste à payer</span>
+                        <strong>{{ remainingAfterDeposit }} TND</strong>
+                    </div>
+                </div>
+            </app-glass-card>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="resetForm()">
+                Réinitialiser
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || reservationForm.invalid">
+                {{ isSubmitting ? 'Création...' : 'Créer la réservation' }}
+            </button>
+        </div>
+    </form>
+</div>

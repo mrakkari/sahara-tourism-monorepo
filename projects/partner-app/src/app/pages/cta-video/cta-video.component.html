@@ -1,0 +1,23 @@
+<section class="cta-video-section" [style.background-image]="'url(' + ctaBackgroundImage + ')'">
+  <div class="cta-video-container">
+    <!-- Content FIRST (left side) -->
+    <div class="cta-content">
+      <p class="cta-tagline">Ensemble, Nous Pouvons Créer Des Souvenirs Incroyables.</p>
+      <h2 class="cta-main-title">
+        Êtes-Vous Prêt À Nous Rejoindre Pour Votre Prochaine Aventure Dans Le Désert ?
+      </h2>
+      <a routerLink="/tours" class="btn-cta-explore">EXPLOREZ LE CAMPEMENT.</a>
+    </div>
+    
+    <!-- Video SECOND (right side) -->
+    <div class="cta-video-wrapper">
+      <iframe 
+        [src]="youtubeVideoUrl | safe: 'resourceUrl'" 
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen
+        class="youtube-video">
+      </iframe>
+    </div>
+  </div>
+</section>

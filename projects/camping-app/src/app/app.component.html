@@ -1,0 +1,57 @@
+<div class="camping-layout">
+  <!-- Simple Sidebar -->
+  <app-sidebar title="Camping Portal" icon="🏕️" [items]="sidebarItems" [(collapsed)]="sidebarCollapsed">
+  </app-sidebar>
+
+  <!-- Main Content Area -->
+  <main class="camping-content" [class.sidebar-collapsed]="sidebarCollapsed">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <h1 class="page-title">{{ pageTitle }}</h1>
+        <span class="live-badge">🟢 En direct</span>
+      </div>
+      <div class="top-bar-right">
+        <button class="notification-btn" title="Notifications" (click)="toggleNotifications()">
+          🔔
+          <span class="notification-badge" *ngIf="notificationCount > 0">{{ notificationCount }}</span>
+        </button>
+
+        <!-- Notification Dropdown -->
+        <div class="notification-overlay" *ngIf="showNotifications" (click)="toggleNotifications()"></div>
+        <div class="notification-dropdown glass-panel" *ngIf="showNotifications">
+          <div class="dropdown-header">
+            <h3>Notifications</h3>
+            <button class="btn-text" (click)="markAllAsRead()">Tout lire</button>
+          </div>
+          <div class="notification-list">
+            <div class="notif-item" [class.unread]="!n.isRead" *ngFor="let n of notifications">
+              <div class="notif-icon">
+                {{ n.type === 'payment' ? '💰' : (n.type === 'system' ? '🛠️' : '📅') }}
+              </div>
+              <div class="notif-content">
+                <p class="notif-title">{{ n.title }}</p>
+                <p class="notif-msg">{{ n.message }}</p>
+                <span class="notif-time">{{ n.timestamp | date:'short' }}</span>
+              </div>
+              <div class="unread-dot" *ngIf="!n.isRead"></div>
+            </div>
+            <div class="empty-notif" *ngIf="notifications.length === 0">
+              Aucune nouvelle notification
+            </div>
+          </div>
+        </div>
+
+        <div class="user-menu">
+          <span class="user-avatar">🏕️</span>
+          <span class="user-name">Camp Sahara</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

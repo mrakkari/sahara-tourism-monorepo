@@ -1,0 +1,45 @@
+<main class="home-page">
+  <!-- Welcome Hero -->
+  <section class="welcome-hero">
+    <div class="hero-bg" [style.backgroundImage]="'url(' + currentHeroImage + ')'"></div>
+    <div class="hero-overlay"></div>
+
+    <div class="hero-content">
+      <div class="welcome-card">
+        <h1 class="welcome-title">
+          Bienvenue <span class="partner-name">{{ currentUser.name }}</span>
+        </h1>
+        <p class="welcome-subtitle">
+          Gérez vos réservations et suivez vos performances en toute simplicité
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Promotional Cards -->
+  <section class="promotional-section container">
+    <div class="promo-grid">
+      <div *ngFor="let card of promotionalCards" class="promo-card">
+        <div class="promo-icon" [style.background]="card.color + '20'" [style.color]="card.color">
+          {{ card.icon }}
+        </div>
+        <h3>{{ card.title }}</h3>
+        <p>{{ card.description }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Actions -->
+  <section class="quick-actions-section container">
+    <h2 class="section-title">Actions Rapides</h2>
+
+    <div class="actions-grid">
+      <a *ngFor="let action of quickActions" [routerLink]="action.route" class="action-card"
+        [style.--action-color]="action.color">
+        <div class="action-icon">{{ action.icon }}</div>
+        <h3>{{ action.title }}</h3>
+        <p>{{ action.description }}</p>
+      </a>
+    </div>
+  </section>
+</main>

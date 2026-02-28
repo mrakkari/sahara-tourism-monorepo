@@ -1,0 +1,82 @@
+<div class="payment-container" *ngIf="reservation">
+  <h1>💳 Payment for Reservation</h1>
+
+  <div class="reservation-summary">
+    <h2>Reservation Details</h2>
+    <div class="summary-row">
+      <span>Partner:</span>
+      <strong>{{ reservation.partnerName }}</strong>
+    </div>
+    <div class="summary-row">
+      <span>Group Size:</span>
+      <strong>{{ reservation.numberOfPeople }} people</strong>
+    </div>
+    <div class="summary-row">
+      <span>Tour Type:</span>
+      <strong>{{ getTourLabel(reservation.groupInfo.tourType) }}</strong>
+    </div>
+    <div class="summary-row total">
+      <span>Total Amount:</span>
+      <strong>{{ reservation.payment.totalAmount }} TND</strong>
+    </div>
+    <div class="summary-row">
+      <span>Already Paid:</span>
+      <strong class="paid">{{ reservation.payment.paidAmount }} TND</strong>
+    </div>
+    <div class="summary-row remaining">
+      <span>Remaining:</span>
+      <strong>{{ reservation.payment.totalAmount - reservation.payment.paidAmount }} TND</strong>
+    </div>
+  </div>
+
+  <div class="payment-options">
+    <h2>🔒 Flouci Payment Options</h2>
+    
+    <div class="payment-cards">
+      <div class="payment-card" (click)="initiatePayment(50)" [class.disabled]="isProcessing">
+        <div class="card-icon">💰</div>
+        <h3>50% Advance Payment</h3>
+        <p class="amount">{{ (reservation.payment.totalAmount - reservation.payment.paidAmount) * 0.5 }} TND</p>
+        <p class="description">Pay half now, rest on arrival</p>
+        <button class="btn-pay" [disabled]="isProcessing">Pay 50%</button>
+      </div>
+
+      <div class="payment-card featured" (click)="initiatePayment(100)" [class.disabled]="isProcessing">
+        <div class="ribbon">Recommended</div>
+        <div class="card-icon">✨</div>
+        <h3>Full Payment</h3>
+        <p class="amount">{{ reservation.payment.totalAmount - reservation.payment.paidAmount }} TND</p>
+        <p class="description">Pay in full and secure your booking</p>
+        <button class="btn-pay primary" [disabled]="isProcessing">Pay 100%</button>
+      </div>
+    </div>
+
+    <div class="mock-notice">
+      <p>🔐 This is a mock payment interface for demonstration purposes.</p>
+      <p>In production, this would integrate with the real Flouci payment gateway.</p>
+    </div>
+  </div>
+
+  <div class="payment-history" *ngIf="reservation.payment.transactions.length > 0">
+    <h2>Payment History</h2>
+    <div class="transaction-list">
+      <div *ngFor="let transaction of reservation.payment.transactions" class="transaction-item">
+        <div class="transaction-icon">✅</div>
+        <div class="transaction-details">
+          <div class="transaction-amount">{{ transaction.amount }} TND</div>
+          <div class="transaction-date">{{ formatDate(transaction.date) }}</div>
+          <div class="transaction-method">{{ transaction.method }}</div>
+          <div class="transaction-desc" *ngIf="transaction.description">{{ transaction.description }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="payment-container" *ngIf="!reservation">
+  <div class="error-state">
+    <h2>❌ Reservation Not Found</h2>
+    <p>The reservation you're trying to pay for could not be found.</p>
+    <button class="btn-primary" (click)="goBack()">Go Back</button>
+  </div>
+</div>

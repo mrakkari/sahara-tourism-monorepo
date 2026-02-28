@@ -1,0 +1,231 @@
+.my-reservations-container {
+  min-height: 400px;
+}
+
+h1 {
+  color: #D2691E;
+  margin: 0 0 2rem 0;
+  font-size: 2rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.empty-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h2 {
+  color: #2C1810;
+  margin: 1rem 0;
+}
+
+.empty-state p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.btn-primary {
+  background: #D2691E;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #B8541A;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.reservations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.reservation-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.reservation-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #D2691E, #CD853F);
+  color: white;
+}
+
+.card-header.status-confirmed {
+  background: linear-gradient(135deg, #4682B4, #5a9bd4);
+}
+
+.card-header.status-rejected {
+  background: linear-gradient(135deg, #CD5C5C, #DC143C);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.badge-confirmed {
+  background: rgba(76, 175, 80, 0.9);
+}
+
+.badge-rejected {
+  background: rgba(244, 67, 54, 0.9);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-weight: 600;
+  color: #2C1810;
+}
+
+.price {
+  font-weight: 700;
+  color: #D2691E;
+}
+
+.payment-pending {
+  color: #FFA500;
+}
+
+.payment-partial {
+  color: #4682B4;
+}
+
+.payment-completed {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.card-footer {
+  padding: 1rem 1.5rem;
+  background: #FFF8DC;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #DEB887;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  transition: width 0.3s ease;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-pay {
+  background: #4682B4;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-pay:hover {
+  background: #5a9bd4;
+  transform: scale(1.05);
+}
+
+.reservation-id {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header-section h1 {
+  margin: 0;
+}
+
+.points-badge {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #2C1810;
+  padding: 0.75rem 1.5rem;
+  border-radius: 24px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  font-size: 1.1rem;
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .reservations-grid {
+    grid-template-columns: 1fr;
+  }
+}

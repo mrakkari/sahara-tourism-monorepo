@@ -1,0 +1,123 @@
+<div class="page-container stagger-in">
+  <div class="header">
+    <div class="header-left">
+      <h1>🧾 Liste des Factures</h1>
+    </div>
+    <p class="subtitle">Historique des factures et paiements</p>
+  </div>
+  
+  <!-- Filters Section -->
+  <lib-glass-card>
+    <div class="filters-container">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          [(ngModel)]="searchClient"
+          (input)="applyFilters()"
+          placeholder="Rechercher client..."
+          class="search-input"
+        />
+      </div>
+      <div class="date-filters">
+        <input 
+          type="date" 
+          [(ngModel)]="startDate"
+          (change)="applyFilters()"
+          class="date-input"
+          placeholder="Date début"
+        />
+        <input 
+          type="date" 
+          [(ngModel)]="endDate"
+          (change)="applyFilters()"
+          class="date-input"
+          placeholder="Date fin"
+        />
+      </div>
+      <button class="btn-filter" (click)="applyFilters()">
+        Filtrer
+      </button>
+    </div>
+  </lib-glass-card>
+  
+  <!-- Table Section -->
+  <lib-glass-card>
+    <div class="table-responsive">
+      <table class="premium-table">
+        <thead>
+          <tr>
+            <th class="col-date">Date</th>
+            <th class="col-invoice">Facture N°</th>
+            <th class="col-client">Client</th>
+            <th class="col-amount">Montant TTC</th>
+            <th class="col-status">Statut</th>
+            <th class="col-actions text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let invoice of paginatedInvoices" class="table-row"> 
+            <td class="col-date">{{ formatDate(invoice.createdAt) }}</td>
+            <td class="col-invoice">
+              <span class="invoice-id">{{ getInvoiceNumber(invoice) }}</span>
+            </td>
+            <td class="col-client client-name">{{ invoice.partnerName }}</td>
+            <td class="col-amount font-bold amount">{{ invoice.payment.totalAmount.toLocaleString('fr-FR') }} DT</td>
+            <td class="col-status">
+              <lib-status-badge [status]="invoice.payment.paymentStatus"></lib-status-badge>
+            </td>
+            <td class="col-actions text-right">
+              <div class="action-buttons">
+                <button 
+                  class="btn-action btn-view" 
+                  [routerLink]="['/invoice', invoice.id]" 
+                  title="Voir">
+                  Voir
+                </button>
+                <button 
+                  class="btn-action btn-cancel" 
+                  (click)="cancelInvoice(invoice)"
+                  title="Annuler">
+                  🗑️ Annuler
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="filteredInvoices.length === 0">
+            <td colspan="6" class="empty-state">
+              <div class="empty-content">
+                <span class="empty-icon">📭</span>
+                <p>Aucune facture trouvée</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </lib-glass-card>
+  
+  <!-- Pagination -->
+  <div *ngIf="filteredInvoices.length > 0" class="pagination">
+    <button 
+      class="pagination-btn" 
+      [disabled]="currentPage === 1"
+      (click)="goToPage(currentPage - 1)"
+    >
+      ← Précédent
+    </button>
+    
+    <div class="pagination-info">
+      <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+      <span class="separator">|</span>
+      <span>{{ filteredInvoices.length }} résultats</span>
+    </div>
+    
+    <button 
+      class="pagination-btn" 
+      [disabled]="currentPage === totalPages"
+      (click)="goToPage(currentPage + 1)"
+    >
+      Suivant →
+    </button>
+  </div>
+</div>

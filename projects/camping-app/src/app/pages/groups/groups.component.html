@@ -1,0 +1,200 @@
+<div class="groups-dashboard">
+  <!-- Dashboard Header -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>📋 Gestion des Campements</h1>
+        <p class="subtitle">Suivi en temps réel des arrivées et réservations</p>
+      </div>
+      <div class="stats-cards">
+        <div class="stat-card confirmed">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-info">
+            <span class="stat-value">{{ getConfirmedCount() }}</span>
+            <span class="stat-label">Attendu(s)</span>
+          </div>
+        </div>
+        <div class="stat-card arrived">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <span class="stat-value">{{ getArrivedCount() }}</span>
+            <span class="stat-label">Au Camp</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Search & Filters Bar -->
+  <div class="filters-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        placeholder="Rechercher par partenaire, type de tour, ID..."
+        (keyup.enter)="applyFilters()"
+        class="search-input"
+      >
+    </div>
+    
+    <div class="filter-controls">
+      <div class="filter-item">
+        <label>Statut:</label>
+        <select [(ngModel)]="statusFilter" class="filter-select">
+          <option value="all">🌐 Tous</option>
+          <option value="confirmed">⏳ En attente</option>
+          <option value="arrived">✅ Au camp</option>
+        </select>
+      </div>
+      
+      <button class="btn btn-primary" (click)="applyFilters()">
+        Rechercher
+      </button>
+      <button class="btn btn-secondary" (click)="resetFilters()" title="Réinitialiser">
+        🔄 Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="filteredReservations.length === 0" class="empty-state">
+    <div class="empty-icon">🏜️</div>
+    <h3>Aucun groupe à afficher</h3>
+    <p>Les groupes confirmés par l'administration apparaîtront ici.</p>
+  </div>
+
+  <!-- Groups Table -->
+  <div class="table-container" *ngIf="filteredReservations.length > 0" [@tableAnimation]="pagedReservations.length">
+    <table class="groups-table">
+      <thead>
+        <tr>
+          <th class="col-leader">NOM DU GROUPE</th>
+          <th class="col-partner">PARTENAIRE</th>
+          <th class="col-tour">TYPE DE TOUR</th>
+          <th class="col-people">PERSONNES</th>
+          <th class="col-date">DATE DÉPART</th>
+          <th class="col-date">DATE ARRIVÉE</th>
+          <th class="col-nights">NUITS</th>
+          <th class="col-payment">PAIEMENT</th>
+          <th class="col-actions">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr 
+          *ngFor="let reservation of pagedReservations" 
+          class="group-row"
+          [class.row-arrived]="reservation.status === 'arrived'"
+          [class.row-confirmed]="reservation.status === 'confirmed'"
+        >
+          <!-- Group Leader Name -->
+          <td class="col-leader">
+            <div class="leader-info">
+              <span class="leader-name">{{ getGroupLeaderName(reservation) }}</span>
+            </div>
+          </td>
+
+          <!-- Partner Name -->
+          <td class="col-partner">
+            <span class="partner-name">{{ reservation.partnerName }}</span>
+          </td>
+
+          <!-- Tour Type -->
+          <td class="col-tour">
+            <span class="tour-badge">{{ getTourLabel(reservation.groupInfo.tourType) }}</span>
+          </td>
+
+          <!-- Number of People -->
+          <td class="col-people">
+            <div class="people-info">
+              <span class="total">👥 {{ reservation.numberOfPeople }}</span>
+              <span class="breakdown">{{ reservation.adults }} Ad, {{ reservation.children }} Enf</span>
+            </div>
+          </td>
+
+          <!-- Departure Date (Check-out) -->
+          <td class="col-date">
+            <span class="date-value">{{ formatDate(reservation.checkOutDate) }}</span>
+          </td>
+
+          <!-- Arrival Date (Check-in) -->
+          <td class="col-date">
+            <span class="date-value">{{ formatDate(reservation.checkInDate) }}</span>
+          </td>
+
+          <!-- Number of Nights -->
+          <td class="col-nights">
+            <span class="nights-badge">{{ getNights(reservation) }} nuits</span>
+          </td>
+
+          <!-- Payment Status -->
+          <td class="col-payment">
+            <span class="payment-badge" [ngClass]="getPaymentStatusClass(reservation)">
+              {{ getPaymentStatus(reservation) }}
+            </span>
+          </td>
+
+          <!-- Actions -->
+          <td class="col-actions">
+            <div class="action-buttons">
+              <button 
+                class="btn-table btn-details" 
+                [routerLink]="['/group', reservation.id]"
+                title="Voir détails"
+              >
+                📖 Détails
+              </button>
+              
+              <button 
+                *ngIf="reservation.status === 'confirmed'" 
+                class="btn-table btn-checkin"
+                (click)="markArrived(reservation.id)"
+                title="Check-in"
+              >
+                ✅ Check-in
+              </button>
+              
+              <button 
+                *ngIf="reservation.status === 'arrived'" 
+                class="btn-table btn-payment"
+                [routerLink]="['/group', reservation.id]"
+                title="Gérer le paiement"
+              >
+                💰 Paiement
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-section" *ngIf="filteredReservations.length > 0">
+    <div class="pagination-info">
+      <span>Affichage {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredReservations.length) }} sur {{ filteredReservations.length }} groupes</span>
+    </div>
+    
+    <div class="pagination-controls">
+      <button 
+        class="btn-page" 
+        [disabled]="currentPage === 1"
+        (click)="goToPage(currentPage - 1)"
+      >
+        ← Précédent
+      </button>
+      
+      <div class="page-numbers">
+        <span class="current-page">Page {{ currentPage }} / {{ totalPages }}</span>
+      </div>
+      
+      <button 
+        class="btn-page" 
+        [disabled]="currentPage === totalPages"
+        (click)="goToPage(currentPage + 1)"
+      >
+        Suivant →
+      </button>
+    </div>
+  </div>
+</div>

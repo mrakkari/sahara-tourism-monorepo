@@ -1,0 +1,83 @@
+<header class="modern-header">
+  <nav class="navbar">
+    <div class="nav-container">
+      <!-- Logo with Image -->
+      <a routerLink="/" class="logo">
+        <img [src]="logo" alt="Dunes Insolites" class="logo-image">
+      </a>
+
+      <!-- Desktop Navigation -->
+      <ul class="nav-menu" [class.active]="menuOpen">
+        <li><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">{{
+            'header.home' | translate }}</a></li>
+        <li><a routerLink="/historique" routerLinkActive="active" class="nav-link">Historique</a></li>
+        <li><a routerLink="/factures" routerLinkActive="active" class="nav-link">Factures</a></li>
+        <li><a routerLink="/statistiques" routerLinkActive="active" class="nav-link">Statistiques</a></li>
+        <li><a routerLink="/about" routerLinkActive="active" class="nav-link">{{ 'header.about' | translate }}</a></li>
+        <li><a routerLink="/contact" routerLinkActive="active" class="nav-link">{{ 'header.contact' | translate }}</a>
+        </li>
+      </ul>
+
+      <!-- Actions -->
+      <div class="nav-actions">
+        <!-- Language Toggle -->
+        <button class="btn-icon" (click)="toggleLanguage()"
+          [title]="currentLang === 'FR' ? 'Switch to English' : 'Passer au Français'">
+          🌍 {{ currentLang }}
+        </button>
+
+        <!-- Partner Profile (New) -->
+        <div class="partner-profile-wrapper" *ngIf="currentUser">
+          <a routerLink="/profile" class="btn-icon partner-btn" [title]="currentUser.name">
+            <span class="partner-name-short">{{ currentUser.name | slice:0:1 }}</span>
+            <span class="partner-org-name">{{ currentUser.name }}</span>
+          </a>
+        </div>
+
+        <!-- Notifications -->
+        <div class="notifications-wrapper">
+          <button class="btn-icon notif-btn" (click)="toggleNotifications($event)">
+            🔔
+            <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+          </button>
+
+          <div class="notif-dropdown glass-dropdown" *ngIf="showNotifications" (click)="$event.stopPropagation()">
+            <div class="notif-header">
+              <h3>{{ 'header.notifications' | translate }}</h3>
+              <button class="mark-read" (click)="markAllRead()">{{ 'header.markAllRead' | translate }}</button>
+            </div>
+            <div class="notif-list">
+              <div *ngFor="let notif of notifications" class="notif-item" [class.unread]="!notif.isRead"
+                (click)="handleNotificationClick(notif)">
+                <div class="notif-icon">{{ getNotificationIcon(notif.type) }}</div>
+                <div class="notif-content">
+                  <div class="notif-title">{{ notif.title }}</div>
+                  <div class="notif-message">{{ notif.message }}</div>
+                  <div class="notif-time">{{ formatTime(notif.timestamp) }}</div>
+                </div>
+              </div>
+              <div *ngIf="notifications.length === 0" class="empty-notifs">
+                {{ 'header.noNotifications' | translate }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Support -->
+        <button class="btn-icon" (click)="openChat()" title="Support WhatsApp">💬</button>
+
+        <!-- CTA Button -->
+        <a routerLink="/create-reservation" class="btn-cta">
+          ✨ {{ 'header.book' | translate }}
+        </a>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="hamburger" [class.active]="menuOpen" (click)="toggleMenu()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+</header>

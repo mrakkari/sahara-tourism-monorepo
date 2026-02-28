@@ -1,0 +1,182 @@
+<main class="tour-details-page theme-aurora" *ngIf="tour">
+  <!-- Hero Section -->
+  <section class="tour-hero">
+    <div class="hero-bg" [style.backgroundImage]="'url(' + tour.image + ')'"></div>
+    <div class="hero-overlay-gradient"></div>
+    
+    <div class="container">
+      <div class="breadcrumb">
+        <a routerLink="/">Accueil</a>
+        <span>/</span>
+        <a routerLink="/tours">Tours</a>
+        <span>/</span>
+        <span>{{ tour.title }}</span>
+      </div>
+      
+      <div class="hero-content">
+        <div class="tour-badge" *ngIf="tour.discount">
+          -{{ tour.discount }}% DE RÉDUCTION
+        </div>
+        <h1 class="tour-title">{{ tour.title }}</h1>
+        <p class="tour-tagline">{{ tour.description }}</p>
+        
+        <div class="tour-quick-info">
+          <div class="info-item">
+            <i class="far fa-clock"></i>
+            <span>{{ tour.duration }}</span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-users"></i>
+            <span>Min. {{ tour.minPeople }} personnes</span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>{{ tour.destination }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="tour-content-section">
+    <div class="container">
+      <div class="content-grid">
+        <!-- Left Column - Main Info -->
+        <div class="main-content">
+          <!-- Description -->
+          <div class="content-card glass-panel">
+            <h2 class="section-title">
+              <i class="fas fa-info-circle"></i>
+              Description
+            </h2>
+            <p class="tour-full-description">{{ tour.fullDescription }}</p>
+          </div>
+
+          <!-- Itinerary -->
+          <div class="content-card glass-panel" *ngIf="tour.itinerary && tour.itinerary.length > 0">
+            <h2 class="section-title">
+              <i class="fas fa-route"></i>
+              Itinéraire
+            </h2>
+            <div class="itinerary-timeline">
+              <div class="timeline-item" *ngFor="let item of tour.itinerary; let i = index">
+                <div class="timeline-marker">{{ i + 1 }}</div>
+                <div class="timeline-content">
+                  <div class="timeline-day">{{ item.day }}</div>
+                  <h3 class="timeline-title">{{ item.title }}</h3>
+                  <p class="timeline-description">{{ item.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Included / Not Included -->
+          <div class="content-card glass-panel">
+            <h2 class="section-title">
+              <i class="fas fa-check-circle"></i>
+              Ce qui est inclus
+            </h2>
+            <ul class="included-list">
+              <li *ngFor="let item of tour.included">
+                <i class="fas fa-check"></i>
+                {{ item }}
+              </li>
+            </ul>
+
+            <h2 class="section-title mt-4">
+              <i class="fas fa-times-circle"></i>
+              Ce qui n'est pas inclus
+            </h2>
+            <ul class="not-included-list">
+              <li *ngFor="let item of tour.notIncluded">
+                <i class="fas fa-times"></i>
+                {{ item }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- Gallery -->
+          <div class="content-card glass-panel" *ngIf="tour.gallery && tour.gallery.length > 0">
+            <h2 class="section-title">
+              <i class="fas fa-images"></i>
+              Galerie
+            </h2>
+            <div class="tour-gallery">
+              <img *ngFor="let img of tour.gallery" 
+                   [src]="img" 
+                   [alt]="tour.title"
+                   class="gallery-image">
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Booking Card -->
+        <div class="sidebar">
+          <div class="booking-card glass-panel sticky">
+            <div class="price-section">
+              <div class="price-label">À partir de</div>
+              <div class="price-container">
+                <span class="price-old" *ngIf="tour.discount">{{ tour.price }}€</span>
+                <span class="price-current">{{ getFinalPrice() }}€</span>
+                <span class="price-unit">/ personne</span>
+              </div>
+              <div class="savings" *ngIf="tour.discount">
+                Économisez {{ tour.price - getFinalPrice() }}€ par personne
+              </div>
+            </div>
+
+            <div class="booking-highlights">
+              <div class="highlight-item">
+                <i class="fas fa-shield-alt"></i>
+                <span>Annulation gratuite jusqu'à 24h</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fas fa-headset"></i>
+                <span>Support client 24/7</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fas fa-star"></i>
+                <span>Garantie meilleur prix</span>
+              </div>
+            </div>
+
+            <button class="btn-primary-glow btn-book" (click)="bookNow()">
+              <i class="fas fa-calendar-check"></i>
+              Réserver maintenant
+            </button>
+
+            <div class="contact-info">
+              <p>Des questions ?</p>
+              <a routerLink="/contact" class="contact-link">
+                <i class="fas fa-phone"></i>
+                Contactez-nous
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-glass-box">
+        <h2>Prêt à réserver cette expérience ?</h2>
+        <p>Rejoignez des milliers de voyageurs satisfaits et vivez une aventure inoubliable.</p>
+        <button class="btn-primary-glow" (click)="bookNow()">
+          Réserver {{ tour.title }}
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Loading/Error State -->
+<div class="loading-state" *ngIf="!tour">
+  <div class="container text-center">
+    <i class="fas fa-spinner fa-spin fa-3x"></i>
+    <p>Chargement...</p>
+  </div>
+</div>

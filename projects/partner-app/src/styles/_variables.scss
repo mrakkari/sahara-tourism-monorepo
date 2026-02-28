@@ -1,0 +1,64 @@
+// ============================================
+// Premium Color Palette 2025 (Aurora Theme - Partner)
+// ============================================
+
+// Primary Brand Colors (Vibrant Gradients)
+$primary-blue: #0EA5E9; // Sky Blue
+$primary-violet: #6366F1; // Indigo
+$primary-cyan: #22D3EE;
+
+// Accent Colors
+$accent-amber: #F59E0B;
+$accent-rose: #FB7185;
+$accent-emerald: #10B981;
+
+// Backgrounds & Surface
+$bg-dark: #0F172A;
+$bg-dark-mesh: radial-gradient(at 0% 0%, hsla(198, 16%, 7%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(280, 49%, 30%, 1) 0, transparent 50%);
+
+$glass-surface-light: rgba(255, 255, 255, 0.75);
+$glass-surface-ultra: rgba(255, 255, 255, 0.15);
+$glass-border: rgba(255, 255, 255, 0.3);
+$glass-border-light: rgba(255, 255, 255, 0.6);
+
+// Typography
+$font-heading: 'Montserrat', sans-serif;
+$font-body: 'Inter', sans-serif;
+
+// Shadows
+$shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+$shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+$shadow-glow: 0 0 20px rgba(14, 165, 233, 0.4);
+
+// Animation
+$ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+$ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+// Status
+$status-success: #10B981;
+$status-warning: #F59E0B;
+$status-danger: #EF4444;
+
+// Legacy Variables (Backwards Compatibility)
+$wide: 1200px;
+$sahara-night-blue: $bg-dark;
+$sahara-orange: $accent-amber;
+$sahara-beige: #F5E6D3;
+$spacing-xl: 4rem;
+$spacing-lg: 3rem;
+$spacing-md: 2rem;
+$spacing-sm: 1rem;
+$text-light: #F8FAFC;
+$text-dark: #1E293B;
+
+$tablet: 768px;
+$mobile: 480px;
+$laptop: 1024px;
+$desktop: 1440px;
+
+$sahara-sand: #E6D5AC;
+$sahara-gold: #C5A059;
+$sahara-red: #C0392B;

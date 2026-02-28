@@ -1,0 +1,44 @@
+// ============================================
+// Premium Color Palette 2025 (Aurora Theme)
+// ============================================
+
+// Primary Brand Colors (Vibrant Gradients)
+$primary-blue: #3B82F6;
+$primary-violet: #8B5CF6;
+$primary-cyan: #06B6D4;
+
+// Accent Colors
+$accent-amber: #F59E0B;
+$accent-rose: #F43F5E;
+$accent-emerald: #10B981;
+
+// Backgrounds & Surface
+$bg-dark: #0F172A;
+$bg-dark-mesh: radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+
+$glass-surface-light: rgba(255, 255, 255, 0.7);
+$glass-surface-ultra: rgba(255, 255, 255, 0.1); // For dark mode/deep glass
+$glass-border: rgba(255, 255, 255, 0.2);
+$glass-border-light: rgba(255, 255, 255, 0.5);
+
+// Typography (Modern Geometric)
+$font-heading: 'Montserrat', sans-serif;
+$font-body: 'Inter', sans-serif;
+
+// Shadows & Glows
+$shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$shadow-glow: 0 0 15px rgba(59, 130, 246, 0.5);
+$shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+
+// Animation Splines
+$ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+$ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+// Status Colors
+$status-success: #10B981;
+$status-warning: #F59E0B;
+$status-danger: #EF4444;
+$status-info: #3B82F6;

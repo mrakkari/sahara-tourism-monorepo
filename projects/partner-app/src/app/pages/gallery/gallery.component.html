@@ -1,0 +1,20 @@
+<main class="gallery-page fade-in">
+  <div class="container">
+    <div class="page-header text-center">
+      <h1 class="title-gradient">Instants Magiques</h1>
+      <p class="subtitle">Une fenêtre ouverte sur la beauté infinie du Sahara.</p>
+    </div>
+
+    <div class="gallery-masonry">
+      <div class="gallery-item glass-panel" *ngFor="let img of galleryImages; let i = index" 
+           [style.animation-delay]="i * 50 + 'ms'">
+        <div class="img-wrapper">
+          <img [src]="img" loading="lazy" alt="Gallery Image">
+          <div class="overlay">
+            <button class="btn-zoom">🔍</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

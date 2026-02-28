@@ -1,0 +1,444 @@
+:host {
+  display: block;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+// Hero Section
+.about-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  margin-bottom: 5rem;
+  padding: 3rem 0;
+}
+
+.hero-content {
+  .pill-badge {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+
+  .title-gradient {
+    font-size: 4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #F59E0B, #D97706, #92400E);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 1.5rem;
+    color: #64748B;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+}
+
+.hero-image {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.2);
+
+  img {
+    width: 100%;
+    height: 500px;
+    object-fit: cover;
+    object-position: center 30%;
+    transition: transform 0.5s ease;
+  }
+
+  &:hover img {
+    transform: scale(1.05);
+  }
+}
+
+// Section Header
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  h2 {
+    font-size: 2.5rem;
+    color: #1E293B;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .divider {
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #F59E0B, #D97706);
+    margin: 0 auto;
+    border-radius: 4px;
+  }
+}
+
+// Mission Section
+.mission-section {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(217, 119, 6, 0.05));
+  padding: 3rem;
+  border-radius: 24px;
+  margin-bottom: 5rem;
+  border: 1px solid rgba(245, 158, 11, 0.1);
+
+  .mission-text {
+    font-size: 1.2rem;
+    line-height: 1.9;
+    color: #475569;
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+}
+
+// Services Section
+.services-section {
+  margin-bottom: 5rem;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.service-card {
+  padding: 2.5rem;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #E2E8F0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #F59E0B, #D97706);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.15);
+
+    &::before {
+      transform: scaleX(1);
+    }
+
+    .service-icon img {
+      transform: scale(1.05);
+    }
+  }
+
+  .service-icon {
+    width: 100%;
+    height: 200px;
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+  }
+
+  h3 {
+    font-size: 1.4rem;
+    color: #1E293B;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  p {
+    color: #64748B;
+    line-height: 1.7;
+    font-size: 1.05rem;
+  }
+}
+
+// Destinations Section
+.destinations-section {
+  margin-bottom: 5rem;
+}
+
+.destinations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.destination-card {
+  background: white;
+  border-radius: 16px;
+  border: 2px solid #E2E8F0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: #F59E0B;
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px -5px rgba(245, 158, 11, 0.3);
+
+    .destination-image img {
+      transform: scale(1.1);
+    }
+  }
+
+  .destination-image {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+  }
+
+  .destination-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 1.5rem 1.5rem 0.5rem;
+  }
+
+  p {
+    color: #64748B;
+    font-size: 0.95rem;
+    margin: 0 1.5rem 1.5rem;
+  }
+}
+
+// Platforms Section
+.platforms-section {
+  margin-bottom: 5rem;
+}
+
+.platforms-grid {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.platform-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  background: white;
+  border: 2px solid #E2E8F0;
+  border-radius: 50px;
+  font-weight: 600;
+  color: #1E293B;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  cursor: pointer;
+
+  i {
+    font-size: 1.5rem;
+    color: #F59E0B;
+  }
+
+  &:hover {
+    border-color: #F59E0B;
+    background: #FEF3C7;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -5px rgba(245, 158, 11, 0.3);
+  }
+}
+
+// CTA Section
+.cta-section {
+  text-align: center;
+  padding: 4rem 3rem;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(217, 119, 6, 0.05));
+  border-radius: 24px;
+  border: 1px solid rgba(245, 158, 11, 0.1);
+
+  h2 {
+    font-size: 2.5rem;
+    color: #1E293B;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  p {
+    font-size: 1.2rem;
+    color: #64748B;
+    margin-bottom: 2.5rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+
+  a {
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1.05rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+
+    i {
+      font-size: 1.2rem;
+    }
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+    }
+  }
+
+  .btn-secondary {
+    background: white;
+    color: #F59E0B;
+    border: 2px solid #F59E0B;
+
+    &:hover {
+      background: #F59E0B;
+      color: white;
+      transform: translateY(-2px);
+    }
+  }
+
+  .btn-whatsapp {
+    background: #25D366;
+    color: white;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+
+    &:hover {
+      background: #20BA5A;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .about-hero {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+
+    .hero-content .title-gradient {
+      font-size: 3rem;
+    }
+
+    .hero-image img {
+      height: 400px;
+    }
+  }
+
+  .services-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .hero-content .title-gradient {
+    font-size: 2.5rem;
+  }
+
+  .hero-content .subtitle {
+    font-size: 1.2rem;
+  }
+
+  .section-header h2 {
+    font-size: 2rem;
+  }
+
+  .services-grid,
+  .destinations-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-section {
+    padding: 2.5rem 1.5rem;
+
+    h2 {
+      font-size: 2rem;
+    }
+  }
+
+  .cta-buttons {
+    flex-direction: column;
+    align-items: stretch;
+
+    a {
+      justify-content: center;
+    }
+  }
+
+  .platforms-grid {
+    gap: 1rem;
+  }
+
+  .platform-badge {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content .title-gradient {
+    font-size: 2rem;
+  }
+
+  .hero-image img {
+    height: 300px;
+  }
+
+  .mission-section,
+  .service-card {
+    padding: 1.5rem;
+  }
+}

@@ -1,0 +1,71 @@
+<div class="profile-page container">
+    <div class="profile-content glass-panel" *ngIf="partner; else loadingTpl">
+        <div class="profile-header">
+            <div class="logo-section">
+                <div class="logo-upload-wrapper" (click)="triggerFileInput()">
+                    <div class="logo-container" *ngIf="logoPreview; else defaultAvatar">
+                        <img [src]="logoPreview" alt="Partner Logo" class="partner-logo">
+                    </div>
+                    <ng-template #defaultAvatar>
+                        <div class="profile-avatar">
+                            {{ partner.name.charAt(0) }}
+                        </div>
+                    </ng-template>
+                    
+                    <div class="upload-overlay">
+                        <i class="fas fa-camera"></i>
+                        <span>Change Logo</span>
+                    </div>
+                </div>
+                
+                <input 
+                    type="file" 
+                    id="logoUpload" 
+                    accept="image/*" 
+                    (change)="onLogoUpload($event)"
+                    style="display: none;">
+            </div>
+            
+            <div class="profile-info">
+                <h2>{{ partner.name }}</h2>
+            </div>
+        </div>
+
+        <div class="profile-sections">
+            <div class="section-card">
+                <h3>Contact Information</h3>
+                <div class="detail-row">
+                    <i class="fas fa-envelope"></i>
+                    <span>{{ partner.contactInfo.email }}</span>
+                </div>
+                <div class="detail-row">
+                    <i class="fas fa-phone"></i>
+                    <span>{{ partner.contactInfo.phone }}</span>
+                </div>
+                <div class="detail-row">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ partner.address.street }}, {{ partner.address.city }} {{ partner.address.postalCode }}</span>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3>Business Information</h3>
+                <div class="detail-row">
+                    <strong>Commission Rate:</strong>
+                    <span class="highlight">{{ partner.commissionRate }}%</span>
+                </div>
+                <div class="detail-row">
+                    <strong>Contract Status:</strong>
+                    <span class="status-active">Active</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ng-template #loadingTpl>
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </ng-template>
+</div>

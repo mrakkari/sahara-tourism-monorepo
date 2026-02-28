@@ -1,0 +1,207 @@
+<div class="detail-page" *ngIf="reservation" [@fadeSlide]>
+  <header class="detail-header">
+    <div class="nav-toolbar">
+      <button class="btn-nav arrow" [disabled]="!prevId" (click)="navigateTo(prevId)" title="Précédent">
+        ←
+      </button>
+      <button class="btn-nav home" routerLink="/" title="Accueil">
+        🏠
+      </button>
+      <button class="btn-nav arrow" [disabled]="!nextId" (click)="navigateTo(nextId)" title="Suivant">
+        →
+      </button>
+    </div>
+    <div class="header-content">
+      <h1 class="text-gradient">{{ reservation.partnerName }}</h1>
+      <app-status-badge [status]="reservation.status"></app-status-badge>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <!-- Left Column: Details & Payments -->
+    <div class="secondary-column">
+
+      <!-- Group Info Card -->
+      <app-glass-card class="info-section">
+        <h2 class="section-title">📋 Détails du Groupe</h2>
+        <div class="info-grid">
+          <div class="info-box">
+            <span class="l">Taille</span>
+            <span class="v">{{ reservation.numberOfPeople }} Personnes</span>
+            <span class="s">({{ reservation.adults }} Ad, {{ reservation.children }} Enf)</span>
+          </div>
+          <div class="info-box">
+            <span class="l">Expérience</span>
+            <span class="v">{{ getTourLabel(reservation.groupInfo.tourType) }}</span>
+          </div>
+          <div class="info-box full">
+            <span class="l">Séjour</span>
+            <div class="stay-dates">
+              <div class="date-p">
+                <span class="d">{{ formatDate(reservation.checkInDate) }}</span>
+                <span class="lbl">Arrivée</span>
+              </div>
+              <div class="arrow">→</div>
+              <div class="date-p">
+                <span class="d">{{ formatDate(reservation.checkOutDate) }}</span>
+                <span class="lbl">Départ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button *ngIf="reservation.status === 'confirmed'" class="btn-premium primary btn-full" (click)="markArrived()">
+          Confirmer l'Arrivée ✅
+        </button>
+        <button *ngIf="reservation.status === 'arrived'" class="btn-premium primary btn-full"
+          style="background: #e11d48; margin-top: 10px;" (click)="checkOut()">
+          Départ / Check-out 👋
+        </button>
+      </app-glass-card>
+
+      <!-- Payment Card -->
+      <app-glass-card class="payment-section" [gradient]="true">
+        <h2 class="section-title">💰 État des Paiements</h2>
+
+        <div class="payment-overview">
+          <div class="amount-row total">
+            <span>Total dû</span>
+            <strong>{{ reservation.payment.totalAmount }} TND</strong>
+          </div>
+          <div class="amount-row paid">
+            <span>Déjà réglé</span>
+            <strong>{{ reservation.payment.paidAmount }} TND</strong>
+          </div>
+          <div class="amount-divider"></div>
+          <div class="amount-row remaining">
+            <span>Reste à payer</span>
+            <strong [class.highlight]="getRemainingAmount() > 0">{{ getRemainingAmount() }} TND</strong>
+          </div>
+        </div>
+
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getPaymentProgress()"></div>
+          </div>
+          <span class="progress-text">{{ getPaymentProgress() | number:'1.0-0' }}% de l'objectif</span>
+        </div>
+
+        <!-- On-site payment form -->
+        <div class="onsite-form-glass" *ngIf="reservation.status === 'arrived' && getRemainingAmount() > 0">
+          <h3>Enregistrer un Paiement Local</h3>
+          <form [formGroup]="paymentForm" (ngSubmit)="addOnsitePayment()">
+            <div class="form-row">
+              <div class="input-group">
+                <label>Montant (TND)</label>
+                <input type="number" formControlName="amount" class="premium-input" placeholder="0.00">
+              </div>
+            </div>
+            <div class="input-group">
+              <label>Commentaire</label>
+              <input type="text" formControlName="description" class="premium-input"
+                placeholder="Ex: Espèces, Chèque...">
+            </div>
+            <button type="submit" class="btn-premium emerald btn-full" [disabled]="paymentForm.invalid">
+              Valider le Paiement 💳
+            </button>
+          </form>
+        </div>
+      </app-glass-card>
+    </div>
+
+    <!-- Right Column: Extras & Participants -->
+    <div class="primary-column">
+
+      <!-- Extras Section -->
+      <app-glass-card class="extras-section">
+        <div class="section-header-row">
+          <h2 class="section-title">🎯 Extras & Consommations</h2>
+          <span class="total-badge">{{ getExtrasTotal() }} TND</span>
+        </div>
+
+        <div class="add-extra-trigger" *ngIf="reservation.status === 'arrived'">
+          <h3 (click)="showExtraForm = !showExtraForm" class="form-toggle">
+            {{ showExtraForm ? '− Fermer le formulaire' : '+ Ajouter une prestation' }}
+          </h3>
+
+          <div class="extra-form-box" *ngIf="showExtraForm">
+            <form [formGroup]="extraForm" (ngSubmit)="addExtra()">
+              <div class="grid-2">
+                <div class="input-group">
+                  <label>Service</label>
+                  <select formControlName="type" class="premium-select" (change)="updateExtraName()">
+                    <option value="quad">Sortie Quad</option>
+                    <option value="4x4">Excursion 4x4</option>
+                    <option value="meal">Repas Supplémentaire</option>
+                    <option value="dromedary">Balade Chameau</option>
+                    <option value="other">Autre / Divers</option>
+                  </select>
+                </div>
+                <div class="input-group">
+                  <label>Description</label>
+                  <input type="text" formControlName="name" class="premium-input" placeholder="Détails...">
+                </div>
+              </div>
+              <div class="grid-3">
+                <div class="input-group">
+                  <label>Qté</label>
+                  <input type="number" formControlName="quantity" class="premium-input" (input)="calculateExtraTotal()">
+                </div>
+                <div class="input-group">
+                  <label>Prix Unitaire</label>
+                  <input type="number" formControlName="unitPrice" class="premium-input"
+                    (input)="calculateExtraTotal()">
+                </div>
+                <div class="extra-preview">
+                  <span class="l">TOTAL</span>
+                  <span class="v">{{ extraTotal }} TND</span>
+                </div>
+              </div>
+              <button type="submit" class="btn-premium primary btn-full" [disabled]="extraForm.invalid">
+                Ajouter au compte
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="extras-list" *ngIf="reservation.extras.length > 0">
+          <div class="extra-item-premium" *ngFor="let extra of reservation.extras">
+            <div class="ex-icon">{{ getExtraIcon(extra.type) }}</div>
+            <div class="ex-info">
+              <span class="ex-name">{{ extra.name }}</span>
+              <span class="ex-calc">{{ extra.quantity }} × {{ extra.unitPrice }} TND</span>
+            </div>
+            <div class="ex-total">{{ extra.totalPrice }} TND</div>
+            <button class="btn-del" (click)="removeExtra(extra.id)">×</button>
+          </div>
+        </div>
+
+        <div *ngIf="reservation.extras.length === 0" class="empty-mini">
+          Aucun extra enregistré.
+        </div>
+      </app-glass-card>
+
+      <!-- Participants Section -->
+      <app-glass-card class="participants-section">
+        <h2 class="section-title">👥 Participants ({{ reservation.groupInfo.participants.length }})</h2>
+        <div class="participants-list">
+          <div *ngFor="let p of reservation.groupInfo.participants; let i = index" class="participant-row-premium">
+            <div class="p-num">{{ i + 1 }}</div>
+            <div class="p-main">
+              <span class="p-name">{{ p.name }}</span>
+              <span class="p-age">{{ p.age ? p.age : 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+      </app-glass-card>
+
+    </div>
+  </div>
+</div>
+
+<div class="empty-state-full" *ngIf="!reservation">
+  <div class="glass-panel">
+    <h2>Groupe Introuvable</h2>
+    <button class="btn-premium primary" routerLink="/">Retour à l'accueil</button>
+  </div>
+</div>

@@ -1,0 +1,42 @@
+<header class="camping-header">
+  <nav class="navbar">
+    <div class="nav-container">
+      <a routerLink="/groups" class="logo">
+        <span class="logo-icon">🏕️</span>
+        <div class="logo-text">
+          <span class="logo-title">Sahara Reservations</span>
+          <span class="logo-subtitle">Camping Portal</span>
+        </div>
+      </a>
+
+      <ul class="nav-menu" [class.active]="menuOpen">
+        <li class="nav-item">
+          <a routerLink="/groups" routerLinkActive="active" class="nav-link">
+            👥 Confirmed Groups
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/arrivals" routerLinkActive="active" class="nav-link">
+            ✅ Arrivals
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/payment-history" routerLinkActive="active" class="nav-link">
+            💰 Payment History
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="http://localhost:4200" target="_blank" class="btn-public-site">
+          🌐 Public Site
+        </a>
+        <button class="hamburger" [class.active]="menuOpen" (click)="toggleMenu()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+</header>

@@ -1,0 +1,63 @@
+<footer class="sahara-footer">
+  <div class="container">
+    <div class="footer-content">
+      <!-- Brand Section -->
+      <div class="footer-section brand-section">
+        <img [src]="logo" alt="Les Dunes Insolites" class="footer-logo">
+        <p class="brand-description">
+          Découvrez Dunes Insolites À Sabria, Tunisie Le Confort, La Cuisine Savoureuse, Les Activités Palpitantes, Et Bivouacs Privés Sous Les Étoiles. Accessible En Voiture, Avec Réductions Pour Les Enfants.
+        </p>
+      </div>
+
+      <!-- Informations Section -->
+      <div class="footer-section">
+        <h4>Informations</h4>
+        <ul>
+          <li *ngFor="let link of informationLinks">
+            <a [routerLink]="link.route">{{ link.label }}</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Infos Générale Section -->
+      <div class="footer-section">
+        <h4>Infos Générale</h4>
+        <ul>
+          <li *ngFor="let link of infosGeneraleLinks">
+            <a [routerLink]="link.route">
+              <span class="link-icon">✓</span> {{ link.label }}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Liens Utiles Section -->
+      <div class="footer-section">
+        <h4>Liens Utiles</h4>
+        <ul>
+          <li *ngFor="let link of liensUtilesLinks">
+            <a [routerLink]="link.route">{{ link.label }}</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Social Media Icons -->
+    <div class="social-media-section">
+      <a *ngFor="let social of socialMediaLinks" 
+         [href]="social.url" 
+         target="_blank" 
+         rel="noopener noreferrer"
+         class="social-icon"
+         [attr.aria-label]="social.name"
+         [style.color]="social.color">
+        <i [class]="social.icon"></i>
+      </a>
+    </div>
+
+    <!-- Copyright Section -->
+    <div class="footer-bottom">
+      <p>© COPYRIGHT {{ currentYear }} POWERED BY <a href="https://djpub.tn" target="_blank" rel="noopener noreferrer">DJPUB.TN</a></p>
+    </div>
+  </div>
+</footer>
