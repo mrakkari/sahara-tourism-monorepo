@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { Reservation, Extra, Transaction, Notification } from '../models/reservation.model';
+import { BehaviorSubject, Observable ,map } from 'rxjs';
+import { Reservation, Extra, Transaction, Notification, ExtraResponse } from '../models/reservation.model';
 import { isToday, isTomorrow, isInDateRange } from '../utils/date-utils';
 import { MockDataService } from './mock-data.service';
+import { HttpClient } from '@angular/common/http';
+import { TourType } from '../models/tour.model';
+import { DEFAULT_TOUR_IMAGE, TOUR_TYPE_IMAGES } from '../core/constants/images';
 
 @Injectable({
     providedIn: 'root'
@@ -10,18 +13,35 @@ import { MockDataService } from './mock-data.service';
 export class ReservationService {
     private readonly STORAGE_KEY = 'sahara-reservations';
     private readonly NOTIFS_KEY = 'sahara-notifications';
+    private apiUrl = 'http://localhost:8080/api';
 
+    
     private reservationsSubject = new BehaviorSubject<Reservation[]>([]);
     public reservations$ = this.reservationsSubject.asObservable();
 
     private notificationsSubject = new BehaviorSubject<Notification[]>([]);
     public notifications$ = this.notificationsSubject.asObservable();
 
-    constructor(private mockDataService: MockDataService) {
+    constructor(private http: HttpClient) {
         this.loadReservations();
         this.loadNotifications();
-        this.initializeMockData();
     }
+
+    getAllTourTypes(): Observable<TourType[]> {
+        return this.http.get<TourType[]>(this.apiUrl + '/tour-types').pipe(
+            map(tourTypes =>
+                tourTypes.map(tt => ({
+                    ...tt,
+                image: TOUR_TYPE_IMAGES[tt.name] ?? DEFAULT_TOUR_IMAGE
+            }))
+        ));
+    }
+
+  getActiveExtras(): Observable<ExtraResponse[]> {
+    return this.http.get<ExtraResponse[]>(this.apiUrl + '/extras').pipe(
+      map(extras => extras.filter(e => e.isActive))
+    );
+  }
 
     private loadReservations(): void {
         const stored = localStorage.getItem(this.STORAGE_KEY);
@@ -47,22 +67,6 @@ export class ReservationService {
         this.notificationsSubject.next(notifications);
     }
 
-    private initializeMockData(): void {
-        const reservations = this.reservationsSubject.value;
-        // UPDATED VERSION KEY - This will force reload with new date-distributed data
-        // Change this version key whenever you update the mock data structure
-        if (reservations.length < 30 || !localStorage.getItem('sahara-mock-v6-improved-dates')) {
-            localStorage.setItem('sahara-mock-v6-improved-dates', 'true');
-            // Clear old versions
-            localStorage.removeItem('sahara-mock-v5-date-distributed');
-
-            // Use mock data service with CORRECT tour types AND date distribution
-            const mockReservations = this.mockDataService.getMockReservations();
-
-            this.saveReservations(mockReservations);
-            this.initializeNotifications();
-        }
-    }
 
     private initializeNotifications(): void {
         const notifs = this.notificationsSubject.value;
@@ -316,7 +320,7 @@ export class ReservationService {
 
         const newExtra: Extra = {
             ...extra,
-            id: this.generateId()
+            extraId: this.generateId()
         };
 
         const updatedExtras = [...reservation.extras, newExtra];
@@ -336,10 +340,10 @@ export class ReservationService {
         const reservation = this.getReservationById(reservationId);
         if (!reservation) return undefined;
 
-        const extraToRemove = reservation.extras.find(e => e.id === extraId);
+        const extraToRemove = reservation.extras.find(e => e.extraId === extraId);
         if (!extraToRemove) return undefined;
 
-        const updatedExtras = reservation.extras.filter(e => e.id !== extraId);
+        const updatedExtras = reservation.extras.filter(e => e.extraId !== extraId);
         const newTotalAmount = reservation.payment.totalAmount - extraToRemove.totalPrice;
 
         return this.updateReservation(reservationId, {

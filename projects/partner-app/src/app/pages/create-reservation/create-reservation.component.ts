@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormControl, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ReservationService } from '../../services/reservation.service';
@@ -8,15 +8,8 @@ import { NotificationService } from '../../services/notification.service';
 import { StepperComponent } from '../../shared/components/stepper/stepper.component';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
 import { IMAGES } from '../../core/constants/images';
-
-interface TourType {
-  id: string;
-  label: string;
-  icon: string;
-  image: string;
-  description: string;
-  basePrice: number;
-}
+import { TourType } from '../../models/tour.model';
+import { ExtraResponse } from '../../models/reservation.model';
 
 @Component({
   selector: 'app-create-reservation',
@@ -48,79 +41,17 @@ export class CreateReservationComponent implements OnInit {
   isSubmitting = false;
   currentStep = 0;
 
+  availableExtras: ExtraResponse[] = [];
+  selectedExtras: Record<string, number> = {};
+
+  tourTypes: TourType[] = [];
+  isLoadingTourTypes = false;
+
   steps = [
     { label: 'Expérience' },
     { label: 'Dates & Options' },
     { label: 'Voyageurs' },
     { label: 'Confirmer' }
-  ];
-
-  // ORIGINAL 8 TOURS - Only images updated to authentic Dunes Insolites photos
-  tourTypes: TourType[] = [
-    {
-      id: 'Bivouac',
-      label: 'Bivouac',
-      icon: '',
-      image: 'https://www.dunes-insolites.com/wp-content/uploads/2024/05/Bivouac-desert-tunisie-prix-sahara.jpg',
-      description: 'Nuit sous les étoiles dans le désert',
-      basePrice: 120
-    },
-    {
-      id: 'Demi Pension SUITE Reveillon',
-      label: 'Demi Pension SUITE Reveillon',
-      icon: '',
-      image: 'https://www.dunes-insolites.com/wp-content/uploads/2022/05/281858432_716391999787768_2586643242991276159_n.jpg',
-      description: 'Demi-pension en suite pour le réveillon',
-      basePrice: 250
-    },
-    {
-      id: 'Demi Pension Reveillon',
-      label: 'Demi Pension Reveillon',
-      icon: '',
-      image: 'https://www.dunes-insolites.com/wp-content/uploads/2024/08/bedouin-dinner-in-desert-tunisia-7.jpg',
-      description: 'Demi-pension pour le réveillon',
-      basePrice: 180
-    },
-    {
-      id: 'Nuitée Camp DP',
-      label: 'Nuitée Camp DP',
-      icon: '',
-      image: 'https://www.dunes-insolites.com/wp-content/uploads/2024/07/WhatsApp-Image-2024-06-28-at-15.21.52.jpeg',
-      description: 'Nuitée au campement avec demi-pension',
-      basePrice: 85
-    },
-    {
-      id: 'Sortie 1h30 4x4',
-      label: 'Sortie 1h30 4x4',
-      icon: '',
-      image: IMAGES.QUAD_DJERBA,
-      description: 'Excursion en 4x4 dans le désert',
-      basePrice: 50
-    },
-    {
-      id: 'Tente Suite DP',
-      label: 'Tente Suite DP',
-      icon: '',
-      image: IMAGES.COMFORTABLE_TENTS,
-      description: 'Tente suite avec demi-pension',
-      basePrice: 150
-    },
-    {
-      id: 'tente suite adulte',
-      label: 'tente suite adulte',
-      icon: '',
-      image: 'https://www.dunes-insolites.com/wp-content/uploads/2024/05/desert-tentes-confort.jpg',
-      description: 'Tente suite pour adultes',
-      basePrice: 140
-    },
-    {
-      id: 'tozeur_tataouine_matmata',
-      label: 'tozeur_tataouine_matmata',
-      icon: '',
-      image: 'https://www.dunes-insolites.com/wp-content/uploads/2024/07/tataouine-chenini-djerba.jpg',
-      description: 'Circuit Tozeur, Tataouine et Matmata',
-      basePrice: 280
-    }
   ];
 
   appliedPromoCode = '';
@@ -140,29 +71,111 @@ export class CreateReservationComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Auto-select tour based on URL parameter
+    this.loadTourTypes();
+    this.loadExtras();
+    this.addParticipant();
+  }
+
+  private loadTourTypes(): void {
+    this.isLoadingTourTypes = true;
+    this.reservationService.getAllTourTypes().subscribe({
+      next: (data) => {
+        this.tourTypes = data;
+        this.isLoadingTourTypes = false;
+        this.handleQueryParams();
+      },
+      error: (err) => {
+        console.error('Failed to load tour types', err);
+        this.isLoadingTourTypes = false;
+      }
+    });
+  }
+
+  private handleQueryParams(): void {
     this.route.queryParams.subscribe(params => {
       if (params['tour']) {
         const tourId = params['tour'];
-        const selectedTour = this.tourTypes.find(t => t.id === tourId);
-
+        const selectedTour = this.tourTypes.find(t => t.tourTypeId === tourId);
         if (selectedTour) {
-          this.reservationForm.patchValue({
-            tourType: tourId
-          });
-
-          // Auto-enable quad extra if it's a quad tour
-          if (tourId.includes('quad')) {
-            this.reservationForm.patchValue({
-              extras: { quad: true }
-            });
-          }
+          this.reservationForm.patchValue({ tourType: tourId });
         }
       }
     });
+  }
 
-    // Initialize one participant row
-    this.addParticipant();
+  private loadExtras(): void {
+    this.reservationService.getActiveExtras().subscribe({
+      next: (extras) => {
+        this.availableExtras = extras;
+        extras.forEach(e => this.selectedExtras[e.extraId] = 0);
+      },
+      error: (err) => console.error('Failed to load extras', err)
+    });
+  }
+
+  toggleExtra(extraId: string): void {
+    if (this.selectedExtras[extraId] > 0) {
+      this.selectedExtras[extraId] = 0;
+    } else {
+      this.selectedExtras[extraId] = 1;
+    }
+  }
+
+  setExtraForAll(extraId: string, event: Event): void {
+    event.stopPropagation();
+    const total = this.getCount('adults') + this.getCount('children');
+    this.selectedExtras[extraId] = total;
+  }
+
+  updateExtraQuantity(extraId: string, value: string, event: Event): void {
+    event.stopPropagation();
+    const qty = parseInt(value, 10);
+    const max = this.getCount('adults') + this.getCount('children');
+    if (!isNaN(qty) && qty >= 0) {
+      this.selectedExtras[extraId] = Math.min(qty, max);
+    }
+  }
+
+  isExtraSelected(extraId: string): boolean {
+    return (this.selectedExtras[extraId] || 0) > 0;
+  }
+
+  getExtraQuantity(extraId: string): number {
+    return this.selectedExtras[extraId] || 0;
+  }
+
+  calculateExtrasPrice(): number {
+    return this.availableExtras.reduce((total, extra) => {
+      const qty = this.selectedExtras[extra.extraId] || 0;
+      return total + (qty * extra.unitPrice);
+    }, 0);
+  }
+
+  hasExtras(): boolean {
+    return Object.values(this.selectedExtras).some(qty => qty > 0);
+  }
+
+  getSelectedExtrasList(): { name: string; qty: number; subtotal: number }[] {
+    return this.availableExtras
+      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
+      .map(e => ({
+        name: e.name,
+        qty: this.selectedExtras[e.extraId],
+        subtotal: this.selectedExtras[e.extraId] * e.unitPrice
+      }));
+  }
+
+  private buildSelectedExtras() {
+    return this.availableExtras
+      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
+      .map(e => ({
+        extraId: e.extraId,
+        name: e.name,
+        description: e.description,
+        quantity: this.selectedExtras[e.extraId],
+        unitPrice: e.unitPrice,
+        totalPrice: this.selectedExtras[e.extraId] * e.unitPrice
+      }));
   }
 
   createForm(): FormGroup {
@@ -172,15 +185,10 @@ export class CreateReservationComponent implements OnInit {
       checkOutDate: ['', Validators.required],
       adults: [2, [Validators.required, Validators.min(1)]],
       children: [0, Validators.min(0)],
-      tourType: ['Bivouac', Validators.required],
+      tourType: ['', Validators.required],
       specialRequests: [''],
       promoCode: [''],
-      participants: this.fb.array([]),
-      extras: this.fb.group({
-        transfer: [false],
-        mealUpgrade: [false],
-        quad: [false]
-      })
+      participants: this.fb.array([])
     });
   }
 
@@ -188,19 +196,8 @@ export class CreateReservationComponent implements OnInit {
     return this.reservationForm.get('participants') as FormArray;
   }
 
-  get extrasForm(): FormGroup {
-    return this.reservationForm.get('extras') as FormGroup;
-  }
-
-  getExtraControl(name: string): FormControl {
-    return this.extrasForm.get(name) as FormControl;
-  }
-
   addParticipant(): void {
-    const p = this.fb.group({
-      name: [''],
-      ageGroup: ['adult']
-    });
+    const p = this.fb.group({ name: [''], ageGroup: ['adult'] });
     this.participants.push(p);
   }
 
@@ -235,49 +232,29 @@ export class CreateReservationComponent implements OnInit {
 
   getTourLabel(): string {
     const type = this.reservationForm.get('tourType')?.value;
-    const tour = this.tourTypes.find(t => t.id === type);
-    return tour ? tour.label : 'Tour';
+    const tour = this.tourTypes.find(t => t.tourTypeId === type);
+    return tour ? tour.name : 'Tour';
   }
 
   getTourImage(): string {
     const type = this.reservationForm.get('tourType')?.value;
-    const tour = this.tourTypes.find(t => t.id === type);
+    const tour = this.tourTypes.find(t => t.tourTypeId === type);
     return tour?.image || IMAGES.BIVOUAC_SAFARI;
   }
 
   getSelectedTourBasePrice(): number {
     const type = this.reservationForm.get('tourType')?.value;
-    const tour = this.tourTypes.find(t => t.id === type);
-    return tour?.basePrice || 200;
-  }
-
-  hasExtras(): boolean {
-    return this.extrasForm.get('transfer')?.value ||
-      this.extrasForm.get('mealUpgrade')?.value ||
-      this.extrasForm.get('quad')?.value;
-  }
-
-  calculateExtrasPrice(): number {
-    let total = 0;
-    const adults = this.getCount('adults');
-    const children = this.getCount('children');
-    const people = adults + children;
-
-    if (this.extrasForm.get('transfer')?.value) total += 150;
-    if (this.extrasForm.get('mealUpgrade')?.value) total += (80 * people);
-    if (this.extrasForm.get('quad')?.value) total += (120 * people);
-
-    return total;
+    const tour = this.tourTypes.find(t => t.tourTypeId === type);
+    return tour?.partnerAdultPrice || 0;
   }
 
   calculateAdultPrice(): number {
-    const basePrice = this.getSelectedTourBasePrice();
-    return this.getCount('adults') * basePrice * Math.max(1, this.getNights());
+    return this.getCount('adults') * this.getSelectedTourBasePrice() * Math.max(1, this.getNights());
   }
 
   calculateChildPrice(): number {
-    const basePrice = this.getSelectedTourBasePrice();
-    return this.getCount('children') * (basePrice * 0.5) * Math.max(1, this.getNights());
+    const tour = this.tourTypes.find(t => t.tourTypeId === this.reservationForm.get('tourType')?.value);
+    return this.getCount('children') * (tour?.partnerChildPrice || 0) * Math.max(1, this.getNights());
   }
 
   calculateBasePrice(): number {
@@ -313,30 +290,18 @@ export class CreateReservationComponent implements OnInit {
   }
 
   canProceed(): boolean {
-    if (this.currentStep === 0) {
-      return this.getCount('adults') >= 1 && !!this.reservationForm.get('tourType')?.value;
-    }
-    if (this.currentStep === 1) {
-      return !!this.reservationForm.get('checkInDate')?.value &&
-        !!this.reservationForm.get('checkOutDate')?.value &&
-        this.getNights() > 0;
-    }
-    if (this.currentStep === 2) {
-      return !!this.reservationForm.get('partnerName')?.value;
-    }
+    if (this.currentStep === 0) return this.getCount('adults') >= 1 && !!this.reservationForm.get('tourType')?.value;
+    if (this.currentStep === 1) return !!this.reservationForm.get('checkInDate')?.value && !!this.reservationForm.get('checkOutDate')?.value && this.getNights() > 0;
+    if (this.currentStep === 2) return !!this.reservationForm.get('partnerName')?.value;
     return true;
   }
 
   nextStep(): void {
-    if (this.currentStep < 3 && this.canProceed()) {
-      this.currentStep++;
-    }
+    if (this.currentStep < 3 && this.canProceed()) this.currentStep++;
   }
 
   previousStep(): void {
-    if (this.currentStep > 0) {
-      this.currentStep--;
-    }
+    if (this.currentStep > 0) this.currentStep--;
   }
 
   onSubmit(): void {
@@ -344,10 +309,8 @@ export class CreateReservationComponent implements OnInit {
       this.notificationService.showError('Veuillez remplir tous les champs requis');
       return;
     }
-
     this.isSubmitting = true;
     const formValue = this.reservationForm.value;
-
     const reservation = {
       partnerName: formValue.partnerName,
       numberOfPeople: formValue.adults + formValue.children,
@@ -360,7 +323,6 @@ export class CreateReservationComponent implements OnInit {
         participants: formValue.participants,
         specialRequests: formValue.specialRequests,
         tourType: formValue.tourType,
-        extras: formValue.extras
       },
       payment: {
         totalAmount: this.calculateFinalPrice(),
@@ -369,23 +331,20 @@ export class CreateReservationComponent implements OnInit {
         transactions: [],
         currency: 'TND' as const
       },
-      extras: [],
+      extras: this.buildSelectedExtras(),
       promoCode: this.appliedPromoCode,
       discountAmount: this.discountAmount,
       partnerId: 'p1',
       createdAt: new Date().toISOString()
     };
-
     try {
       // @ts-ignore
       this.reservationService.createReservation(reservation);
       this.notificationService.showSuccess('✅ Réservation créée avec succès!');
-      setTimeout(() => {
-        this.router.navigate(['/']);
-      }, 1500);
+      setTimeout(() => this.router.navigate(['/']), 1500);
     } catch (error) {
       this.notificationService.showError('Erreur lors de la création');
       this.isSubmitting = false;
     }
   }
-}
+} 

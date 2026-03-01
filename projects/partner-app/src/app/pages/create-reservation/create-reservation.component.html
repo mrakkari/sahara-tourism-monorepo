@@ -13,32 +13,27 @@
       
       <!-- Left Column: Stepper & Form -->
       <div class="form-column">
-        <!-- Stepper -->
         <div class="stepper-glass">
           <lib-stepper [steps]="steps" [currentStep]="currentStep"></lib-stepper>
         </div>
 
-        <!-- Form Content -->
         <form [formGroup]="reservationForm" (ngSubmit)="onSubmit()" class="form-content">
           
-          <!-- Step 0: Type & People -->
+          <!-- Step 0: Tour Type & People -->
           <div class="step-panel" *ngIf="currentStep === 0" [@stepAnimation]>
             <h2 class="step-title">1. Choisissez votre expérience</h2>
             
             <div class="tour-grid-scroll">
               <label class="tour-option" *ngFor="let tour of tourTypes" 
-                     [class.selected]="reservationForm.get('tourType')?.value === tour.id">
-                <input type="radio" formControlName="tourType" [value]="tour.id">
+                     [class.selected]="reservationForm.get('tourType')?.value === tour.tourTypeId">
+                <input type="radio" formControlName="tourType" [value]="tour.tourTypeId">
                 <div class="tour-image-container">
-                  <img [src]="tour.image" [alt]="tour.label" class="tour-thumb">
-                  <div class="tour-overlay">
-                    <span class="tour-icon">{{ tour.icon }}</span>
-                  </div>
+                  <img [src]="tour.image" [alt]="tour.name" class="tour-thumb">
                 </div>
                 <div class="tour-details">
-                  <span class="tour-name">{{ tour.label }}</span>
+                  <span class="tour-name">{{ tour.name }}</span>
                   <span class="tour-desc">{{ tour.description }}</span>
-                  <span class="tour-price">{{ tour.basePrice }} TND</span>
+                  <span class="tour-price">{{ tour.partnerAdultPrice }} TND</span>
                 </div>
                 <div class="check-mark">✓</div>
               </label>
@@ -69,6 +64,7 @@
           <!-- Step 1: Dates & Extras -->
           <div class="step-panel" *ngIf="currentStep === 1" [@stepAnimation]>
             <h2 class="step-title">2. Dates & Options</h2>
+            
             <div class="date-grid glass-panel-light">
               <div class="form-group">
                 <label>Arrivée</label>
@@ -80,27 +76,57 @@
                 <input type="date" formControlName="checkOutDate" class="premium-date-input">
               </div>
             </div>
+
             <div class="info-alert" *ngIf="getNights() > 0">
               <span>🌙</span> Durée du séjour : <strong>{{ getNights() }} Nuits</strong>
             </div>
 
+            <!-- ✅ DYNAMIC EXTRAS FROM API -->
             <h3 class="subsection-title" style="margin-top: 2rem;">Options Supplémentaires</h3>
+            <p *ngIf="availableExtras.length === 0" class="loading-text">Chargement des options...</p>
+
             <div class="extras-grid">
-              <label class="extra-card" [class.selected]="extrasForm.get('transfer')?.value">
-                <input type="checkbox" [formControl]="getExtraControl('transfer')">
-                <span class="icon">🚕</span>
-                <span>Transfert Aéroport (+150 TND)</span>
-              </label>
-              <label class="extra-card" [class.selected]="extrasForm.get('mealUpgrade')?.value">
-                <input type="checkbox" [formControl]="getExtraControl('mealUpgrade')">
-                <span class="icon">🍽️</span>
-                <span>Repas Royal (+80 TND/p)</span>
-              </label>
-              <label class="extra-card" [class.selected]="extrasForm.get('quad')?.value">
-                <input type="checkbox" [formControl]="getExtraControl('quad')">
-                <span class="icon">🏎️</span>
-                <span>Sortie Quad 1h (+120 TND/p)</span>
-              </label>
+              <div
+                class="extra-card"
+                *ngFor="let extra of availableExtras"
+                [class.selected]="isExtraSelected(extra.extraId)"
+                (click)="toggleExtra(extra.extraId)">
+
+                <div class="extra-header">
+                  <span class="extra-name">{{ extra.name }}</span>
+                  <span class="extra-price-badge">{{ extra.unitPrice }} TND/p</span>
+                </div>
+
+                <span class="extra-desc" *ngIf="extra.description">{{ extra.description }}</span>
+                <span class="extra-duration" *ngIf="extra.duration">⏱ {{ extra.duration }}</span>
+
+                <!-- Quantity controls — only visible when selected -->
+                <div class="extra-quantity-controls" *ngIf="isExtraSelected(extra.extraId)" (click)="$event.stopPropagation()">
+                  <div class="qty-row">
+                    <span class="qty-label">Quantité :</span>
+                    <input
+                      type="number"
+                      class="qty-input"
+                      [value]="getExtraQuantity(extra.extraId)"
+                      min="1"
+                      [max]="getCount('adults') + getCount('children')"
+                      (change)="updateExtraQuantity(extra.extraId, $any($event.target).value, $event)"
+                      (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      class="btn-all-group"
+                      (click)="setExtraForAll(extra.extraId, $event)">
+                      👥 Tout le groupe ({{ getCount('adults') + getCount('children') }})
+                    </button>
+                  </div>
+                  <span class="extra-subtotal">
+                    = <strong>{{ getExtraQuantity(extra.extraId) * extra.unitPrice }} TND</strong>
+                  </span>
+                </div>
+
+                <!-- Check indicator -->
+                <div class="extra-check" *ngIf="isExtraSelected(extra.extraId)">✓</div>
+              </div>
             </div>
           </div>
 
@@ -125,10 +151,7 @@
                   </select>
                   <button type="button" class="btn-delete-participant" 
                           (click)="removeParticipant(i)" 
-                          [disabled]="participants.length <= 1" 
-                          title="Supprimer">
-                    ×
-                  </button>
+                          [disabled]="participants.length <= 1">×</button>
                 </div>
               </div>
               <button type="button" class="btn-add-p" (click)="addParticipant()">+ Ajouter un voyageur</button>
@@ -162,14 +185,12 @@
             </div>
           </div>
 
-          <!-- Actions -->
+          <!-- Navigation -->
           <div class="navigation-actions">
             <button type="button" class="btn-ghost" *ngIf="currentStep > 0" (click)="previousStep()">Retour</button>
-            
             <button type="button" class="btn-glow" *ngIf="currentStep < 3" (click)="nextStep()" [disabled]="!canProceed()">
               Continuer <span class="arrow">→</span>
             </button>
-            
             <button type="submit" class="btn-glow success" *ngIf="currentStep === 3" [disabled]="reservationForm.invalid || isSubmitting">
               {{ isSubmitting ? 'Validation...' : 'Confirmer la Réservation' }}
             </button>
@@ -201,10 +222,12 @@
               <strong>{{ formatDate(reservationForm.get('checkInDate')?.value) }}</strong>
             </div>
             
+            <!-- ✅ DYNAMIC extras list in summary — replaces old static transfer/meal/quad -->
             <div class="extras-list" *ngIf="hasExtras()">
-              <div class="sum-row extra-item" *ngIf="extrasForm.get('transfer')?.value">+ Transfert</div>
-              <div class="sum-row extra-item" *ngIf="extrasForm.get('mealUpgrade')?.value">+ Repas Royal</div>
-              <div class="sum-row extra-item" *ngIf="extrasForm.get('quad')?.value">+ Quad (Extra)</div>
+              <div class="sum-row extra-item" *ngFor="let item of getSelectedExtrasList()">
+                <span>+ {{ item.name }} × {{ item.qty }}</span>
+                <span>{{ item.subtotal }} TND</span>
+              </div>
             </div>
           </div>
 

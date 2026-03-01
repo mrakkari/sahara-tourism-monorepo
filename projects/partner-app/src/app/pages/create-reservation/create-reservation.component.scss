@@ -934,3 +934,162 @@ textarea.premium-input {
     opacity: 1;
   }
 }
+
+
+// ============================================
+// ADD THESE STYLES TO YOUR EXISTING SCSS FILE
+// (append at the bottom)
+// ============================================
+
+// Override extra-card to work as div (not label with checkbox)
+.extra-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+  position: relative;
+  user-select: none;
+
+  &:hover {
+    border-color: #0EA5E9;
+    background: #F0F9FF;
+    transform: translateY(-2px);
+  }
+
+  &.selected {
+    border-color: #0EA5E9;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(99, 102, 241, 0.04));
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  }
+}
+
+.extra-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.extra-name {
+  font-weight: 600;
+  color: #0F172A;
+  font-size: 1rem;
+}
+
+.extra-price-badge {
+  background: #EFF6FF;
+  color: #0EA5E9;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  border: 1px solid #BFDBFE;
+}
+
+.extra-desc {
+  font-size: 0.82rem;
+  color: #64748B;
+}
+
+.extra-duration {
+  font-size: 0.82rem;
+  color: #94A3B8;
+}
+
+// Quantity controls shown when extra is selected
+.extra-quantity-controls {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #E2E8F0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.qty-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.qty-label {
+  font-size: 0.85rem;
+  color: #64748B;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.qty-input {
+  width: 70px;
+  padding: 0.4rem 0.6rem;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  color: #0F172A;
+
+  &:focus {
+    outline: none;
+    border-color: #0EA5E9;
+  }
+}
+
+.btn-all-group {
+  padding: 0.4rem 0.8rem;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  color: #0EA5E9;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #0EA5E9;
+    color: white;
+    border-color: #0EA5E9;
+  }
+}
+
+.extra-subtotal {
+  font-size: 0.9rem;
+  color: #1E293B;
+
+  strong {
+    color: #0EA5E9;
+    font-size: 1rem;
+  }
+}
+
+// Check badge in top-right corner of selected extra
+.extra-check {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 24px;
+  height: 24px;
+  background: #0EA5E9;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+}
+
+.loading-text {
+  color: #94A3B8;
+  font-style: italic;
+  padding: 1rem;
+  text-align: center;
+}

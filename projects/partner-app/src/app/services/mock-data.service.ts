@@ -1,18 +1,21 @@
 import { Injectable } from '@angular/core';
 import { Partner } from '../models/partner.model';
 import { Invoice, PaymentStatus as InvoicePaymentStatus, InvoiceStatus } from '../models/invoice.model';
-import { TourType, getAllTourTypes } from '../models/tour.model';
 import { Reservation, ReservationStatus } from '../models/reservation.model';
+import { ReservationService } from './reservation.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class MockDataService {
 
-    // CRITICAL: These are the ONLY valid tour types
-    readonly TOUR_TYPES = getAllTourTypes();
+    private tourTypes: string[] = [];
 
-    constructor() { }
+    constructor(private reservationService: ReservationService) {
+        this.reservationService.getAllTourTypes().subscribe(types => {
+            this.tourTypes = types.map(t => t.name);
+        });
+    }
 
     getKantaouiTravelData(): Partner {
         return {
@@ -43,8 +46,7 @@ export class MockDataService {
         const invoices: Invoice[] = [];
         const paymentStatuses = [InvoicePaymentStatus.PAID, InvoicePaymentStatus.UNPAID, InvoicePaymentStatus.PARTIAL];
         const invoiceStatuses = [InvoiceStatus.PAID, InvoiceStatus.UNPAID, InvoiceStatus.OVERDUE];
-        
-        // Realistic group names and their leaders
+
         const groupsData = [
             { groupName: 'Aventuriers du Désert', leaderName: 'Sophie Dubois', partnerId: 'p1' },
             { groupName: 'Desert Explorers Club', leaderName: 'Marco Rossi', partnerId: 'p2' },
@@ -62,7 +64,7 @@ export class MockDataService {
             { groupName: 'Adventure Seekers UK', leaderName: 'James Anderson', partnerId: 'p14' },
             { groupName: 'Famille Rousseau', leaderName: 'Pierre Rousseau', partnerId: 'p15' }
         ];
-        
+
         for (let i = 1; i <= 15; i++) {
             const groupData = groupsData[i - 1];
             const total = 500 + Math.floor(Math.random() * 2000);
@@ -70,24 +72,24 @@ export class MockDataService {
             const invoiceStatus = invoiceStatuses[i % 3];
             const paid = paymentStatus === InvoicePaymentStatus.PAID ? total :
                 (paymentStatus === InvoicePaymentStatus.PARTIAL ? Math.floor(total / 2) : 0);
-            
+
             const invoiceDate = new Date(2026, (i % 12), 10);
             const dueDate = new Date(invoiceDate);
             dueDate.setDate(dueDate.getDate() + 30);
-            
+
             invoices.push({
                 id: `inv-${i}`,
                 invoiceNumber: `INV-2026-${100 + i}`,
                 reservationId: `res-${i}`,
                 reservationReference: `REF-${2026000 + i}`,
-                groupLeaderName: groupData.groupName,  // Group name as main display
-                leaderName: groupData.leaderName,      // Actual leader name (you'll need to add this field to your model)
+                groupLeaderName: groupData.groupName,
+                leaderName: groupData.leaderName,
                 partnerId: groupData.partnerId,
                 invoiceDate: invoiceDate,
                 dueDate: dueDate,
                 totalAmount: total,
                 paidAmount: paid,
-                remainingAmount: total - paid,  
+                remainingAmount: total - paid,
                 status: invoiceStatus,
                 paymentStatus: paymentStatus,
                 items: [
@@ -97,10 +99,9 @@ export class MockDataService {
                 documentUrl: 'assets/documents/sample-invoice.pdf'
             });
         }
-        
+
         return invoices;
     }
-
 
     getDashboardStats() {
         return {
@@ -111,32 +112,17 @@ export class MockDataService {
         };
     }
 
-    /**
-     * Get mock reservations for Kantaoui Travel with CORRECT tour types
-     * Generates reservations distributed over different time periods:
-     * - Last 30 days: ~16 reservations
-     * - Last 90 days (quarter): ~35 reservations
-     * - Last 365 days (year): ~100 reservations
-     */
     getMockReservations(): Reservation[] {
         const reservations: Reservation[] = [];
         const now = new Date();
 
-        // PERIOD 1: Last 30 days - 16 reservations
         reservations.push(...this.generateReservationsForPeriod(16, 0, 30, now));
-
-        // PERIOD 2: Days 31-90 - 19 more reservations (total 35 for quarter)
         reservations.push(...this.generateReservationsForPeriod(19, 31, 90, now));
-
-        // PERIOD 3: Days 91-365 - 65 more reservations (total 100 for year)
         reservations.push(...this.generateReservationsForPeriod(65, 91, 365, now));
 
         return reservations;
     }
 
-    /**
-     * Generate reservations for a specific time period
-     */
     private generateReservationsForPeriod(count: number, minDaysAgo: number, maxDaysAgo: number, referenceDate: Date): Reservation[] {
         const reservations: Reservation[] = [];
         const statuses: ReservationStatus[] = ['confirmed', 'pending', 'rejected'];
@@ -148,31 +134,31 @@ export class MockDataService {
             'Mariem Touil', 'Bassem Gharbi', 'Ines Karoui', 'Fares Messaoud'
         ];
 
+        // Fallback names in case backend hasn't responded yet
+        const fallbackTourTypes = ['Bivouac', 'Demi Pension Reveillon', 'Nuitée Camp DP', 'Tente Suite DP'];
+        const activeTourTypes = this.tourTypes.length > 0 ? this.tourTypes : fallbackTourTypes;
+
         for (let i = 0; i < count; i++) {
-            // Random date within the specified range
             const daysAgo = minDaysAgo + Math.floor(Math.random() * (maxDaysAgo - minDaysAgo));
             const createdDate = new Date(referenceDate);
             createdDate.setDate(createdDate.getDate() - daysAgo);
 
-            const tourType = this.TOUR_TYPES[i % this.TOUR_TYPES.length];
+            const tourType = activeTourTypes[i % activeTourTypes.length]; // now a plain string
             const status = statuses[i % 3];
-            const adultsCount = 10 + Math.floor(Math.random() * 25); // 10-35 adults
-            const childrenCount = Math.floor(Math.random() * 8); // 0-8 children
+            const adultsCount = 10 + Math.floor(Math.random() * 25);
+            const childrenCount = Math.floor(Math.random() * 8);
             const totalPeople = adultsCount + childrenCount;
 
-            // Calculate price based on tour type
             const basePrice = this.getTourBasePrice(tourType);
             const totalPrice = (adultsCount * basePrice) + (childrenCount * basePrice * 0.5);
-
-            // Apply 5% discount for groups of 20+
             const finalPrice = totalPeople >= 20 ? totalPrice * 0.95 : totalPrice;
 
-            // Check-in date is a few days after reservation
             const checkInDate = new Date(createdDate);
             checkInDate.setDate(checkInDate.getDate() + 5 + Math.floor(Math.random() * 10));
-            
+
             const checkOutDate = new Date(checkInDate);
-            checkOutDate.setDate(checkOutDate.getDate() + (tourType === TourType.TOZEUR_TATAOUINE_MATMATA ? 3 : 1));
+            // Use string comparison instead of enum
+            checkOutDate.setDate(checkOutDate.getDate() + (tourType === 'touzeur _ tataouine_ matmata' ? 3 : 1));
 
             const randomNameIndex = Math.floor(Math.random() * tunisianNames.length);
             const randomId = Date.now() + Math.floor(Math.random() * 100000);
@@ -220,26 +206,21 @@ export class MockDataService {
         return reservations;
     }
 
-    /**
-     * Get base price for a tour type
-     */
-    private getTourBasePrice(tourType: TourType): number {
-        const prices: Record<TourType, number> = {
-            [TourType.BIVOUAC]: 120,
-            [TourType.DEMI_PENSION_SUITE_REVEILLON]: 250,
-            [TourType.DEMI_PENSION_REVEILLON]: 180,
-            [TourType.NUITEE_CAMP_DP]: 85,
-            [TourType.SORTIE_1H30_4X4]: 50,
-            [TourType.TENTE_SUITE_DP]: 150,
-            [TourType.TENTE_SUITE_ADULTE]: 140,
-            [TourType.TOZEUR_TATAOUINE_MATMATA]: 280
+    // Now accepts string instead of TourType enum
+    private getTourBasePrice(tourType: string): number {
+        const prices: Record<string, number> = {
+            'Bivouac': 120,
+            'Demi Pension SUITE Reveillon': 250,
+            'Demi Pension Reveillon': 180,
+            'Nuitée Camp DP': 85,
+            'Sortie 1h30 4x4': 50,
+            'Tente Suite DP': 150,
+            'tente suite adulte': 140,
+            'touzeur _ tataouine_ matmata': 280
         };
-        return prices[tourType];
+        return prices[tourType] ?? 100; // fallback if new tour type added by admin
     }
 
-    /**
-     * Generate participants for a reservation
-     */
     private generateParticipants(adultsCount: number, childrenCount: number): any[] {
         const participants = [];
         const firstNames = ['Ahmed', 'Fatma', 'Mohamed', 'Salma', 'Karim', 'Leila', 'Youssef', 'Amira'];
@@ -263,28 +244,20 @@ export class MockDataService {
         return participants;
     }
 
-    /**
-     * Generate extras for a reservation
-     */
     private generateExtras(index: number): any[] {
         if (index % 3 === 0) {
-            return [
-                {
-                    id: 'quad-1',
-                    type: 'quad',
-                    name: 'Quad',
-                    quantity: 5,
-                    unitPrice: 50,
-                    totalPrice: 250
-                }
-            ];
+            return [{
+                id: 'quad-1',
+                type: 'quad',
+                name: 'Quad',
+                quantity: 5,
+                unitPrice: 50,
+                totalPrice: 250
+            }];
         }
         return [];
     }
 
-    /**
-     * Get promotional content for home page
-     */
     getPromotionalContent() {
         return [
             {

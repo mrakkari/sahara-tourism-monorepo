@@ -5,7 +5,7 @@ import { Reservation, ReservationStatus } from '../../models/reservation.model';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
 import { TranslatePipe } from '../../core/services/translate.pipe';
-import { TourType, getAllTourTypes } from '../../models/tour.model';
+import { TourType } from '../../models/tour.model';
 
 @Component({
     selector: 'app-historique',
@@ -21,20 +21,19 @@ export class HistoriqueComponent implements OnInit {
     loading = true;
 
     statusFilter: 'all' | ReservationStatus = 'all';
-    tourTypeFilter: 'all' | TourType = 'all';
+    tourTypeFilter = 'all'; // now plain string, not TourType enum
     searchQuery = '';
     sortBy: 'date' | 'amount' = 'date';
     sortOrder: 'asc' | 'desc' = 'desc';
 
     selectedReservation: Reservation | null = null;
-    allTourTypes: TourType[] = getAllTourTypes();
+    allTourTypes: TourType[] = []; // loaded from backend via ReservationService
 
     // Pagination properties
     currentPage = 1;
     itemsPerPage = 10;
     totalPages = 0;
 
-    // Expose Math to template
     Math = Math;
 
     constructor(
@@ -43,10 +42,18 @@ export class HistoriqueComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
+        this.loadTourTypes();
         this.authService.currentUser$.subscribe(user => {
             if (user) {
                 this.loadReservations(user.id);
             }
+        });
+    }
+
+    private loadTourTypes(): void {
+        this.reservationService.getAllTourTypes().subscribe({
+            next: (types) => this.allTourTypes = types,
+            error: (err) => console.error('Failed to load tour types', err)
         });
     }
 
@@ -81,7 +88,7 @@ export class HistoriqueComponent implements OnInit {
             result = result.filter(r =>
                 r.contactInfo?.firstName?.toLowerCase().includes(query) ||
                 r.contactInfo?.lastName?.toLowerCase().includes(query) ||
-                r.tourType?.toLowerCase().includes(query)
+                r.tourType?.toLowerCase().includes(query) // now works since tourType is string
             );
         }
 
@@ -96,7 +103,7 @@ export class HistoriqueComponent implements OnInit {
         });
 
         this.filteredReservations = result;
-        this.currentPage = 1; // Reset to first page when filters change
+        this.currentPage = 1;
         this.updatePagination();
     }
 
@@ -131,35 +138,29 @@ export class HistoriqueComponent implements OnInit {
     getPageNumbers(): number[] {
         const pages: number[] = [];
         const maxPagesToShow = 5;
-        
+
         if (this.totalPages <= maxPagesToShow) {
-            for (let i = 1; i <= this.totalPages; i++) {
-                pages.push(i);
-            }
+            for (let i = 1; i <= this.totalPages; i++) pages.push(i);
         } else {
             if (this.currentPage <= 3) {
-                for (let i = 1; i <= 4; i++) {
-                    pages.push(i);
-                }
-                pages.push(-1); // Ellipsis
+                for (let i = 1; i <= 4; i++) pages.push(i);
+                pages.push(-1);
                 pages.push(this.totalPages);
             } else if (this.currentPage >= this.totalPages - 2) {
                 pages.push(1);
-                pages.push(-1); // Ellipsis
-                for (let i = this.totalPages - 3; i <= this.totalPages; i++) {
-                    pages.push(i);
-                }
+                pages.push(-1);
+                for (let i = this.totalPages - 3; i <= this.totalPages; i++) pages.push(i);
             } else {
                 pages.push(1);
-                pages.push(-1); // Ellipsis
+                pages.push(-1);
                 pages.push(this.currentPage - 1);
                 pages.push(this.currentPage);
                 pages.push(this.currentPage + 1);
-                pages.push(-1); // Ellipsis
+                pages.push(-1);
                 pages.push(this.totalPages);
             }
         }
-        
+
         return pages;
     }
 
@@ -172,10 +173,7 @@ export class HistoriqueComponent implements OnInit {
     }
 
     downloadPDF(reservation: Reservation) {
-        // Create PDF content
         const content = this.generatePDFContent(reservation);
-        
-        // Create a blob and download
         const blob = new Blob([content], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');

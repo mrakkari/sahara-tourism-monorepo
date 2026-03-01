@@ -84,3 +84,16 @@ export const TOUR_IMAGES = {
     'Demi Pension Reveillon': IMAGES.NEW_YEAR_EVENT,
     'Demi Pension SUITE Reveillon': IMAGES.NEW_YEAR_EVENT
 };
+
+export const TOUR_TYPE_IMAGES: Record<string, string> = {
+  'Bivouac': 'https://www.dunes-insolites.com/wp-content/uploads/2024/05/Bivouac-desert-tunisie-prix-sahara.jpg',
+  'Demi Pension SUITE Reveillon': 'https://www.dunes-insolites.com/wp-content/uploads/2022/05/281858432_716391999787768_2586643242991276159_n.jpg',
+  'Demi Pension Reveillon': 'https://www.dunes-insolites.com/wp-content/uploads/2024/08/bedouin-dinner-in-desert-tunisia-7.jpg',
+  'Nuitée Camp DP': 'https://www.dunes-insolites.com/wp-content/uploads/2024/07/WhatsApp-Image-2024-06-28-at-15.21.52.jpeg',
+  'Sortie 1h30 4x4': IMAGES.QUAD_DJERBA,
+  'Tente Suite DP': IMAGES.COMFORTABLE_TENTS,
+  'tente suite adulte': 'https://www.dunes-insolites.com/wp-content/uploads/2024/05/desert-tentes-confort.jpg',
+  'touzeur _ tataouine_ matmata': 'https://www.dunes-insolites.com/wp-content/uploads/2024/07/tataouine-chenini-djerba.jpg',
+};
+
+export const DEFAULT_TOUR_IMAGE = 'https://www.dunes-insolites.com/wp-content/uploads/2024/05/Bivouac-desert-tunisie-prix-sahara.jpg';

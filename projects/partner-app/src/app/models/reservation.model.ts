@@ -1,5 +1,3 @@
-import { TourType } from './tour.model';
-
 export type ReservationStatus = 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled' | 'completed';
 
 export type PaymentStatus = 'pending' | 'partial' | 'completed' | 'paid' | 'unpaid';
@@ -32,10 +30,9 @@ export interface Reservation {
   createdAt: string;
   updatedAt: string;
 
-  // Properties needed for historique component
-  tourType?: TourType;      // Tour type (uses TourType enum)
-  totalPrice?: number;      // Total price (synced with payment.totalAmount)
-  rejectionReason?: string; // Reason if status is rejected
+  tourType?: string;        // Tour type name (from backend API)
+  totalPrice?: number;
+  rejectionReason?: string;
 }
 
 export interface Notification {
@@ -53,7 +50,7 @@ export interface Notification {
 export interface GroupInfo {
   participants: Participant[];
   specialRequests?: string;
-  tourType?: TourType;
+  tourType?: string;        // Tour type name (from backend API)
 }
 
 export interface Participant {
@@ -80,14 +77,23 @@ export interface Transaction {
   description?: string;
 }
 
+export interface ExtraResponse {
+  extraId: string;
+  name: string;
+  description?: string;
+  duration?: string;
+  unitPrice: number;
+  isActive: boolean;
+}
+
+// Used inside a Reservation (after user selects quantity)
 export interface Extra {
-  id: string;
-  type: 'quad' | '4x4' | 'meal' | 'dromedary' | 'sandboarding' | 'bedouin-dinner' | 'other';
+  extraId: string;
   name: string;
   description?: string;
   quantity: number;
   unitPrice: number;
-  totalPrice: number;
+  totalPrice: number; // calculated: quantity * unitPrice
 }
 
 export interface Invoice {
