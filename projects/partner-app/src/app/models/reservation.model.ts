@@ -1,3 +1,5 @@
+import { Extra } from './extra.model'; // ✅ Extra lives in extra.model now
+
 export type ReservationStatus = 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled' | 'completed';
 
 export type PaymentStatus = 'pending' | 'partial' | 'completed' | 'paid' | 'unpaid';
@@ -29,8 +31,7 @@ export interface Reservation {
   discountAmount?: number;
   createdAt: string;
   updatedAt: string;
-
-  tourType?: string;        // Tour type name (from backend API)
+  tourType?: string;
   totalPrice?: number;
   rejectionReason?: string;
 }
@@ -50,7 +51,7 @@ export interface Notification {
 export interface GroupInfo {
   participants: Participant[];
   specialRequests?: string;
-  tourType?: string;        // Tour type name (from backend API)
+  tourType?: string;
 }
 
 export interface Participant {
@@ -75,25 +76,6 @@ export interface Transaction {
   method: 'flouci' | 'onsite' | 'transfer' | 'card';
   status?: 'pending' | 'completed' | 'failed';
   description?: string;
-}
-
-export interface ExtraResponse {
-  extraId: string;
-  name: string;
-  description?: string;
-  duration?: string;
-  unitPrice: number;
-  isActive: boolean;
-}
-
-// Used inside a Reservation (after user selects quantity)
-export interface Extra {
-  extraId: string;
-  name: string;
-  description?: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number; // calculated: quantity * unitPrice
 }
 
 export interface Invoice {

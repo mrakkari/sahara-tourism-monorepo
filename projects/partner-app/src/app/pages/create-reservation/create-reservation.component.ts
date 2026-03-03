@@ -5,22 +5,18 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ReservationService } from '../../services/reservation.service';
 import { NotificationService } from '../../services/notification.service';
+import { AuthService } from '../../services/auth.service';
 import { StepperComponent } from '../../shared/components/stepper/stepper.component';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
 import { IMAGES } from '../../core/constants/images';
 import { TourType } from '../../models/tour.model';
-import { ExtraResponse } from '../../models/reservation.model';
+import { ExtraResponse } from '../../models/extra.model';
+import { ReservationRequest } from '../../models/reservation-api.model';
 
 @Component({
   selector: 'app-create-reservation',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterModule,
-    StepperComponent,
-    GlassCardComponent
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, StepperComponent, GlassCardComponent],
   templateUrl: './create-reservation.component.html',
   styleUrls: ['./create-reservation.component.scss'],
   animations: [
@@ -43,7 +39,6 @@ export class CreateReservationComponent implements OnInit {
 
   availableExtras: ExtraResponse[] = [];
   selectedExtras: Record<string, number> = {};
-
   tourTypes: TourType[] = [];
   isLoadingTourTypes = false;
 
@@ -64,6 +59,7 @@ export class CreateReservationComponent implements OnInit {
     private fb: FormBuilder,
     private reservationService: ReservationService,
     private notificationService: NotificationService,
+    private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -75,6 +71,8 @@ export class CreateReservationComponent implements OnInit {
     this.loadExtras();
     this.addParticipant();
   }
+
+  // ─── Loaders ──────────────────────────────────────────────────
 
   private loadTourTypes(): void {
     this.isLoadingTourTypes = true;
@@ -94,11 +92,8 @@ export class CreateReservationComponent implements OnInit {
   private handleQueryParams(): void {
     this.route.queryParams.subscribe(params => {
       if (params['tour']) {
-        const tourId = params['tour'];
-        const selectedTour = this.tourTypes.find(t => t.tourTypeId === tourId);
-        if (selectedTour) {
-          this.reservationForm.patchValue({ tourType: tourId });
-        }
+        const found = this.tourTypes.find(t => t.tourTypeId === params['tour']);
+        if (found) this.reservationForm.patchValue({ tourType: params['tour'] });
       }
     });
   }
@@ -113,46 +108,31 @@ export class CreateReservationComponent implements OnInit {
     });
   }
 
+  // ─── Extras ───────────────────────────────────────────────────
+
   toggleExtra(extraId: string): void {
-    if (this.selectedExtras[extraId] > 0) {
-      this.selectedExtras[extraId] = 0;
-    } else {
-      this.selectedExtras[extraId] = 1;
-    }
+    this.selectedExtras[extraId] = this.selectedExtras[extraId] > 0 ? 0 : 1;
   }
 
   setExtraForAll(extraId: string, event: Event): void {
     event.stopPropagation();
-    const total = this.getCount('adults') + this.getCount('children');
-    this.selectedExtras[extraId] = total;
+    this.selectedExtras[extraId] = this.getCount('adults') + this.getCount('children');
   }
 
   updateExtraQuantity(extraId: string, value: string, event: Event): void {
     event.stopPropagation();
     const qty = parseInt(value, 10);
     const max = this.getCount('adults') + this.getCount('children');
-    if (!isNaN(qty) && qty >= 0) {
-      this.selectedExtras[extraId] = Math.min(qty, max);
-    }
+    if (!isNaN(qty) && qty >= 0) this.selectedExtras[extraId] = Math.min(qty, max);
   }
 
-  isExtraSelected(extraId: string): boolean {
-    return (this.selectedExtras[extraId] || 0) > 0;
-  }
-
-  getExtraQuantity(extraId: string): number {
-    return this.selectedExtras[extraId] || 0;
-  }
+  isExtraSelected(extraId: string): boolean { return (this.selectedExtras[extraId] || 0) > 0; }
+  getExtraQuantity(extraId: string): number { return this.selectedExtras[extraId] || 0; }
+  hasExtras(): boolean { return Object.values(this.selectedExtras).some(qty => qty > 0); }
 
   calculateExtrasPrice(): number {
-    return this.availableExtras.reduce((total, extra) => {
-      const qty = this.selectedExtras[extra.extraId] || 0;
-      return total + (qty * extra.unitPrice);
-    }, 0);
-  }
-
-  hasExtras(): boolean {
-    return Object.values(this.selectedExtras).some(qty => qty > 0);
+    return this.availableExtras.reduce((total, e) =>
+      total + ((this.selectedExtras[e.extraId] || 0) * e.unitPrice), 0);
   }
 
   getSelectedExtrasList(): { name: string; qty: number; subtotal: number }[] {
@@ -165,22 +145,12 @@ export class CreateReservationComponent implements OnInit {
       }));
   }
 
-  private buildSelectedExtras() {
-    return this.availableExtras
-      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
-      .map(e => ({
-        extraId: e.extraId,
-        name: e.name,
-        description: e.description,
-        quantity: this.selectedExtras[e.extraId],
-        unitPrice: e.unitPrice,
-        totalPrice: this.selectedExtras[e.extraId] * e.unitPrice
-      }));
-  }
+  // ─── Form ─────────────────────────────────────────────────────
 
   createForm(): FormGroup {
     return this.fb.group({
-      partnerName: ['', Validators.required],
+      groupLeaderName: ['', Validators.required], // "Responsable de réservation"
+      groupName: [''],
       checkInDate: ['', Validators.required],
       checkOutDate: ['', Validators.required],
       adults: [2, [Validators.required, Validators.min(1)]],
@@ -197,23 +167,25 @@ export class CreateReservationComponent implements OnInit {
   }
 
   addParticipant(): void {
-    const p = this.fb.group({ name: [''], ageGroup: ['adult'] });
-    this.participants.push(p);
+    this.participants.push(this.fb.group({
+      fullName: [''],
+      age: [18],
+      isAdult: [true]
+    }));
   }
 
   removeParticipant(index: number): void {
-    if (this.participants.length > 1) {
-      this.participants.removeAt(index);
-    }
+    if (this.participants.length > 1) this.participants.removeAt(index);
   }
+
+  // ─── Counters & Dates ─────────────────────────────────────────
 
   getCount(field: 'adults' | 'children'): number {
     return this.reservationForm.get(field)?.value || 0;
   }
 
   updateCount(field: 'adults' | 'children', delta: number): void {
-    const current = this.getCount(field);
-    const newValue = Math.max(field === 'adults' ? 1 : 0, current + delta);
+    const newValue = Math.max(field === 'adults' ? 1 : 0, this.getCount(field) + delta);
     this.reservationForm.get(field)?.setValue(newValue);
   }
 
@@ -221,8 +193,9 @@ export class CreateReservationComponent implements OnInit {
     const checkIn = this.reservationForm.get('checkInDate')?.value;
     const checkOut = this.reservationForm.get('checkOutDate')?.value;
     if (!checkIn || !checkOut) return 0;
-    const diff = new Date(checkOut).getTime() - new Date(checkIn).getTime();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    return Math.max(0, Math.ceil(
+      (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)
+    ));
   }
 
   formatDate(dateString: string): string {
@@ -230,23 +203,24 @@ export class CreateReservationComponent implements OnInit {
     return new Date(dateString).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   }
 
+  // ─── Tour helpers ─────────────────────────────────────────────
+
   getTourLabel(): string {
-    const type = this.reservationForm.get('tourType')?.value;
-    const tour = this.tourTypes.find(t => t.tourTypeId === type);
+    const tour = this.tourTypes.find(t => t.tourTypeId === this.reservationForm.get('tourType')?.value);
     return tour ? tour.name : 'Tour';
   }
 
   getTourImage(): string {
-    const type = this.reservationForm.get('tourType')?.value;
-    const tour = this.tourTypes.find(t => t.tourTypeId === type);
+    const tour = this.tourTypes.find(t => t.tourTypeId === this.reservationForm.get('tourType')?.value);
     return tour?.image || IMAGES.BIVOUAC_SAFARI;
   }
 
   getSelectedTourBasePrice(): number {
-    const type = this.reservationForm.get('tourType')?.value;
-    const tour = this.tourTypes.find(t => t.tourTypeId === type);
+    const tour = this.tourTypes.find(t => t.tourTypeId === this.reservationForm.get('tourType')?.value);
     return tour?.partnerAdultPrice || 0;
   }
+
+  // ─── Pricing ──────────────────────────────────────────────────
 
   calculateAdultPrice(): number {
     return this.getCount('adults') * this.getSelectedTourBasePrice() * Math.max(1, this.getNights());
@@ -268,83 +242,99 @@ export class CreateReservationComponent implements OnInit {
   applyPromoCode(): void {
     const code = this.reservationForm.get('promoCode')?.value?.toUpperCase();
     if (!code) {
-      this.promoApplied = false;
-      this.discountAmount = 0;
-      this.promoMessage = '';
-      return;
+      this.promoApplied = false; this.discountAmount = 0; this.promoMessage = ''; return;
     }
-    const basePrice = this.calculateBasePrice();
     if (code === 'SAHARA10') {
-      this.discountAmount = basePrice * 0.10;
+      this.discountAmount = this.calculateBasePrice() * 0.10;
       this.appliedPromoCode = 'SAHARA10';
-      this.promoApplied = true;
-      this.promoError = false;
+      this.promoApplied = true; this.promoError = false;
       this.promoMessage = '✅ 10% de réduction appliqué!';
     } else {
-      this.discountAmount = 0;
-      this.appliedPromoCode = '';
-      this.promoApplied = false;
-      this.promoError = true;
+      this.discountAmount = 0; this.appliedPromoCode = '';
+      this.promoApplied = false; this.promoError = true;
       this.promoMessage = '❌ Code promo invalide';
     }
   }
 
+  // ─── Navigation ───────────────────────────────────────────────
+
   canProceed(): boolean {
     if (this.currentStep === 0) return this.getCount('adults') >= 1 && !!this.reservationForm.get('tourType')?.value;
-    if (this.currentStep === 1) return !!this.reservationForm.get('checkInDate')?.value && !!this.reservationForm.get('checkOutDate')?.value && this.getNights() > 0;
-    if (this.currentStep === 2) return !!this.reservationForm.get('partnerName')?.value;
+    if (this.currentStep === 1) return !!this.reservationForm.get('checkInDate')?.value
+      && !!this.reservationForm.get('checkOutDate')?.value && this.getNights() > 0;
+    if (this.currentStep === 2) return !!this.reservationForm.get('groupLeaderName')?.value;
     return true;
   }
 
-  nextStep(): void {
-    if (this.currentStep < 3 && this.canProceed()) this.currentStep++;
-  }
+  nextStep(): void { if (this.currentStep < 3 && this.canProceed()) this.currentStep++; }
+  previousStep(): void { if (this.currentStep > 0) this.currentStep--; }
 
-  previousStep(): void {
-    if (this.currentStep > 0) this.currentStep--;
-  }
+  // ─── Submit ───────────────────────────────────────────────────
 
   onSubmit(): void {
     if (this.reservationForm.invalid) {
       this.notificationService.showError('Veuillez remplir tous les champs requis');
       return;
     }
+
     this.isSubmitting = true;
     const formValue = this.reservationForm.value;
-    const reservation = {
-      partnerName: formValue.partnerName,
-      numberOfPeople: formValue.adults + formValue.children,
-      adults: formValue.adults,
-      children: formValue.children,
-      checkInDate: new Date(formValue.checkInDate).toISOString(),
-      checkOutDate: new Date(formValue.checkOutDate).toISOString(),
-      status: 'pending' as const,
-      groupInfo: {
-        participants: formValue.participants,
-        specialRequests: formValue.specialRequests,
-        tourType: formValue.tourType,
-      },
-      payment: {
-        totalAmount: this.calculateFinalPrice(),
-        paidAmount: 0,
-        paymentStatus: 'pending' as const,
-        transactions: [],
-        currency: 'TND' as const
-      },
-      extras: this.buildSelectedExtras(),
-      promoCode: this.appliedPromoCode,
-      discountAmount: this.discountAmount,
-      partnerId: 'p1',
-      createdAt: new Date().toISOString()
+
+    // Get current user ID from AuthService
+    //const currentUser = this.authService.getCurrentUser();
+   // const userId = currentUser?.userId;
+      const userId = JSON.parse(localStorage.getItem('auth_user') || '{}')?.userId ?? undefined;
+      console.log('Submitting reservation for user ID:', userId);
+    // Filter out empty participant rows, map to backend shape
+    const participants = (formValue.participants || [])
+      .filter((p: any) => p.fullName?.trim())
+      .map((p: any) => ({
+        fullName: p.fullName.trim(),
+        age: p.age ?? 18,
+        isAdult: p.isAdult ?? true
+      }));
+
+    // Only include selected extras
+    const extras = this.availableExtras
+      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
+      .map(e => ({
+        extraId: e.extraId,
+        quantity: this.selectedExtras[e.extraId]
+      }));
+
+    // Build exact request body the backend expects
+    const request: ReservationRequest = {
+      userId,
+      source: 'PARTNER_APP',
+      checkInDate: formValue.checkInDate,   
+      checkOutDate: formValue.checkOutDate,
+      groupLeaderName: formValue.groupLeaderName,
+      demandeSpecial: formValue.specialRequests || undefined,
+      groupName: formValue.groupName || formValue.groupLeaderName,
+      numberOfAdults: formValue.adults,
+      numberOfChildren: formValue.children,
+      currency: 'TND',
+      promoCode: this.appliedPromoCode || undefined,
+      tourTypes: [{
+        tourTypeId: formValue.tourType,       // UUID of selected tour
+        numberOfAdults: formValue.adults,
+        numberOfChildren: formValue.children
+      }],
+      participants: participants.length > 0 ? participants : undefined,
+      extras: extras.length > 0 ? extras : undefined
     };
-    try {
-      // @ts-ignore
-      this.reservationService.createReservation(reservation);
-      this.notificationService.showSuccess('✅ Réservation créée avec succès!');
-      setTimeout(() => this.router.navigate(['/']), 1500);
-    } catch (error) {
-      this.notificationService.showError('Erreur lors de la création');
-      this.isSubmitting = false;
-    }
+
+    this.reservationService.createReservation(request).subscribe({
+      next: (response) => {
+        this.notificationService.showSuccess('✅ Réservation créée avec succès!');
+        setTimeout(() => this.router.navigate(['/']), 1500);
+      },
+      error: (err) => {
+        console.error('Reservation creation failed:', err);
+        const msg = err?.error?.message || err?.error?.error || 'Erreur lors de la création de la réservation';
+        this.notificationService.showError(msg);
+        this.isSubmitting = false;
+      }
+    });
   }
-} 
+}
