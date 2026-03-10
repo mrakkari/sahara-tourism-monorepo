@@ -1,280 +1,539 @@
-<main class="reservation-page fade-in">
-  <div class="page-container">
+<main class="resa-page">
 
-    <header class="page-header">
-      <a routerLink="/" class="back-link">← Retour</a>
-      <h1 class="title-gradient">Créer votre Réservation</h1>
-      <p class="subtitle">Configurez votre aventure sur mesure en quelques étapes.</p>
+  <!-- Ambient background -->
+  <div class="bg-canvas">
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-grain"></div>
+  </div>
+
+  <div class="resa-container">
+
+    <!-- ── Header ── -->
+    <header class="resa-header">
+      <a routerLink="/" class="back-link">
+        <span class="back-arrow">←</span>
+        <span>Tableau de bord</span>
+      </a>
+      <div class="header-center">
+        <div class="header-icon">🏕️</div>
+        <h1>Nouvelle Réservation</h1>
+        <p>Configurez le séjour de votre groupe en quelques étapes</p>
+      </div>
+      <div class="header-spacer"></div>
     </header>
 
-    <div class="reservation-layout">
-
-      <!-- Left Column -->
-      <div class="form-column">
-        <div class="stepper-glass">
-          <lib-stepper [steps]="steps" [currentStep]="currentStep"></lib-stepper>
+    <!-- ── Progress Bar ── -->
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="(currentStep / 3) * 100"></div>
+      <div class="progress-steps">
+        <div class="prog-step" *ngFor="let step of steps; let i = index"
+             [class.active]="i === currentStep"
+             [class.done]="i < currentStep">
+          <div class="prog-dot">
+            <span *ngIf="i < currentStep">✓</span>
+            <span *ngIf="i >= currentStep">{{ i + 1 }}</span>
+          </div>
+          <span class="prog-label">{{ step.label }}</span>
         </div>
+      </div>
+    </div>
 
-        <form [formGroup]="reservationForm" (ngSubmit)="onSubmit()" class="form-content">
+    <!-- ── Main Layout ── -->
+    <div class="resa-layout">
 
-          <!-- ═══ STEP 0: Tour & People ═══ -->
-          <div class="step-panel" *ngIf="currentStep === 0" [@stepAnimation]>
-            <h2 class="step-title">1. Choisissez votre expérience</h2>
+      <!-- ════ LEFT: Form ════ -->
+      <div class="form-col">
+        <form [formGroup]="reservationForm" (ngSubmit)="onSubmit()">
 
-            <div *ngIf="isLoadingTourTypes" class="loading-text">Chargement des tours...</div>
+          <!-- ══ STEP 0: Tour & Groupe ══ -->
+          <div class="step-card" *ngIf="currentStep === 0" [@stepAnim]>
 
-            <div class="tour-grid-scroll">
-              <label class="tour-option" *ngFor="let tour of tourTypes"
-                     [class.selected]="reservationForm.get('tourType')?.value === tour.tourTypeId">
-                <input type="radio" formControlName="tourType" [value]="tour.tourTypeId">
-                <div class="tour-image-container">
-                  <img [src]="tour.image" [alt]="tour.name" class="tour-thumb">
-                </div>
-                <div class="tour-details">
-                  <span class="tour-name">{{ tour.name }}</span>
-                  <span class="tour-desc">{{ tour.description }}</span>
-                  <span class="tour-price">{{ tour.partnerAdultPrice }} TND</span>
-                </div>
-                <div class="check-mark">✓</div>
-              </label>
+            <div class="step-eyebrow">Étape 1 sur 4</div>
+            <h2 class="step-heading">Quelle expérience pour votre groupe ?</h2>
+            <p class="step-sub">Sélectionnez un ou plusieurs types de tour. Si vous en choisissez plusieurs, vous devrez répartir votre groupe entre eux.</p>
+
+            <!-- Tour loading -->
+            <div class="loading-state" *ngIf="isLoadingTourTypes">
+              <div class="spinner"></div>
+              <span>Chargement des expériences...</span>
             </div>
 
-            <h3 class="subsection-title">Participants</h3>
-            <div class="people-counter-row glass-panel-light">
-              <div class="counter-group">
-                <span class="label">Adultes <small>(12+ ans)</small></span>
-                <div class="counter-input">
-                  <button type="button" (click)="updateCount('adults', -1)" [disabled]="getCount('adults') <= 1">−</button>
-                  <span>{{ getCount('adults') }}</span>
-                  <button type="button" (click)="updateCount('adults', 1)">+</button>
-                </div>
-              </div>
-              <div class="counter-divider"></div>
-              <div class="counter-group">
-                <span class="label">Enfants <small>(< 12 ans)</small></span>
-                <div class="counter-input">
-                  <button type="button" (click)="updateCount('children', -1)" [disabled]="getCount('children') <= 0">−</button>
-                  <span>{{ getCount('children') }}</span>
-                  <button type="button" (click)="updateCount('children', 1)">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
+            <!-- Tour cards -->
+            <div class="tour-grid" *ngIf="!isLoadingTourTypes">
+              <div class="tour-card"
+                   *ngFor="let tour of tourTypes"
+                   [class.is-selected]="isTourSelected(tour.tourTypeId)"
+                   (click)="toggleTourType(tour.tourTypeId)">
 
-          <!-- ═══ STEP 1: Dates & Extras ═══ -->
-          <div class="step-panel" *ngIf="currentStep === 1" [@stepAnimation]>
-            <h2 class="step-title">2. Dates & Options</h2>
-
-            <div class="date-grid glass-panel-light">
-              <div class="form-group">
-                <label>Arrivée</label>
-                <input type="date" formControlName="checkInDate" class="premium-date-input">
-              </div>
-              <div class="arrow">➜</div>
-              <div class="form-group">
-                <label>Départ</label>
-                <input type="date" formControlName="checkOutDate" class="premium-date-input">
-              </div>
-            </div>
-
-            <div class="info-alert" *ngIf="getNights() > 0">
-              <span>🌙</span> Durée du séjour : <strong>{{ getNights() }} Nuits</strong>
-            </div>
-
-            <h3 class="subsection-title" style="margin-top: 2rem;">Options Supplémentaires</h3>
-            <p *ngIf="availableExtras.length === 0" class="loading-text">Chargement des options...</p>
-
-            <div class="extras-grid">
-              <div class="extra-card" *ngFor="let extra of availableExtras"
-                   [class.selected]="isExtraSelected(extra.extraId)"
-                   (click)="toggleExtra(extra.extraId)">
-
-                <div class="extra-header">
-                  <span class="extra-name">{{ extra.name }}</span>
-                  <span class="extra-price-badge">{{ extra.unitPrice }} TND/p</span>
-                </div>
-                <span class="extra-desc" *ngIf="extra.description">{{ extra.description }}</span>
-                <span class="extra-duration" *ngIf="extra.duration">⏱ {{ extra.duration }}</span>
-
-                <!-- Quantity controls — only when selected -->
-                <div class="extra-quantity-controls" *ngIf="isExtraSelected(extra.extraId)"
-                     (click)="$event.stopPropagation()">
-                  <div class="qty-row">
-                    <span class="qty-label">Quantité :</span>
-                    <input type="number" class="qty-input"
-                           [value]="getExtraQuantity(extra.extraId)"
-                           min="1" [max]="getCount('adults') + getCount('children')"
-                           (change)="updateExtraQuantity(extra.extraId, $any($event.target).value, $event)"
-                           (click)="$event.stopPropagation()">
-                    <button type="button" class="btn-all-group"
-                            (click)="setExtraForAll(extra.extraId, $event)">
-                      👥 Tout le groupe ({{ getCount('adults') + getCount('children') }})
-                    </button>
+                <div class="tour-card-img">
+                  <img [src]="tour.image" [alt]="tour.name">
+                  <div class="tour-card-overlay"></div>
+                  <div class="tour-selected-badge" *ngIf="isTourSelected(tour.tourTypeId)">
+                    <span>✓ Sélectionné</span>
                   </div>
-                  <span class="extra-subtotal">
-                    = <strong>{{ getExtraQuantity(extra.extraId) * extra.unitPrice }} TND</strong>
-                  </span>
                 </div>
 
-                <div class="extra-check" *ngIf="isExtraSelected(extra.extraId)">✓</div>
+                <div class="tour-card-body">
+                  <div class="tour-card-top">
+                    <h3>{{ tour.name }}</h3>
+                    <div class="tour-prices">
+                      <div class="tour-price-tag">
+                        <span class="price-amount">{{ tour.partnerAdultPrice }}</span>
+                        <span class="price-unit">TND/ad</span>
+                      </div>
+                      <div class="tour-price-tag child-price">
+                        <span class="price-amount">{{ tour.partnerChildPrice }}</span>
+                        <span class="price-unit">TND/enf</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="tour-card-desc">{{ tour.description }}</p>
+
+                  <!-- Allocation section (multiple tours only) -->
+                  <div class="tour-alloc-section"
+                       *ngIf="isTourSelected(tour.tourTypeId) && tourTypesArray.length > 1"
+                       (click)="$event.stopPropagation()"
+                       [formGroup]="getTourFormGroup(tour.tourTypeId)!">
+                    <div class="alloc-header">
+                      <span class="alloc-title">👥 Répartition pour ce tour</span>
+                    </div>
+                    <div class="alloc-counters">
+                      <div class="alloc-counter-item">
+                        <span class="alloc-label">Adultes</span>
+                        <div class="mini-counter">
+                          <button type="button"
+                                  (click)="decrementAlloc(tour.tourTypeId, 'numberOfAdults')">−</button>
+                          <span>{{ getTourFormGroup(tour.tourTypeId)?.get('numberOfAdults')?.value || 0 }}</span>
+                          <button type="button"
+                                  (click)="incrementAlloc(tour.tourTypeId, 'numberOfAdults')">+</button>
+                        </div>
+                      </div>
+                      <div class="alloc-divider"></div>
+                      <div class="alloc-counter-item">
+                        <span class="alloc-label">Enfants</span>
+                        <div class="mini-counter">
+                          <button type="button"
+                                  (click)="decrementAlloc(tour.tourTypeId, 'numberOfChildren')">−</button>
+                          <span>{{ getTourFormGroup(tour.tourTypeId)?.get('numberOfChildren')?.value || 0 }}</span>
+                          <button type="button"
+                                  (click)="incrementAlloc(tour.tourTypeId, 'numberOfChildren')">+</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- Allocation warning -->
+            <div class="alloc-warning" *ngIf="tourTypesArray.length > 1 && getTourAllocationMessage()">
+              <span class="warn-icon">⚠️</span>
+              <span>{{ getTourAllocationMessage() }}</span>
+            </div>
+
+            <!-- Group size -->
+            <div class="section-divider">
+              <span>Taille du groupe</span>
+            </div>
+
+            <div class="group-size-card">
+              <div class="group-size-item">
+                <div class="gs-info">
+                  <span class="gs-icon">🧑</span>
+                  <div>
+                    <strong>Adultes</strong>
+                    <small>12 ans et plus</small>
+                  </div>
+                </div>
+                <div class="gs-counter">
+                  <button type="button" class="gs-btn"
+                          (click)="updateCount('adults', -1)"
+                          [disabled]="getCount('adults') <= 1">−</button>
+                  <span class="gs-value">{{ getCount('adults') }}</span>
+                  <button type="button" class="gs-btn"
+                          (click)="updateCount('adults', 1)">+</button>
+                </div>
+              </div>
+              <div class="gs-divider"></div>
+              <div class="group-size-item">
+                <div class="gs-info">
+                  <span class="gs-icon">🧒</span>
+                  <div>
+                    <strong>Enfants</strong>
+                    <small>Moins de 12 ans</small>
+                  </div>
+                </div>
+                <div class="gs-counter">
+                  <button type="button" class="gs-btn"
+                          (click)="updateCount('children', -1)"
+                          [disabled]="getCount('children') <= 0">−</button>
+                  <span class="gs-value">{{ getCount('children') }}</span>
+                  <button type="button" class="gs-btn"
+                          (click)="updateCount('children', 1)">+</button>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <!-- ═══ STEP 2: Voyageurs ═══ -->
-          <div class="step-panel" *ngIf="currentStep === 2" [@stepAnimation]>
-            <h2 class="step-title">3. Détails des Voyageurs</h2>
+          <!-- ══ STEP 1: Dates & Extras ══ -->
+          <div class="step-card" *ngIf="currentStep === 1" [@stepAnim]>
 
-            <!-- groupLeaderName — maps to backend groupLeaderName field -->
-            <div class="form-group">
-              <label>Responsable de réservation (Nom complet) <span class="required">*</span></label>
-              <input type="text" formControlName="groupLeaderName" class="premium-input"
-                     placeholder="Ex: Jean Dupont">
-              <span class="field-hint">Ce nom sera utilisé comme responsable du groupe</span>
+            <div class="step-eyebrow">Étape 2 sur 4</div>
+            <h2 class="step-heading">Quand arrive votre groupe ?</h2>
+
+            <!-- Date picker -->
+            <div class="dates-card">
+              <div class="date-field">
+                <label>
+                  <span class="date-icon">📅</span>
+                  Arrivée
+                </label>
+                <input type="date" formControlName="checkInDate" class="date-input">
+              </div>
+              <div class="dates-arrow">
+                <div class="arrow-line"></div>
+                <div class="nights-badge" *ngIf="getNights() > 0">
+                  {{ getNights() }} nuit{{ getNights() > 1 ? 's' : '' }}
+                </div>
+                <div class="arrow-line"></div>
+              </div>
+              <div class="date-field">
+                <label>
+                  <span class="date-icon">📅</span>
+                  Départ
+                </label>
+                <input type="date" formControlName="checkOutDate" class="date-input">
+              </div>
             </div>
 
-            <!-- groupName — optional -->
-            <div class="form-group" style="margin-top: 1rem;">
-              <label>Nom du groupe <small>(optionnel)</small></label>
-              <input type="text" formControlName="groupName" class="premium-input"
-                     placeholder="Ex: Famille Dupont, Club Aventure...">
+            <!-- Extras -->
+            <div class="section-divider" style="margin-top: 2.5rem;">
+              <span>Options pour le groupe</span>
+            </div>
+            <p class="section-hint">Ajoutez des activités ou services supplémentaires. Utilisez les compteurs pour préciser combien de personnes en bénéficieront.</p>
+
+            <div class="extras-list-redesign">
+              <div class="extra-row"
+                   *ngFor="let extra of availableExtras"
+                   [class.extra-active]="isExtraSelected(extra.extraId)">
+
+                <!-- Left: Info -->
+                <div class="extra-info" (click)="toggleExtra(extra.extraId)">
+                  <div class="extra-toggle-dot" [class.active]="isExtraSelected(extra.extraId)">
+                    <span *ngIf="isExtraSelected(extra.extraId)">✓</span>
+                  </div>
+                  <div class="extra-text">
+                    <span class="extra-title">{{ extra.name }}</span>
+                    <span class="extra-meta" *ngIf="extra.description">{{ extra.description }}</span>
+                    <span class="extra-meta" *ngIf="extra.duration">⏱ {{ extra.duration }}</span>
+                  </div>
+                  <div class="extra-unit-price">
+                    <span>{{ extra.unitPrice }} TND</span>
+                    <small>/ pers.</small>
+                  </div>
+                </div>
+
+                <!-- Right: Quantity (shown when active) -->
+                <div class="extra-qty-section" *ngIf="isExtraSelected(extra.extraId)"
+                     (click)="$event.stopPropagation()">
+                  <div class="qty-control">
+                    <button type="button" class="qty-btn"
+                            (click)="adjustExtraQty(extra.extraId, -1)"
+                            [disabled]="getExtraQuantity(extra.extraId) <= 1">−</button>
+                    <span class="qty-display">{{ getExtraQuantity(extra.extraId) }}</span>
+                    <button type="button" class="qty-btn"
+                            (click)="adjustExtraQty(extra.extraId, 1)"
+                            [disabled]="getExtraQuantity(extra.extraId) >= getCount('adults') + getCount('children')">+</button>
+                  </div>
+                  <button type="button" class="qty-all-btn"
+                          (click)="setExtraForAll(extra.extraId, $event)">
+                    Tout le groupe
+                  </button>
+                  <div class="extra-total-chip">
+                    {{ getExtraQuantity(extra.extraId) * extra.unitPrice }} TND
+                  </div>
+                </div>
+
+              </div>
             </div>
 
-            <div class="participants-list">
-              <h4 class="subsection-title">Liste des voyageurs (Optionnel)</h4>
+          </div>
+
+          <!-- ══ STEP 2: Voyageurs ══ -->
+          <div class="step-card" *ngIf="currentStep === 2" [@stepAnim]>
+
+            <div class="step-eyebrow">Étape 3 sur 4</div>
+            <h2 class="step-heading">Qui est responsable du groupe ?</h2>
+
+            <div class="fields-stack">
+              <div class="field-wrap">
+                <label class="field-label">
+                  Responsable de réservation
+                  <span class="required-dot">*</span>
+                </label>
+                <div class="field-input-wrap">
+                  <span class="field-icon">👤</span>
+                  <input type="text" formControlName="groupLeaderName"
+                         placeholder="Nom complet du responsable" class="field-input">
+                </div>
+                <span class="field-hint-text">Ce nom figurera sur la confirmation de réservation</span>
+              </div>
+
+              <div class="field-wrap">
+                <label class="field-label">
+                  Nom du groupe
+                  <span class="optional-tag">optionnel</span>
+                </label>
+                <div class="field-input-wrap">
+                  <span class="field-icon">🏷️</span>
+                  <input type="text" formControlName="groupName"
+                         placeholder="Ex: Club Désert Aventure, Famille Benali..." class="field-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Participants -->
+            <div class="section-divider" style="margin-top: 2rem;">
+              <span>Liste des voyageurs <span class="optional-tag">optionnel</span></span>
+            </div>
+
+            <div class="participants-table">
+              <div class="participants-head">
+                <span>Nom complet</span>
+                <span>Âge</span>
+                <span>Type</span>
+                <span></span>
+              </div>
               <div formArrayName="participants">
                 <div *ngFor="let p of participants.controls; let i=index"
-                     [formGroupName]="i" class="participant-row">
-                  <span class="row-index">#{{ i + 1 }}</span>
+                     [formGroupName]="i" class="participant-row-new">
+                  <span class="p-num">{{ i + 1 }}</span>
                   <input type="text" formControlName="fullName"
-                         class="premium-input-small" placeholder="Nom Prénom">
+                         class="p-input p-name" placeholder="Nom Prénom">
                   <input type="number" formControlName="age"
-                         class="premium-input-age" placeholder="Âge" min="0" max="120">
-                  <select formControlName="isAdult" class="premium-select-small">
+                         class="p-input p-age" placeholder="Âge" min="0" max="120">
+                  <select formControlName="isAdult" class="p-select">
                     <option [value]="true">Adulte</option>
                     <option [value]="false">Enfant</option>
                   </select>
-                  <button type="button" class="btn-delete-participant"
+                  <button type="button" class="p-del"
                           (click)="removeParticipant(i)"
-                          [disabled]="participants.length <= 1">×</button>
+                          [disabled]="participants.length <= 1">✕</button>
                 </div>
               </div>
-              <button type="button" class="btn-add-p" (click)="addParticipant()">
-                + Ajouter un voyageur
+              <button type="button" class="add-p-btn" (click)="addParticipant()">
+                <span>+</span> Ajouter un voyageur
               </button>
             </div>
 
-            <div class="form-group" style="margin-top: 2rem;">
-              <label>Demandes Spéciales</label>
-              <textarea formControlName="specialRequests" class="premium-input" rows="3"
-                        placeholder="Régime alimentaire, anniversaire, etc."></textarea>
+            <div class="field-wrap" style="margin-top: 2rem;">
+              <label class="field-label">
+                Demandes spéciales
+                <span class="optional-tag">optionnel</span>
+              </label>
+              <div class="field-input-wrap textarea-wrap">
+                <span class="field-icon" style="padding-top: 0.2rem;">💬</span>
+                <textarea formControlName="specialRequests"
+                          class="field-input field-textarea"
+                          rows="3"
+                          placeholder="Régime alimentaire, accessibilité, anniversaire, autre demande..."></textarea>
+              </div>
             </div>
+
           </div>
 
-          <!-- ═══ STEP 3: Confirmation ═══ -->
-          <div class="step-panel" *ngIf="currentStep === 3" [@stepAnimation]>
-            <h2 class="step-title">4. Confirmation</h2>
+          <!-- ══ STEP 3: Confirmation ══ -->
+          <div class="step-card" *ngIf="currentStep === 3" [@stepAnim]>
 
-            <div class="promo-box glass-panel-light">
-              <label>Code Promo</label>
-              <div class="promo-row">
-                <input type="text" formControlName="promoCode" class="premium-input" placeholder="SAHARA10">
-                <button type="button" class="btn-apply" (click)="applyPromoCode()">Appliquer</button>
+            <div class="step-eyebrow">Étape 4 sur 4</div>
+            <h2 class="step-heading">Tout est prêt ?</h2>
+            <p class="step-sub">Vérifiez le récapitulatif à droite avant de confirmer.</p>
+
+            <!-- Recap tours -->
+            <div class="confirm-section">
+              <div class="confirm-label">🗺️ Tours sélectionnés</div>
+              <div class="confirm-tours">
+                <div class="confirm-tour-item" *ngFor="let ctrl of tourTypesArray.controls">
+                  <span class="ct-name">{{ getTourNameById(ctrl.get('tourTypeId')?.value) }}</span>
+                  <span class="ct-info" *ngIf="tourTypesArray.length > 1">
+                    {{ ctrl.get('numberOfAdults')?.value || getCount('adults') }} ad ·
+                    {{ ctrl.get('numberOfChildren')?.value || getCount('children') }} enf
+                  </span>
+                  <span class="ct-info" *ngIf="tourTypesArray.length === 1">
+                    {{ getCount('adults') }} ad · {{ getCount('children') }} enf
+                  </span>
+                </div>
               </div>
-              <p class="promo-feedback" [class.success]="promoApplied" [class.error]="promoError">
-                {{ promoMessage }}
-              </p>
             </div>
 
-            <div class="confirmation-check">
-              <label class="checkbox-container">
-                <input type="checkbox" required>
-                <span class="checkmark"></span>
-                J'accepte les conditions générales de vente et la politique d'annulation.
+            <div class="confirm-section" *ngIf="hasExtras()">
+              <div class="confirm-label">✨ Extras sélectionnés</div>
+              <div class="confirm-extras">
+                <div class="confirm-extra-item" *ngFor="let item of getSelectedExtrasList()">
+                  <span>{{ item.name }}</span>
+                  <span class="ce-qty">× {{ item.qty }} pers.</span>
+                  <span class="ce-price">{{ item.subtotal }} TND</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Promo code -->
+            <div class="promo-section">
+              <div class="confirm-label">🏷️ Code promotionnel</div>
+              <div class="promo-input-row">
+                <div class="field-input-wrap" style="flex: 1;">
+                  <span class="field-icon">%</span>
+                  <input type="text" formControlName="promoCode"
+                         class="field-input" placeholder="Entrez votre code (ex: SAHARA10)">
+                </div>
+                <button type="button" class="promo-apply-btn" (click)="applyPromoCode()">
+                  Appliquer
+                </button>
+              </div>
+              <div class="promo-result" *ngIf="promoMessage"
+                   [class.promo-ok]="promoApplied" [class.promo-err]="promoError">
+                {{ promoMessage }}
+              </div>
+            </div>
+
+            <!-- Terms -->
+            <div class="terms-check">
+              <label class="terms-label">
+                <input type="checkbox" class="terms-input" required>
+                <span class="terms-box"></span>
+                <span>J'accepte les <a href="#" class="terms-link">conditions générales</a> et la <a href="#" class="terms-link">politique d'annulation</a></span>
               </label>
             </div>
+
           </div>
 
-          <!-- Navigation -->
-          <div class="navigation-actions">
-            <button type="button" class="btn-ghost" *ngIf="currentStep > 0" (click)="previousStep()">
-              Retour
+          <!-- ── Navigation ── -->
+          <div class="nav-bar">
+            <button type="button" class="nav-back" *ngIf="currentStep > 0" (click)="previousStep()">
+              ← Retour
             </button>
-            <button type="button" class="btn-glow" *ngIf="currentStep < 3"
+            <div class="nav-spacer"></div>
+            <button type="button" class="nav-next" *ngIf="currentStep < 3"
                     (click)="nextStep()" [disabled]="!canProceed()">
-              Continuer <span class="arrow">→</span>
+              <span>Continuer</span>
+              <span class="nav-arrow">→</span>
             </button>
-            <button type="submit" class="btn-glow success" *ngIf="currentStep === 3"
+            <button type="submit" class="nav-submit" *ngIf="currentStep === 3"
                     [disabled]="reservationForm.invalid || isSubmitting">
-              {{ isSubmitting ? 'Envoi en cours...' : 'Confirmer la Réservation' }}
+              <span *ngIf="!isSubmitting">🏕️ Confirmer la réservation</span>
+              <span *ngIf="isSubmitting" class="submitting-state">
+                <span class="mini-spinner"></span> Envoi en cours...
+              </span>
             </button>
           </div>
 
         </form>
       </div>
 
-      <!-- Right Column: Summary -->
-      <div class="summary-column">
-        <div class="summary-card glass-panel sticky">
-          <h3>Votre Réservation</h3>
+      <!-- ════ RIGHT: Summary ════ -->
+      <aside class="summary-col">
+        <div class="summary-panel">
 
-          <div class="summary-img" [style.backgroundImage]="'url(' + getTourImage() + ')'">
-            <div class="summary-badge">{{ getTourLabel() }}</div>
-          </div>
-
-          <div class="summary-details">
-            <div class="sum-row">
-              <span>Voyageurs</span>
-              <strong>{{ getCount('adults') }} Ad, {{ getCount('children') }} Enf</strong>
-            </div>
-            <div class="sum-row" *ngIf="getNights() > 0">
-              <span>Durée</span>
-              <strong>{{ getNights() }} Nuits</strong>
-            </div>
-            <div class="sum-row" *ngIf="reservationForm.get('checkInDate')?.value">
-              <span>Arrivée</span>
-              <strong>{{ formatDate(reservationForm.get('checkInDate')?.value) }}</strong>
-            </div>
-            <div class="sum-row" *ngIf="reservationForm.get('groupLeaderName')?.value">
-              <span>Responsable</span>
-              <strong>{{ reservationForm.get('groupLeaderName')?.value }}</strong>
-            </div>
-
-            <!-- Dynamic extras list -->
-            <div class="extras-list" *ngIf="hasExtras()">
-              <div class="sum-row extra-item" *ngFor="let item of getSelectedExtrasList()">
-                <span>+ {{ item.name }} × {{ item.qty }}</span>
-                <span>{{ item.subtotal }} TND</span>
+          <!-- Hero image -->
+          <div class="summary-hero" [style.backgroundImage]="'url(' + getTourImage() + ')'">
+            <div class="summary-hero-overlay"></div>
+            <div class="summary-hero-content">
+              <div class="summary-tour-label">{{ getTourLabel() }}</div>
+              <div class="summary-group-size">
+                <span>{{ getCount('adults') + getCount('children') }} voyageurs</span>
               </div>
             </div>
           </div>
 
-          <div class="price-section">
-            <div class="price-row">
-              <span>Base ({{ getCount('adults') }} Ad × {{ getNights() || 1 }} nuit)</span>
-              <span>{{ calculateAdultPrice() }} TND</span>
-            </div>
-            <div class="price-row" *ngIf="getCount('children') > 0">
-              <span>Enfants</span>
-              <span>{{ calculateChildPrice() }} TND</span>
-            </div>
-            <div class="price-row highlight" *ngIf="calculateExtrasPrice() > 0">
-              <span>Options</span>
-              <span>+{{ calculateExtrasPrice() }} TND</span>
-            </div>
-            <div class="price-row discount" *ngIf="discountAmount > 0">
-              <span>Remise ({{ appliedPromoCode }})</span>
-              <span>-{{ discountAmount | number:'1.0-0' }} TND</span>
-            </div>
-            <div class="total-row">
-              <span>Total Estimé</span>
-              <span class="amount">{{ calculateFinalPrice() | number:'1.0-0' }} <small>TND</small></span>
-            </div>
-          </div>
+          <!-- Details -->
+          <div class="summary-body">
 
-          <p class="secure-note">🔒 Paiement sécurisé lors de la confirmation</p>
+            <div class="summary-section">
+              <div class="sum-item" *ngIf="getNights() > 0">
+                <span class="sum-key">📅 Durée</span>
+                <span class="sum-val">{{ getNights() }} nuit{{ getNights() > 1 ? 's' : '' }}</span>
+              </div>
+              <div class="sum-item" *ngIf="reservationForm.get('checkInDate')?.value">
+                <span class="sum-key">✈️ Arrivée</span>
+                <span class="sum-val">{{ formatDate(reservationForm.get('checkInDate')?.value) }}</span>
+              </div>
+              <div class="sum-item" *ngIf="reservationForm.get('checkOutDate')?.value">
+                <span class="sum-key">🏠 Départ</span>
+                <span class="sum-val">{{ formatDate(reservationForm.get('checkOutDate')?.value) }}</span>
+              </div>
+              <div class="sum-item" *ngIf="reservationForm.get('groupLeaderName')?.value">
+                <span class="sum-key">👤 Responsable</span>
+                <span class="sum-val">{{ reservationForm.get('groupLeaderName')?.value }}</span>
+              </div>
+            </div>
+
+            <!-- Price breakdown -->
+            <div class="summary-price-section">
+
+              <!-- Per-tour breakdown -->
+              <div *ngFor="let ctrl of tourTypesArray.controls">
+                <ng-container *ngIf="getTourById(ctrl.get('tourTypeId')?.value) as tour">
+                  <div class="price-line tour-line-header">
+                    <span>{{ tour.name }}</span>
+                    <span></span>
+                  </div>
+                  <!-- Adults row -->
+                  <div class="price-line price-line-sub">
+                    <span>
+                      {{ tourTypesArray.length === 1 ? getCount('adults') : (ctrl.get('numberOfAdults')?.value || 0) }}
+                      ad × {{ tour.partnerAdultPrice }} TND × {{ getNights() || 1 }} nuit{{ getNights() > 1 ? 's' : '' }}
+                    </span>
+                    <span>
+                      {{ calcTourAdultLine(ctrl) | number:'1.0-0' }} TND
+                    </span>
+                  </div>
+                  <!-- Children row (only if children > 0) -->
+                  <div class="price-line price-line-sub"
+                      *ngIf="(tourTypesArray.length === 1 ? getCount('children') : (ctrl.get('numberOfChildren')?.value || 0)) > 0">
+                    <span>
+                      {{ tourTypesArray.length === 1 ? getCount('children') : (ctrl.get('numberOfChildren')?.value || 0) }}
+                      enf × {{ tour.partnerChildPrice }} TND × {{ getNights() || 1 }} nuit{{ getNights() > 1 ? 's' : '' }}
+                    </span>
+                    <span>
+                      {{ calcTourChildLine(ctrl) | number:'1.0-0' }} TND
+                    </span>
+                  </div>
+                </ng-container>
+              </div>
+
+              <!-- Extras -->
+              <div class="price-line extras-line" *ngIf="calculateExtrasPrice() > 0">
+                <span>Extras</span>
+                <span>+{{ calculateExtrasPrice() | number:'1.0-0' }} TND</span>
+              </div>
+
+              <!-- Discount -->
+              <div class="price-line discount-line" *ngIf="discountAmount > 0">
+                <span>Remise {{ appliedPromoCode }}</span>
+                <span>−{{ discountAmount | number:'1.0-0' }} TND</span>
+              </div>
+
+              <!-- Total -->
+              <div class="price-total">
+                <span>Total estimé</span>
+                <div class="total-amount">
+                  {{ calculateFinalPrice() | number:'1.0-0' }}
+                  <span class="total-currency">TND</span>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="summary-secure">
+              <span>🔒</span>
+              <span>Réservation confirmée après validation admin</span>
+            </div>
+
+          </div>
         </div>
-      </div>
+      </aside>
 
     </div>
   </div>

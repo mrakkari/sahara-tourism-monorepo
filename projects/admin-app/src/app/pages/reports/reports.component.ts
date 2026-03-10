@@ -133,35 +133,33 @@ export class ReportsComponent implements OnInit {
   }
 
   generateChartData(): void {
-    let confirmed = 0, pending = 0, rejected = 0;
-    this.reservations.forEach(r => {
-      if (r.status === 'confirmed' || r.status === 'arrived') confirmed++;
-      else if (r.status === 'pending') pending++;
-      else if (r.status === 'rejected' || r.status === 'cancelled') rejected++;
-    });
+      let confirmed = 0, pending = 0, rejected = 0;
+      this.reservations.forEach(r => {
+          if (r.status === 'confirmed' || r.status === 'checked_in' || r.status === 'completed') confirmed++;
+          else if (r.status === 'pending') pending++;
+          else if (r.status === 'rejected' || r.status === 'cancelled') rejected++;
+      });
 
-    this.pieChartData.datasets[0].data = [confirmed, pending, rejected];
+      this.pieChartData.datasets[0].data = [confirmed, pending, rejected];
 
-    const labels = [];
-    const data = [];
+      const labels = [];
+      const data = [];
 
-    // Last 7 days
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+      for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const dateStr = d.toISOString().split('T')[0];
+          labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
 
-      // Allow partial match for simplicity if createdAt has time
-      const dayRevenue = this.reservations
-        .filter(r => r.createdAt.includes(dateStr))
-        .reduce((acc, curr) => acc + curr.payment.paidAmount, 0);
+          const dayRevenue = this.reservations
+              .filter(r => r.createdAt.includes(dateStr))
+              .reduce((acc, curr) => acc + curr.payment.paidAmount, 0);
 
-      data.push(dayRevenue);
-    }
+          data.push(dayRevenue);
+      }
 
-    this.lineChartData.labels = labels;
-    this.lineChartData.datasets[0].data = data;
+      this.lineChartData.labels = labels;
+      this.lineChartData.datasets[0].data = data;
   }
 
   getPendingCount(): number {

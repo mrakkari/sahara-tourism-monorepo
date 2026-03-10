@@ -11,19 +11,33 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn-glass" [routerLink]="['/invoice', reservation.id]">
-        📄 View Invoice
-      </button>
-      <ng-container *ngIf="reservation.status === 'pending'">
-        <button class="btn-danger" (click)="rejectReservation()">Reject</button>
-        <button class="btn-primary" (click)="confirmReservation()">Confirm Reservation</button>
-      </ng-container>
+        <button class="btn-glass" [routerLink]="['/invoice', reservation.id]">
+            📄 View Invoice
+        </button>
+
+        <!-- PENDING → can confirm or reject -->
+        <ng-container *ngIf="reservation.status === 'pending'">
+            <button class="btn-danger" (click)="rejectReservation()">❌ Reject</button>
+            <button class="btn-primary" (click)="confirmReservation()">✅ Confirm</button>
+        </ng-container>
+
+        <!-- CONFIRMED → can check in or reject -->
+        <ng-container *ngIf="reservation.status === 'confirmed'">
+            <button class="btn-danger" (click)="rejectReservation()">❌ Reject</button>
+            <button class="btn-primary" (click)="checkInReservation()">🏕️ Check In</button>
+        </ng-container>
+
+        <!-- CHECKED_IN → can complete -->
+        <ng-container *ngIf="reservation.status === 'checked_in'">
+            <button class="btn-primary" (click)="completeReservation()">✓ Complete</button>
+        </ng-container>
     </div>
   </header>
 
   <div class="detail-grid">
     <!-- Left Column: Main Info -->
     <div class="main-info">
+
       <!-- Tour & Stay -->
       <lib-glass-card class="section-card" [gradient]="true">
         <div class="card-header">
@@ -32,7 +46,15 @@
         <div class="info-grid">
           <div class="info-item">
             <span class="label">Tour Type</span>
-            <span class="value">{{ getTourLabel() }}</span>
+            <div class="tour-types-cell">
+              <ng-container *ngFor="let t of getTourLabels()">
+                <span class="tour-type-badge">{{ t.name }}</span>
+                <span class="tour-type-counts"
+                      *ngIf="reservation?.tourTypes && reservation!.tourTypes!.length > 1">
+                  👨‍👩 {{ t.adults }} &nbsp; 🧒 {{ t.children }}
+                </span>
+              </ng-container>
+            </div>
           </div>
           <div class="info-item">
             <span class="label">Duration</span>
@@ -47,7 +69,7 @@
             <span class="value">{{ formatDate(reservation.checkOutDate) }}</span>
           </div>
         </div>
-        
+
         <div class="special-req" *ngIf="reservation.groupInfo.specialRequests">
           <span class="req-label">⚠️ Special Requests</span>
           <p class="req-text">{{ reservation.groupInfo.specialRequests }}</p>
@@ -57,23 +79,41 @@
       <!-- Participants -->
       <lib-glass-card class="section-card">
         <div class="card-header">
-          <h3>👥 Guest List ({{ reservation.numberOfPeople }})</h3>
+          <h3>👥 Participants ({{ reservation.numberOfPeople }})</h3>
+          <div class="people-summary">
+            <span class="adults-chip">
+              👨‍👩 {{ reservation.adults }} adulte{{ reservation.adults > 1 ? 's' : '' }}
+            </span>
+            <span class="children-chip" *ngIf="reservation.children > 0">
+              🧒 {{ reservation.children }} enfant{{ reservation.children > 1 ? 's' : '' }}
+            </span>
+          </div>
         </div>
-        <div class="guests-list">
+
+        <!-- Real participant list from backend -->
+        <div class="guests-list" *ngIf="guestList.length > 0; else noParticipants">
           <div *ngFor="let guest of guestList; let i = index" class="guest-row">
             <div class="guest-avatar">{{ guest.name.charAt(0) }}</div>
             <div class="guest-details">
               <span class="guest-name">{{ guest.name }}</span>
-              <span class="guest-meta">{{ guest.age }} ans • {{ guest.isAdult ? 'Adulte' : 'Enfant' }}</span>
+              <span class="guest-meta">
+                {{ guest.age }} ans • {{ guest.isAdult ? 'Adulte' : 'Enfant' }}
+              </span>
             </div>
             <div class="guest-badge" *ngIf="i === 0">Principal</div>
           </div>
         </div>
+
+        <ng-template #noParticipants>
+          <p class="no-data">Aucun participant enregistré individuellement.</p>
+        </ng-template>
       </lib-glass-card>
+
     </div>
 
     <!-- Right Column: Payment & Partner -->
     <div class="sidebar-info">
+
       <!-- Payment Summary -->
       <lib-glass-card class="section-card">
         <div class="card-header">
@@ -82,18 +122,26 @@
             {{ reservation.payment.paymentStatus | titlecase }}
           </span>
         </div>
-        
+
         <div class="price-breakdown">
+          <div class="price-row">
+            <span>Montant tours</span>
+            <span>{{ reservation.payment.totalAmount - getTotalExtrasAmount() }} TND</span>
+          </div>
+          <div class="price-row" *ngIf="getTotalExtrasAmount() > 0">
+            <span>Montant extras</span>
+            <span>{{ getTotalExtrasAmount() }} TND</span>
+          </div>
           <div class="price-row total">
-            <span>Total</span>
+            <span>Total général</span>
             <span>{{ reservation.payment.totalAmount }} TND</span>
           </div>
           <div class="price-row paid">
-            <span>Paid</span>
+            <span>Payé</span>
             <span>{{ reservation.payment.paidAmount }} TND</span>
           </div>
           <div class="price-row remaining" *ngIf="getRemaining() > 0">
-            <span>Remaining</span>
+            <span>Reste à payer</span>
             <span>{{ getRemaining() }} TND</span>
           </div>
         </div>
@@ -102,11 +150,11 @@
           <div class="progress-bar">
             <div class="fill" [style.width.%]="getPaymentProgress()"></div>
           </div>
-          <span class="progress-text">{{ getPaymentProgress() | number:'1.0-0' }}% Paid</span>
+          <span class="progress-text">{{ getPaymentProgress() | number:'1.0-0' }}% Payé</span>
         </div>
 
         <div class="transactions" *ngIf="reservation.payment.transactions.length">
-          <h4>Recent Transactions</h4>
+          <h4>Transactions</h4>
           <div *ngFor="let t of reservation.payment.transactions" class="txn-item">
             <span class="txn-method">{{ t.method }}</span>
             <span class="txn-amount">+{{ t.amount }} TND</span>
@@ -133,20 +181,32 @@
           </div>
         </div>
       </lib-glass-card>
-      
+
       <!-- Extras -->
       <lib-glass-card class="section-card" *ngIf="reservation.extras && reservation.extras.length > 0">
         <div class="card-header">
           <h3>🎯 Extras</h3>
+          <span class="extras-total-badge">{{ getTotalExtrasAmount() }} TND</span>
         </div>
         <div class="extras-list">
           <div *ngFor="let extra of reservation.extras" class="extra-row">
-            <span class="extra-qty">{{ extra.quantity }}x</span>
-            <span class="extra-name">{{ extra.name }}</span>
+            <div class="extra-left">
+              <span class="extra-name">{{ extra.name }}</span>
+              <span class="extra-meta">
+                {{ extra.quantity }} × {{ extra.unitPrice }} TND
+              </span>
+            </div>
             <span class="extra-price">{{ extra.totalPrice }} TND</span>
+          </div>
+
+          <!-- Total extras line -->
+          <div class="extra-row extra-total-row">
+            <span class="extra-name">Total Extras</span>
+            <span class="extra-price highlight">{{ getTotalExtrasAmount() }} TND</span>
           </div>
         </div>
       </lib-glass-card>
+
     </div>
   </div>
 </div>

@@ -85,7 +85,7 @@ export class DashboardComponent implements OnInit {
   applyFilters(): void {
     this.filteredReservations = this.reservations.filter(r => {
       const statusMatch = this.statusFilter === 'all' || r.status === this.statusFilter;
-      const tourTypeMatch = this.tourTypeFilter === 'all' || r.tourType === this.tourTypeFilter;
+      const tourTypeMatch = this.tourTypeFilter === 'all' || r.tourTypes?.some(t => t.name === this.tourTypeFilter);
       const searchMatch = this.searchTerm === '' ||
         r.partnerName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         r.id.toLowerCase().includes(this.searchTerm.toLowerCase());
@@ -111,11 +111,12 @@ export class DashboardComponent implements OnInit {
     // Sorting by status
     this.filteredReservations.sort((a, b) => {
       const statusOrder: Record<string, number> = {
-        'pending': 1,
-        'confirmed': 2,
-        'arrived': 3,
-        'completed': 4,
-        'cancelled': 5
+          'pending':    1,
+          'confirmed':  2,
+          'checked_in': 3,  // ← replaces 'arrived'
+          'completed':  4,
+          'cancelled':  5,
+          'rejected':   6,
       };
 
       const orderA = statusOrder[a.status] || 99;
@@ -153,7 +154,11 @@ export class DashboardComponent implements OnInit {
   // Stats Helpers
   getTotalReservations(): number { return this.reservations.length; }
   getPendingCount(): number { return this.reservations.filter(r => r.status === 'pending').length; }
-  getConfirmedCount(): number { return this.reservations.filter(r => r.status === 'confirmed' || r.status === 'arrived').length; }
+  getConfirmedCount(): number {
+      return this.reservations.filter(r => 
+          r.status === 'confirmed' || r.status === 'checked_in'
+      ).length;
+  }
   getTotalRevenue(): number { return this.reservations.reduce((sum, r) => sum + r.payment.paidAmount, 0); }
 
   // UI Helpers
@@ -177,21 +182,37 @@ export class DashboardComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    const map: Record<string, string> = {
-      'pending': 'En attente',
-      'confirmed': 'Confirmé',
-      'arrived': 'Arrivé',
-      'completed': 'Terminé',
-      'cancelled': 'Annulé'
-    };
-    return map[status] || status;
+      const labels: Record<string, string> = {
+          'CONFIRMED': 'Confirmée',
+          'PENDING':   'En attente',
+          'CHECKED_IN': 'En cours',   
+          'REJECTED':  'Rejetée',
+          'CANCELLED': 'Annulée',
+          'COMPLETED': 'Terminée'
+      };
+      return labels[status?.toUpperCase()] || status;
   }
 
+  getStatusClass(status: string): string {
+      switch (status?.toUpperCase()) {
+          case 'CONFIRMED':  return 'status-confirmed';
+          case 'PENDING':    return 'status-pending';
+          case 'CHECKED_IN': return 'status-arrived';   // ← add
+          case 'REJECTED':   return 'status-rejected';
+          case 'CANCELLED':  return 'status-cancelled';
+          case 'COMPLETED':  return 'status-completed';
+          default: return '';
+      }
+  }
+
+
   confirmReservation(id: string): void {
-    if (confirm('Confirmer cette réservation ?')) {
-      this.reservationService.confirmReservation(id);
-      this.loadReservations();
-    }
+      if (confirm('Confirmer cette réservation ?')) {
+          this.reservationService.confirmReservation(id).subscribe({
+              next: () => this.loadReservations(),
+              error: (err) => console.error('Erreur confirmation:', err)
+          });
+      }
   }
 
   exportToCSV(): void {
@@ -220,7 +241,7 @@ export class DashboardComponent implements OnInit {
     // Prepare table data from current page
     const tableData = this.pagedReservations.map(r => [
       r.partnerName,
-      r.tourType || 'N/A',
+      r.tourTypes?.map(t => t.name).join(', ') || 'N/A',  // ← replaces r.tourType || 'N/A'
       `${r.numberOfPeople} pers.`,
       this.formatDate(r.checkInDate),
       `${this.calculateDuration(r)} nuits`,

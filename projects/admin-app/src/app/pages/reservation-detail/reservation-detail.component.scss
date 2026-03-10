@@ -392,3 +392,140 @@ h1 {
   padding: 4rem;
   color: #64748B;
 }
+.people-summary {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.adults-chip, .children-chip {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.adults-chip {
+  background: #EFF6FF;
+  color: #1D4ED8;
+}
+
+.children-chip {
+  background: #FFF7ED;
+  color: #C2410C;
+}
+
+.no-data {
+  color: #94A3B8;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+// Extras
+.extra-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #F1F5F9;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.extra-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.extra-name {
+  font-weight: 600;
+  color: #1E293B;
+  font-size: 0.9rem;
+}
+
+.extra-meta {
+  font-size: 0.78rem;
+  color: #94A3B8;
+}
+
+.extra-price {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 0.95rem;
+
+  &.highlight {
+    color: #10B981;
+    font-size: 1rem;
+  }
+}
+
+.extra-total-row {
+  background: #F8FAFC;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-top: 4px;
+
+  .extra-name {
+    color: #64748B;
+  }
+}
+
+.extras-total-badge {
+  background: #D1FAE5;
+  color: #065F46;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+// Payment rows
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #F1F5F9;
+  font-size: 0.9rem;
+  color: #64748B;
+
+  &.total {
+    font-weight: 700;
+    color: #1E293B;
+    font-size: 1rem;
+    border-bottom: 2px solid #E2E8F0;
+  }
+
+  &.paid span:last-child {
+    color: #10B981;
+    font-weight: 700;
+  }
+
+  &.remaining span:last-child {
+    color: #EF4444;
+    font-weight: 700;
+  }
+}
+.tour-types-cell {
+  display: flex;
+  flex-direction: column;  // stack vertically
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.tour-type-badge {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;  // slightly tighter
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50px;
+  font-size: 0.75rem;  // smaller
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

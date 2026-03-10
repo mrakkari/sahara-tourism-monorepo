@@ -27,6 +27,11 @@ export class ReservationService {
         this.loadNotifications();
     }
 
+    // ─── My Reservations (Partner API) ───────────────────────────
+    getMyReservations(): Observable<ReservationResponse[]> {
+        return this.http.get<ReservationResponse[]>(this.apiUrl + '/reservations/my-reservations');
+    }
+
     // ─── Tour Types ───────────────────────────────────────────────
 
     getAllTourTypes(): Observable<TourType[]> {

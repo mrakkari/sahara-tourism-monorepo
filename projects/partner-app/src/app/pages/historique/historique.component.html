@@ -15,16 +15,16 @@
         <div class="filter-group">
             <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
                 <option value="all">Tous les statuts</option>
-                <option value="pending">En attente</option>
-                <option value="confirmed">Confirmée</option>
-                <option value="rejected">Rejetée</option>
-                <option value="completed">Terminée</option>
-                <option value="cancelled">Annulée</option>
+                <option value="PENDING">En attente</option>
+                <option value="CONFIRMED">Confirmée</option>
+                <option value="REJECTED">Rejetée</option>
+                <option value="COMPLETED">Terminée</option>
+                <option value="CANCELLED">Annulée</option>
             </select>
 
             <select [(ngModel)]="tourTypeFilter" (change)="applyFilters()" class="filter-select">
                 <option value="all">Tous les tours</option>
-                <option *ngFor="let tourType of allTourTypes" [value]="tourType">{{ tourType }}</option>
+                <option *ngFor="let tourType of allTourTypes" [value]="tourType.name">{{ tourType.name }}</option>
             </select>
 
             <select [(ngModel)]="sortBy" (change)="applyFilters()" class="filter-select">
@@ -63,43 +63,64 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let res of paginatedReservations" class="table-row">
+
+                        <!-- Client — groupLeaderName + groupName -->
                         <td class="client-name">
                             <div class="client-info">
-                                <span class="name">{{ res.contactInfo.firstName }} {{ res.contactInfo.lastName }}</span>
-                                <span class="email">{{ res.contactInfo.email }}</span>
+                                <span class="name">{{ getClientName(res) }}</span>
+                                <span class="email">{{ res.groupName }}</span>
                             </div>
                         </td>
+
+                        <!-- Date — createdAt -->
                         <td class="date-cell">
                             <div class="date-info">
-                                <span class="date">{{ res.checkInDate | date:'dd/MM/yyyy' }}</span>
-                                <span class="time">{{ res.checkInDate | date:'shortTime' }}</span>
+                                <span class="date">{{ res.createdAt | date:'dd/MM/yyyy' }}</span>
+                                <span class="time">{{ res.createdAt | date:'shortTime' }}</span>
                             </div>
                         </td>
+
+                        <!-- Group — global numberOfAdults / numberOfChildren -->
                         <td class="group-cell">
                             <div class="group-info">
-                                <span class="adults">👥 {{ res.adults }} adultes</span>
-                                <span class="children" *ngIf="res.children > 0">👶 {{ res.children }} enfants</span>
+                                <span class="adults">👥 {{ res.numberOfAdults }} adultes</span>
+                                <span class="children" *ngIf="res.numberOfChildren > 0">
+                                    👶 {{ res.numberOfChildren }} enfants
+                                </span>
                             </div>
                         </td>
+
+                        <!-- Tour Type — joined names from tourTypes array -->
                         <td class="tour-type">
-                            <span class="tour-badge">{{ res.tourType }}</span>
+                            <span class="tour-badge">{{ getTourTypeNames(res) }}</span>
                         </td>
-                        <td class="amount">{{ res.totalPrice | number:'1.2-2' }} {{ res.payment?.currency || 'EUR' }}</td>
+
+                        <!-- Amount — totalAmount + totalExtrasAmount -->
+                        <td class="amount">
+                            {{ getTotalAmount(res) | number:'1.2-2' }} {{ res.currency }}
+                        </td>
+
+                        <!-- Status -->
                         <td>
                             <span class="status-badge" [ngClass]="getStatusClass(res.status)">
                                 {{ getStatusLabel(res.status) }}
                             </span>
                         </td>
+
+                        <!-- Actions -->
                         <td class="actions-cell">
-                            <button class="btn-action btn-details" (click)="viewDetails(res)" title="Voir les détails">
+                            <button class="btn-action btn-details" (click)="viewDetails(res)"
+                                title="Voir les détails">
                                 <i class="fas fa-eye"></i>
                                 Détails
                             </button>
-                            <button class="btn-action btn-download" (click)="downloadPDF(res)" title="Télécharger PDF">
+                            <button class="btn-action btn-download" (click)="downloadPDF(res)"
+                                title="Télécharger PDF">
                                 <i class="fas fa-download"></i>
                             </button>
                         </td>
                     </tr>
+
                     <tr *ngIf="paginatedReservations.length === 0">
                         <td colspan="7" class="empty-state">
                             <div class="empty-message">
@@ -115,21 +136,21 @@
         <!-- Pagination -->
         <div class="pagination-container" *ngIf="filteredReservations.length > 0">
             <div class="pagination-info">
-                Affichage de {{ ((currentPage - 1) * itemsPerPage) + 1 }} 
-                à {{ Math.min(currentPage * itemsPerPage, filteredReservations.length) }} 
+                Affichage de {{ ((currentPage - 1) * itemsPerPage) + 1 }}
+                à {{ Math.min(currentPage * itemsPerPage, filteredReservations.length) }}
                 sur {{ filteredReservations.length }} réservations
             </div>
-            
+
             <div class="pagination-controls">
-                <button class="pagination-btn" 
-                        [disabled]="currentPage === 1" 
+                <button class="pagination-btn"
+                        [disabled]="currentPage === 1"
                         (click)="previousPage()"
                         title="Page précédente">
                     <i class="fas fa-chevron-left"></i>
                 </button>
 
-                <button *ngFor="let page of getPageNumbers()" 
-                        class="pagination-btn page-number" 
+                <button *ngFor="let page of getPageNumbers()"
+                        class="pagination-btn page-number"
                         [class.active]="page === currentPage"
                         [disabled]="page === -1"
                         (click)="page !== -1 && goToPage(page)">
@@ -137,8 +158,8 @@
                     <span *ngIf="page !== -1">{{ page }}</span>
                 </button>
 
-                <button class="pagination-btn" 
-                        [disabled]="currentPage === totalPages" 
+                <button class="pagination-btn"
+                        [disabled]="currentPage === totalPages"
                         (click)="nextPage()"
                         title="Page suivante">
                     <i class="fas fa-chevron-right"></i>
@@ -155,20 +176,21 @@
                 <button class="close-btn" (click)="closeDetails()">×</button>
             </div>
             <div class="modal-body">
-                <!-- Client Information -->
+
+                <!-- Group Information -->
                 <div class="section">
-                    <h3>👤 Informations Client</h3>
+                    <h3>👤 Informations du Groupe</h3>
                     <div class="detail-row">
-                        <strong>Nom:</strong>
-                        <span>{{ selectedReservation.contactInfo.firstName }} {{ selectedReservation.contactInfo.lastName }}</span>
+                        <strong>Chef de groupe:</strong>
+                        <span>{{ selectedReservation.groupLeaderName }}</span>
                     </div>
                     <div class="detail-row">
-                        <strong>Email:</strong>
-                        <span>{{ selectedReservation.contactInfo.email }}</span>
+                        <strong>Nom du groupe:</strong>
+                        <span>{{ selectedReservation.groupName }}</span>
                     </div>
-                    <div class="detail-row">
-                        <strong>Téléphone:</strong>
-                        <span>{{ selectedReservation.contactInfo.phone }}</span>
+                    <div class="detail-row" *ngIf="selectedReservation.demandeSpecial">
+                        <strong>Demande spéciale:</strong>
+                        <span>{{ selectedReservation.demandeSpecial }}</span>
                     </div>
                 </div>
 
@@ -178,16 +200,20 @@
                 <div class="section">
                     <h3>🗺️ Informations du Tour</h3>
                     <div class="detail-row">
-                        <strong>Type de Tour:</strong>
-                        <span class="tour-badge">{{ selectedReservation.tourType }}</span>
+                        <strong>Type(s) de Tour:</strong>
+                        <span class="tour-badge">{{ getTourTypeNames(selectedReservation) }}</span>
                     </div>
                     <div class="detail-row">
-                        <strong>Date de début:</strong>
+                        <strong>Date d'arrivée:</strong>
                         <span>{{ selectedReservation.checkInDate | date:'fullDate' }}</span>
                     </div>
                     <div class="detail-row">
-                        <strong>Date de fin:</strong>
+                        <strong>Date de départ:</strong>
                         <span>{{ selectedReservation.checkOutDate | date:'fullDate' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Créée le:</strong>
+                        <span>{{ selectedReservation.createdAt | date:'fullDate' }}</span>
                     </div>
                 </div>
 
@@ -198,19 +224,49 @@
                     <h3>👥 Participants</h3>
                     <div class="detail-row">
                         <strong>Adultes:</strong>
-                        <span>{{ selectedReservation.adults }} personnes</span>
+                        <span>{{ selectedReservation.numberOfAdults }} personnes</span>
                     </div>
                     <div class="detail-row">
                         <strong>Enfants:</strong>
-                        <span>{{ selectedReservation.children }} personnes</span>
+                        <span>{{ selectedReservation.numberOfChildren }} personnes</span>
                     </div>
                     <div class="detail-row highlight">
                         <strong>Total:</strong>
-                        <span>{{ selectedReservation.numberOfPeople }} personnes</span>
+                        <span>{{ selectedReservation.numberOfAdults + selectedReservation.numberOfChildren }} personnes</span>
+                    </div>
+
+                    <!-- Participant list if available -->
+                    <div *ngIf="selectedReservation.participants && selectedReservation.participants.length > 0" class="extras-list" style="margin-top: 8px;">
+                        <div class="extra-item" *ngFor="let p of selectedReservation.participants">
+                            <div class="extra-info">
+                                <strong>{{ p.fullName }}</strong>
+                                <span class="extra-details">{{ p.age }} ans — {{ p.isAdult ? 'Adulte' : 'Enfant' }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="divider"></div>
+
+                <!-- Tour Types Breakdown -->
+                <div class="section" *ngIf="selectedReservation.tourTypes && selectedReservation.tourTypes.length > 0">
+                    <h3>🏕️ Détail des Tours</h3>
+                    <div class="extras-list">
+                        <div class="extra-item" *ngFor="let t of selectedReservation.tourTypes">
+                            <div class="extra-info">
+                                <strong>{{ t.name }}</strong>
+                                <span class="extra-details">
+                                    {{ t.numberOfAdults }} adultes × {{ t.adultPrice | number:'1.2-2' }} +
+                                    {{ t.numberOfChildren }} enfants × {{ t.childPrice | number:'1.2-2' }}
+                                    <span *ngIf="t.numberOfNights"> — {{ t.numberOfNights }} nuit(s)</span>
+                                </span>
+                            </div>
+                            <span class="extra-price">{{ t.totalPrice | number:'1.2-2' }} {{ selectedReservation.currency }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"*ngIf="selectedReservation.tourTypes && selectedReservation.tourTypes.length > 0"></div>
 
                 <!-- Extras -->
                 <div class="section" *ngIf="selectedReservation.extras && selectedReservation.extras.length > 0">
@@ -219,32 +275,35 @@
                         <div class="extra-item" *ngFor="let extra of selectedReservation.extras">
                             <div class="extra-info">
                                 <strong>{{ extra.name }}</strong>
-                                <span class="extra-details">{{ extra.quantity }} x {{ extra.unitPrice | number:'1.2-2' }} {{ selectedReservation.payment?.currency || 'EUR' }}</span>
+                                <span class="extra-details">
+                                    {{ extra.quantity }} x {{ extra.unitPrice | number:'1.2-2' }} {{ selectedReservation.currency }}
+                                </span>
                             </div>
-                            <span class="extra-price">{{ extra.totalPrice | number:'1.2-2' }} {{ selectedReservation.payment?.currency || 'EUR' }}</span>
+                            <span class="extra-price">{{ extra.totalPrice | number:'1.2-2' }} {{ selectedReservation.currency }}</span>
                         </div>
                     </div>
-                    <div class="divider"></div>
                 </div>
 
-                <!-- Payment Information -->
+                <div class="divider" *ngIf="selectedReservation.extras && selectedReservation.extras.length > 0"></div>
+
+                <!-- Payment Summary -->
                 <div class="section">
-                    <h3>💰 Informations de Paiement</h3>
+                    <h3>💰 Récapitulatif du Paiement</h3>
                     <div class="detail-row">
-                        <strong>Montant total:</strong>
-                        <span>{{ selectedReservation.payment?.totalAmount || selectedReservation.totalPrice || 0 | number:'1.2-2' }} €</span>
+                        <strong>Montant tours:</strong>
+                        <span>{{ selectedReservation.totalAmount | number:'1.2-2' }} {{ selectedReservation.currency }}</span>
                     </div>
                     <div class="detail-row">
-                        <strong>Montant payé:</strong>
-                        <span class="paid-amount">{{ selectedReservation.payment?.paidAmount || 0 | number:'1.2-2' }} €</span>
+                        <strong>Montant extras:</strong>
+                        <span>{{ selectedReservation.totalExtrasAmount | number:'1.2-2' }} {{ selectedReservation.currency }}</span>
                     </div>
-                    <div class="detail-row">
-                        <strong>Montant restant:</strong>
-                        <span class="remaining-amount">{{ ((selectedReservation.payment?.totalAmount || selectedReservation.totalPrice || 0) - (selectedReservation.payment?.paidAmount || 0)) | number:'1.2-2' }} €</span>
+                    <div class="detail-row highlight">
+                        <strong>Total général:</strong>
+                        <span>{{ getTotalAmount(selectedReservation) | number:'1.2-2' }} {{ selectedReservation.currency }}</span>
                     </div>
-                    <div class="detail-row" *ngIf="selectedReservation.payment?.paymentStatus">
-                        <strong>Statut paiement:</strong>
-                        <span class="payment-status">{{ selectedReservation.payment.paymentStatus }}</span>
+                    <div class="detail-row" *ngIf="selectedReservation.promoCode">
+                        <strong>Code promo:</strong>
+                        <span class="tour-badge">{{ selectedReservation.promoCode }}</span>
                     </div>
                 </div>
 
@@ -259,15 +318,12 @@
                             {{ getStatusLabel(selectedReservation.status) }}
                         </span>
                     </div>
-                    <div class="detail-row">
-                        <strong>Créée le:</strong>
-                        <span>{{ selectedReservation.createdAt | date:'fullDate' }}</span>
-                    </div>
                     <div class="detail-row" *ngIf="selectedReservation.rejectionReason">
                         <strong>Raison du rejet:</strong>
                         <span class="rejection-reason">{{ selectedReservation.rejectionReason }}</span>
                     </div>
                 </div>
+
             </div>
             <div class="modal-footer">
                 <button class="btn-download-modal" (click)="downloadPDF(selectedReservation)">

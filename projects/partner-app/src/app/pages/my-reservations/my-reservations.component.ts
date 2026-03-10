@@ -31,14 +31,28 @@ export class MyReservationsComponent implements OnInit {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
-  getStatusLabel(status: string): string {
+getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      pending: '⏳ Pending',
-      confirmed: '✅ Confirmed',
-      rejected: '❌ Rejected',
-      arrived: '🎉 Arrived'
+        'CONFIRMED': 'Confirmée',
+        'PENDING':   'En attente',
+        'CHECKED_IN': 'En cours',   // ← add
+        'REJECTED':  'Rejetée',
+        'CANCELLED': 'Annulée',
+        'COMPLETED': 'Terminée'
     };
-    return labels[status] || status;
+    return labels[status?.toUpperCase()] || status;
+}
+
+  getStatusClass(status: string): string {
+      switch (status?.toUpperCase()) {
+          case 'CONFIRMED':  return 'status-confirmed';
+          case 'PENDING':    return 'status-pending';
+          case 'CHECKED_IN': return 'status-arrived';   
+          case 'REJECTED':   return 'status-rejected';
+          case 'CANCELLED':  return 'status-cancelled';
+          case 'COMPLETED':  return 'status-completed';
+          default: return '';
+      }
   }
 
   getPaymentStatusLabel(status: string): string {

@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-type StatusType = 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled' |
+type StatusType = 'pending' | 'confirmed' | 'rejected' | 'checked_in' | 'cancelled' |
     'paid' | 'partial' | 'completed';
 
 @Component({
@@ -52,8 +52,8 @@ type StatusType = 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled'
       color: #EF4444;
     }
 
-    /* Arrived - Blue */
-    .badge-arrived {
+    /* Checked In - Blue */
+    .badge-checked_in {
       background: rgba(59, 130, 246, 0.1);
       color: #3B82F6;
     }
@@ -90,28 +90,28 @@ export class StatusBadgeComponent {
 
     getIcon(): string {
         const icons: Record<StatusType, string> = {
-            'pending': '⏳',
-            'confirmed': '✅',
-            'rejected': '❌',
-            'arrived': '🎉',
-            'cancelled': '🚫',
-            'paid': '💰',
-            'partial': '💳',
-            'completed': '✓'
+            'pending':    '⏳',
+            'confirmed':  '✅',
+            'rejected':   '❌',
+            'checked_in': '🏕️',
+            'cancelled':  '🚫',
+            'paid':       '💰',
+            'partial':    '💳',
+            'completed':  '✓',
         };
         return icons[this.status] || '📋';
     }
 
     getLabel(): string {
         const labels: Record<StatusType, string> = {
-            'pending': 'En attente',
-            'confirmed': 'Confirmé',
-            'rejected': 'Rejeté',
-            'arrived': 'Arrivé',
-            'cancelled': 'Annulé',
-            'paid': 'Payé',
-            'partial': 'Partiel',
-            'completed': 'Terminé'
+            'pending':    'En attente',
+            'confirmed':  'Confirmé',
+            'rejected':   'Rejeté',
+            'checked_in': 'En cours',
+            'cancelled':  'Annulé',
+            'paid':       'Payé',
+            'partial':    'Partiel',
+            'completed':  'Terminé',
         };
         return labels[this.status] || this.status;
     }

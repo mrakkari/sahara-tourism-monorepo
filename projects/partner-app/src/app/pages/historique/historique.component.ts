@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Reservation, ReservationStatus } from '../../models/reservation.model';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
 import { TranslatePipe } from '../../core/services/translate.pipe';
 import { TourType } from '../../models/tour.model';
+import { ReservationResponse, BackendReservationStatus } from '../../models/reservation-api.model';
 
 @Component({
     selector: 'app-historique',
@@ -15,21 +15,20 @@ import { TourType } from '../../models/tour.model';
     styleUrls: ['./historique.component.scss']
 })
 export class HistoriqueComponent implements OnInit {
-    reservations: Reservation[] = [];
-    filteredReservations: Reservation[] = [];
-    paginatedReservations: Reservation[] = [];
+    reservations: ReservationResponse[] = [];
+    filteredReservations: ReservationResponse[] = [];
+    paginatedReservations: ReservationResponse[] = [];
     loading = true;
 
-    statusFilter: 'all' | ReservationStatus = 'all';
-    tourTypeFilter = 'all'; // now plain string, not TourType enum
+    statusFilter: 'all' | BackendReservationStatus = 'all';
+    tourTypeFilter = 'all';
     searchQuery = '';
     sortBy: 'date' | 'amount' = 'date';
     sortOrder: 'asc' | 'desc' = 'desc';
 
-    selectedReservation: Reservation | null = null;
-    allTourTypes: TourType[] = []; // loaded from backend via ReservationService
+    selectedReservation: ReservationResponse | null = null;
+    allTourTypes: TourType[] = [];
 
-    // Pagination properties
     currentPage = 1;
     itemsPerPage = 10;
     totalPages = 0;
@@ -43,11 +42,7 @@ export class HistoriqueComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadTourTypes();
-        this.authService.currentUser$.subscribe(user => {
-            if (user) {
-                this.loadReservations(user.id);
-            }
-        });
+        this.loadReservations();
     }
 
     private loadTourTypes(): void {
@@ -57,11 +52,11 @@ export class HistoriqueComponent implements OnInit {
         });
     }
 
-    loadReservations(partnerId: string) {
+    loadReservations(): void {
         this.loading = true;
-        this.reservationService.getAllReservations().subscribe({
+        this.reservationService.getMyReservations().subscribe({
             next: (reservations) => {
-                this.reservations = reservations.filter(r => r.partnerId === partnerId);
+                this.reservations = reservations;
                 this.applyFilters();
                 this.loading = false;
             },
@@ -72,7 +67,24 @@ export class HistoriqueComponent implements OnInit {
         });
     }
 
-    applyFilters() {
+    // ── Display helpers (map backend fields to display values) ──
+
+    getClientName(res: ReservationResponse): string {
+        return res.groupLeaderName || res.userName || '—';
+    }
+
+    getTourTypeNames(res: ReservationResponse): string {
+        if (!res.tourTypes || res.tourTypes.length === 0) return '—';
+        return res.tourTypes.map(t => t.name).join(', ');
+    }
+
+    getTotalAmount(res: ReservationResponse): number {
+        return (res.totalAmount || 0) + (res.totalExtrasAmount || 0);
+    }
+
+    // ── Filters ──────────────────────────────────────────────────
+
+    applyFilters(): void {
         let result = [...this.reservations];
 
         if (this.statusFilter !== 'all') {
@@ -80,24 +92,26 @@ export class HistoriqueComponent implements OnInit {
         }
 
         if (this.tourTypeFilter !== 'all') {
-            result = result.filter(r => r.tourType === this.tourTypeFilter);
+            result = result.filter(r =>
+                r.tourTypes?.some(t => t.name === this.tourTypeFilter)
+            );
         }
 
         if (this.searchQuery) {
             const query = this.searchQuery.toLowerCase();
             result = result.filter(r =>
-                r.contactInfo?.firstName?.toLowerCase().includes(query) ||
-                r.contactInfo?.lastName?.toLowerCase().includes(query) ||
-                r.tourType?.toLowerCase().includes(query) // now works since tourType is string
+                r.groupLeaderName?.toLowerCase().includes(query) ||
+                r.groupName?.toLowerCase().includes(query) ||
+                r.tourTypes?.some(t => t.name.toLowerCase().includes(query))
             );
         }
 
         result.sort((a, b) => {
             let comparison = 0;
             if (this.sortBy === 'date') {
-                comparison = new Date(a.checkInDate).getTime() - new Date(b.checkInDate).getTime();
+                comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
             } else if (this.sortBy === 'amount') {
-                comparison = (a.totalPrice || 0) - (b.totalPrice || 0);
+                comparison = this.getTotalAmount(a) - this.getTotalAmount(b);
             }
             return this.sortOrder === 'asc' ? comparison : -comparison;
         });
@@ -107,150 +121,133 @@ export class HistoriqueComponent implements OnInit {
         this.updatePagination();
     }
 
-    updatePagination() {
+    // ── Pagination (unchanged logic) ─────────────────────────────
+
+    updatePagination(): void {
         this.totalPages = Math.ceil(this.filteredReservations.length / this.itemsPerPage);
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        this.paginatedReservations = this.filteredReservations.slice(startIndex, endIndex);
+        this.paginatedReservations = this.filteredReservations.slice(startIndex, startIndex + this.itemsPerPage);
     }
 
-    goToPage(page: number) {
+    goToPage(page: number): void {
         if (page >= 1 && page <= this.totalPages) {
             this.currentPage = page;
             this.updatePagination();
         }
     }
 
-    nextPage() {
-        if (this.currentPage < this.totalPages) {
-            this.currentPage++;
-            this.updatePagination();
-        }
+    nextPage(): void {
+        if (this.currentPage < this.totalPages) { this.currentPage++; this.updatePagination(); }
     }
 
-    previousPage() {
-        if (this.currentPage > 1) {
-            this.currentPage--;
-            this.updatePagination();
-        }
+    previousPage(): void {
+        if (this.currentPage > 1) { this.currentPage--; this.updatePagination(); }
     }
 
     getPageNumbers(): number[] {
         const pages: number[] = [];
         const maxPagesToShow = 5;
-
         if (this.totalPages <= maxPagesToShow) {
             for (let i = 1; i <= this.totalPages; i++) pages.push(i);
         } else {
             if (this.currentPage <= 3) {
                 for (let i = 1; i <= 4; i++) pages.push(i);
-                pages.push(-1);
-                pages.push(this.totalPages);
+                pages.push(-1); pages.push(this.totalPages);
             } else if (this.currentPage >= this.totalPages - 2) {
-                pages.push(1);
-                pages.push(-1);
+                pages.push(1); pages.push(-1);
                 for (let i = this.totalPages - 3; i <= this.totalPages; i++) pages.push(i);
             } else {
-                pages.push(1);
-                pages.push(-1);
+                pages.push(1); pages.push(-1);
                 pages.push(this.currentPage - 1);
                 pages.push(this.currentPage);
                 pages.push(this.currentPage + 1);
-                pages.push(-1);
-                pages.push(this.totalPages);
+                pages.push(-1); pages.push(this.totalPages);
             }
         }
-
         return pages;
     }
 
-    viewDetails(reservation: Reservation) {
+    // ── Modal ─────────────────────────────────────────────────────
+
+    viewDetails(reservation: ReservationResponse): void {
         this.selectedReservation = reservation;
     }
 
-    closeDetails() {
+    closeDetails(): void {
         this.selectedReservation = null;
     }
 
-    downloadPDF(reservation: Reservation) {
+    // ── Download ──────────────────────────────────────────────────
+
+    downloadPDF(reservation: ReservationResponse): void {
         const content = this.generatePDFContent(reservation);
         const blob = new Blob([content], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `reservation-${reservation.id}.txt`;
+        link.download = `reservation-${reservation.reservationId}.txt`;
         link.click();
         window.URL.revokeObjectURL(url);
     }
 
-    private generatePDFContent(res: Reservation): string {
+    private generatePDFContent(res: ReservationResponse): string {
         let content = `
 ========================================
     DÉTAILS DE LA RÉSERVATION
 ========================================
 
-Client: ${res.contactInfo.firstName} ${res.contactInfo.lastName}
-Email: ${res.contactInfo.email}
-Téléphone: ${res.contactInfo.phone}
+Groupe: ${res.groupName}
+Chef de groupe: ${res.groupLeaderName}
 
-Tour: ${res.tourType}
-Date: ${new Date(res.checkInDate).toLocaleDateString()} - ${new Date(res.checkOutDate).toLocaleDateString()}
+Tours: ${this.getTourTypeNames(res)}
+Date d'arrivée: ${new Date(res.checkInDate).toLocaleDateString()}
+Date de départ: ${new Date(res.checkOutDate).toLocaleDateString()}
 
 Participants:
-- Adultes: ${res.adults}
-- Enfants: ${res.children}
-- Total: ${res.numberOfPeople} personnes
+- Adultes: ${res.numberOfAdults}
+- Enfants: ${res.numberOfChildren}
 
-Prix Total: ${res.totalPrice} EUR
+Montant Tours: ${res.totalAmount} ${res.currency}
+Montant Extras: ${res.totalExtrasAmount} ${res.currency}
+Montant Total: ${this.getTotalAmount(res)} ${res.currency}
 `;
-
-        if (res.extras && res.extras.length > 0) {
+        if (res.extras?.length > 0) {
             content += '\nExtras:\n';
-            res.extras.forEach(extra => {
-                content += `- ${extra.name}: ${extra.quantity} x ${extra.unitPrice} EUR = ${extra.totalPrice} EUR\n`;
+            res.extras.forEach(e => {
+                content += `- ${e.name}: ${e.quantity} x ${e.unitPrice} ${res.currency} = ${e.totalPrice} ${res.currency}\n`;
             });
         }
-
-        if (res.payment) {
-            content += `\nPaiement:
-- Montant total: ${res.payment.totalAmount} EUR
-- Montant payé: ${res.payment.paidAmount} EUR
-- Statut: ${res.payment.paymentStatus}
-`;
-        }
-
         content += `
-Statut de la réservation: ${res.status.toUpperCase()}
-Date de création: ${new Date(res.createdAt).toLocaleDateString()}
-
+Statut: ${res.status}
+Créée le: ${new Date(res.createdAt).toLocaleDateString()}
 ========================================
 `;
         return content;
     }
 
-    getStatusClass(status: string): string {
-        switch (status) {
-            case 'confirmed': return 'status-confirmed';
-            case 'pending': return 'status-pending';
-            case 'rejected': return 'status-rejected';
-            case 'cancelled': return 'status-cancelled';
-            case 'completed': return 'status-completed';
-            default: return '';
-        }
-    }
+    // ── Status helpers ────────────────────────────────────────────
 
     getStatusLabel(status: string): string {
         const labels: Record<string, string> = {
-            'confirmed': 'Confirmée',
-            'pending': 'En attente',
-            'rejected': 'Rejetée',
-            'cancelled': 'Annulée',
-            'completed': 'Terminée'
+            'CONFIRMED': 'Confirmée',
+            'PENDING':   'En attente',
+            'CHECKED_IN': 'En cours',   
+            'REJECTED':  'Rejetée',
+            'CANCELLED': 'Annulée',
+            'COMPLETED': 'Terminée'
         };
-        return labels[status] || status;
+        return labels[status?.toUpperCase()] || status;
     }
 
-    getGroupInfo(reservation: Reservation): string {
-        return `${reservation.adults} adultes, ${reservation.children} enfants`;
+    getStatusClass(status: string): string {
+        switch (status?.toUpperCase()) {
+            case 'CONFIRMED':  return 'status-confirmed';
+            case 'PENDING':    return 'status-pending';
+            case 'CHECKED_IN': return 'status-arrived';   // ← add
+            case 'REJECTED':   return 'status-rejected';
+            case 'CANCELLED':  return 'status-cancelled';
+            case 'COMPLETED':  return 'status-completed';
+            default: return '';
+        }
     }
 }

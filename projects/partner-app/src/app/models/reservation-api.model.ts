@@ -40,7 +40,7 @@ export interface ReservationRequest {
 // RESPONSE DTOs — match backend ReservationResponse
 // =============================================
 
-export type BackendReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'REJECTED' | 'COMPLETED';
+export type BackendReservationStatus = 'PENDING' | 'CONFIRMED' | 'CHECKED_IN'|'CANCELLED' | 'REJECTED' | 'COMPLETED';
 
 export interface ReservationTourTypeResponse {
   reservationTourTypeId: string;
@@ -52,6 +52,7 @@ export interface ReservationTourTypeResponse {
   numberOfAdults: number;
   numberOfChildren: number;
   totalPrice: number;
+  numberOfNights?: number | null;
 }
 
 export interface ParticipantResponse {
@@ -89,6 +90,8 @@ export interface ReservationResponse {
   totalAmount: number;
   currency: string;
   promoCode: string;
+  demandeSpecial: string | null;   // ← add this
+  createdAt: string;
   tourTypes: ReservationTourTypeResponse[];
   participants: ParticipantResponse[];
   extras: ReservationExtraResponse[];

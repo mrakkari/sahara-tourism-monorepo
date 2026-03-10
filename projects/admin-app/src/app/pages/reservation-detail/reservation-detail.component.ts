@@ -33,42 +33,63 @@ export class ReservationDetailComponent implements OnInit {
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.reservationService.getAllReservations().subscribe(() => {
-        this.reservation = this.reservationService.getReservationById(id);
-        if (this.reservation) {
-          this.generateGuestList();
-        }
+      // ✅ Use fetchReservationById for fresh data, not the cache
+      this.reservationService.fetchReservationById(id).subscribe({
+        next: (reservation) => {
+          this.reservation = reservation;
+          this.buildGuestList();   // replaces generateGuestList()
+        },
+        error: (err) => console.error('Failed to load reservation:', err)
       });
     }
   }
 
-  generateGuestList(): void {
+  buildGuestList(): void {
     if (!this.reservation) return;
-
-    const numberOfPeople = this.reservation.numberOfPeople;
-    const passengerNames = Array.from(SAMPLE_PASSENGER_NAMES);
-    
-    // Shuffle the names to get random selection
-    const shuffled = passengerNames.sort(() => 0.5 - Math.random());
-    
-    this.guestList = [];
-    for (let i = 0; i < numberOfPeople; i++) {
-      // Use modulo to cycle through names if we need more than available
-      const name = shuffled[i % shuffled.length];
-      
-      // Generate realistic ages: first guest is adult, others can vary
-      const isAdult = i === 0 ? true : Math.random() > 0.3; // 70% adults, 30% children
-      const age = isAdult 
-        ? Math.floor(Math.random() * (65 - 25) + 25) // Adults: 25-65
-        : Math.floor(Math.random() * (17 - 5) + 5);   // Children: 5-17
-      
-      this.guestList.push({
-        name,
-        age,
-        isAdult
-      });
-    }
+    this.guestList = this.reservation.groupInfo.participants.map(p => ({
+      name:    p.name,
+      age:     p.age,
+      isAdult: p.isAdult,
+    }));
   }
+
+  confirmReservation(): void {
+      if (this.reservation && confirm('Confirm this reservation?')) {
+          this.reservationService.confirmReservation(this.reservation.id).subscribe({
+              next: (updated) => this.reservation = updated,
+              error: (err) => console.error('Erreur confirmation:', err)
+          });
+      }
+  }
+
+  rejectReservation(): void {
+      if (!this.reservation) return;
+      const reason = prompt('Rejection reason (optional):');
+      if (reason === null) return; // user cancelled prompt
+      this.reservationService.rejectReservation(this.reservation.id, reason || undefined).subscribe({
+          next: (updated) => this.reservation = updated,
+          error: (err) => console.error('Erreur rejet:', err)
+      });
+  }
+
+  checkInReservation(): void {
+      if (this.reservation && confirm('Mark group as checked in?')) {
+          this.reservationService.checkInReservation(this.reservation.id).subscribe({
+              next: (updated) => this.reservation = updated,
+              error: (err) => console.error('Erreur check-in:', err)
+          });
+      }
+  }
+
+  completeReservation(): void {
+      if (this.reservation && confirm('Mark reservation as completed?')) {
+          this.reservationService.completeReservation(this.reservation.id).subscribe({
+              next: (updated) => this.reservation = updated,
+              error: (err) => console.error('Erreur completion:', err)
+          });
+      }
+  }
+
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -104,30 +125,27 @@ export class ReservationDetailComponent implements OnInit {
     if (!this.reservation || this.reservation.payment.totalAmount === 0) return 0;
     return (this.reservation.payment.paidAmount / this.reservation.payment.totalAmount) * 100;
   }
-
-  getTourLabel(): string {
-    // Use tourType from reservation root level if available, otherwise from groupInfo
-    const tourType = this.reservation?.tourType || this.reservation?.groupInfo.tourType;
-    return tourType || 'Type de tour non spécifié';
+  getTotalExtrasAmount(): number {
+    if (!this.reservation) return 0;
+    return this.reservation.extras.reduce((sum, e) => sum + e.totalPrice, 0);
   }
 
-  confirmReservation(): void {
-    if (this.reservation && confirm('Confirm this reservation?')) {
-      this.reservationService.confirmReservation(this.reservation.id);
-      this.reservation = this.reservationService.getReservationById(this.reservation.id);
+  getTourLabels(): { name: string; adults: number; children: number }[] {
+    if (this.reservation?.tourTypes && this.reservation.tourTypes.length > 1) {
+      return this.reservation.tourTypes.map(t => ({
+        name: t.name,
+        adults: t.numberOfAdults,
+        children: t.numberOfChildren
+      }));
     }
+    // Single tour type
+    const name = this.reservation?.tourTypes?.[0]?.name
+      || this.reservation?.groupInfo?.tourType
+      || 'Type de tour non spécifié';
+    return [{ name, adults: 0, children: 0 }];
   }
-
-  rejectReservation(): void {
-    if (this.reservation && confirm('Reject this reservation?')) {
-      this.reservationService.rejectReservation(this.reservation.id);
-      this.reservation = this.reservationService.getReservationById(this.reservation.id);
-    }
-  }
-
   getReservationNumber(): string {
     if (!this.reservation) return '';
-    
     // Extract just the ID part after the status prefix
     // If ID is like "pending-1", "confirmed-2", etc., get just the number
     const parts = this.reservation.id.split('-');
