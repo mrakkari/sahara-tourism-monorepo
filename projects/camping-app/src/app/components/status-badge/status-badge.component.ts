@@ -1,8 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-type StatusType = 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled' |
-    'paid' | 'partial' | 'completed' | 'checked-out';
+type StatusType = 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'checked_in' |
+    'paid' | 'partial' | 'completed';
 
 @Component({
     selector: 'app-status-badge',
@@ -38,30 +38,35 @@ type StatusType = 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled'
     .badge-pending {
       background: rgba(245, 158, 11, 0.1);
       color: #F59E0B;
+      border: 1px solid rgba(245, 158, 11, 0.2);
     }
 
     /* Confirmed - Green */
     .badge-confirmed {
       background: rgba(16, 185, 129, 0.1);
       color: #10B981;
+      border: 1px solid rgba(16, 185, 129, 0.2);
     }
 
     /* Rejected - Red */
     .badge-rejected {
       background: rgba(239, 68, 68, 0.1);
       color: #EF4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
     }
 
-    /* Arrived - Blue */
-    .badge-arrived {
+    /* Checked In (at camp) - Blue */
+    .badge-checked_in {
       background: rgba(59, 130, 246, 0.1);
       color: #3B82F6;
+      border: 1px solid rgba(59, 130, 246, 0.2);
     }
 
     /* Cancelled - Gray */
     .badge-cancelled {
       background: rgba(100, 116, 139, 0.1);
       color: #64748B;
+      border: 1px solid rgba(100, 116, 139, 0.2);
     }
 
     /* Paid/Completed - Purple */
@@ -69,18 +74,14 @@ type StatusType = 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled'
     .badge-completed {
       background: rgba(139, 92, 246, 0.1);
       color: #8B5CF6;
+      border: 1px solid rgba(139, 92, 246, 0.2);
     }
 
     /* Partial - Sky Blue */
     .badge-partial {
       background: rgba(14, 165, 233, 0.1);
       color: #0EA5E9;
-    }
-    
-    /* Checked-out - Dark Gray/Black */
-    .badge-checked-out {
-      background: rgba(33, 37, 41, 0.1);
-      color: #212529;
+      border: 1px solid rgba(14, 165, 233, 0.2);
     }
 
     /* Hover effect */
@@ -96,30 +97,28 @@ export class StatusBadgeComponent {
 
     getIcon(): string {
         const icons: Record<StatusType, string> = {
-            'pending': '⏳',
-            'confirmed': '✅',
-            'rejected': '❌',
-            'arrived': '🎉',
-            'cancelled': '🚫',
-            'paid': '💰',
-            'partial': '💳',
-            'completed': '✓',
-            'checked-out': '👋'
+            'pending':    '⏳',
+            'confirmed':  '✅',
+            'rejected':   '❌',
+            'checked_in': '🏕️',
+            'cancelled':  '🚫',
+            'paid':       '💰',
+            'partial':    '💳',
+            'completed':  '✓',
         };
         return icons[this.status] || '📋';
     }
 
     getLabel(): string {
         const labels: Record<StatusType, string> = {
-            'pending': 'En attente',
-            'confirmed': 'Confirmé',
-            'rejected': 'Rejeté',
-            'arrived': 'Arrivé',
-            'cancelled': 'Annulé',
-            'paid': 'Payé',
-            'partial': 'Partiel',
-            'completed': 'Terminé',
-            'checked-out': 'Parti'
+            'pending':    'En attente',
+            'confirmed':  'Confirmé',
+            'rejected':   'Rejeté',
+            'checked_in': 'En cours',
+            'cancelled':  'Annulé',
+            'paid':       'Payé',
+            'partial':    'Partiel',
+            'completed':  'Terminé',
         };
         return labels[this.status] || this.status;
     }

@@ -45,7 +45,7 @@ export class MainLayoutComponent implements OnInit {
             const pendingCount = reservations.filter((r: Reservation) => r.status === 'pending').length;
             this.notificationCount = pendingCount;
             this.sidebarItems[0].badge = reservations.filter(
-                (r: Reservation) => r.status === 'confirmed' || r.status === 'arrived'
+                (r: Reservation) => r.status === 'confirmed' || r.status === 'checked_in'
             ).length;
         });
     }

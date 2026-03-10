@@ -1,33 +1,47 @@
 export interface Reservation {
   id: string;
-  partnerId?: string; // For partner filtering
+  reservationId?: string;
+  partnerId?: string;
   partnerName: string;
+  userName?: string;
+  groupName?: string;
+  groupLeaderName?: string;
   numberOfPeople: number;
   adults: number;
   children: number;
+  numberOfAdults?: number;
+  numberOfChildren?: number;
   checkInDate: string;
   checkOutDate: string;
-  status: 'pending' | 'confirmed' | 'rejected' | 'arrived' | 'cancelled' | 'checked-out';
+  status: 'pending' | 'confirmed' | 'checked_in' | 'completed' | 'rejected' | 'cancelled';  // ← fixed
+  rejectionReason?: string | null;
   groupInfo: GroupInfo;
   payment: PaymentInfo;
   extras: Extra[];
+  tourTypes?: TourTypeSnapshot[];   // ← add
+  totalAmount?: number;
+  totalExtrasAmount?: number;
+  currency?: string;
   loyaltyPointsEarned?: number;
-  promoCode?: string;
+  promoCode?: string | null;
+  demandeSpecial?: string | null;
   discountAmount?: number;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
 }
 
-export interface Notification {
-  id: string;
-  reservationId?: string;
-  partnerId: string; // To show only to relevant partner
-  type: 'reservation_status' | 'payment' | 'system';
-  title: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  link?: string;
+export interface TourTypeSnapshot {
+  reservationTourTypeId: string;
+  name: string;
+  description: string;
+  duration: string;
+  adultPrice: number;
+  childPrice: number;
+  numberOfAdults: number;
+  numberOfChildren: number;
+  totalPrice: number;
+  numberOfNights?: number | null;
 }
 
 export interface GroupInfo {
@@ -35,7 +49,21 @@ export interface GroupInfo {
   specialRequests?: string;
   leaderName?: string;
   contactName?: string;
-  tourType?: string; // Changed from union type to support any tour type name
+  tourType?: string;
+  groupName?: string;
+  groupLeaderName?: string;
+}
+
+export interface Notification {
+  id: string;
+  reservationId?: string;
+  partnerId: string;
+  type: 'reservation_status' | 'payment' | 'system';
+  title: string;
+  message: string;
+  timestamp: string;
+  isRead: boolean;
+  link?: string;
 }
 
 export interface Participant {
@@ -64,12 +92,24 @@ export interface Transaction {
 
 export interface Extra {
   id: string;
+  reservationExtraId?: string;
+  reservationId?: string;
   type: 'quad' | '4x4' | 'meal' | 'dromedary' | 'sandboarding' | 'bedouin-dinner' | 'other';
   name: string;
   description?: string;
+  duration?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  isActive?: boolean;
+}
+export interface ExtraCatalog {
+  extraId: string;
+  name: string;
+  description?: string | null;
+  duration?: string | null;
+  unitPrice: number;
+  isActive: boolean;
 }
 
 export interface Invoice {

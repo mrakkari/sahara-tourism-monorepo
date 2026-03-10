@@ -124,7 +124,13 @@ export class NouveauComponent implements OnInit {
         };
 
         try {
-            this.reservationService.createReservation(newReservation);
+            this.reservationService.createReservation(newReservation).subscribe({
+            next: () => {
+                this.notificationService.showSuccess('Réservation créée avec succès!');
+                this.router.navigate(['/']);
+            },
+            error: (err) => console.error('Erreur création:', err)
+        });
             this.notificationService.showSuccess('✅ Réservation créée avec succès !');
             this.router.navigate(['/']);
         } catch (error) {

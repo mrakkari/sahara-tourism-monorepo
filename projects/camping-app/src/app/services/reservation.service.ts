@@ -1,17 +1,86 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { Reservation, Extra, Transaction, Notification } from '../models/reservation.model';
+import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
+import { Reservation, Extra, Transaction, Notification, TourTypeSnapshot, ExtraCatalog } from '../models/reservation.model';
 import { isToday, isTomorrow, isInDateRange } from '../utils/date-utils';
-import { PARTNERS, getRandomPartner } from '../data/partners.data';
-import { TOUR_TYPES, getTourTypeById } from '../data/tour-types.data';
-import { GROUP_NAMES, getRandomGroupName } from '../data/group-names.data';
+import { HttpClient } from '@angular/common/http';
+
+// ── Status mapping ────────────────────────────────────────────
+type BackendStatus = 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'CANCELLED' | 'REJECTED' | 'COMPLETED';
+type FrontendStatus = 'pending' | 'confirmed' | 'checked_in' | 'cancelled' | 'rejected' | 'completed';
+
+const STATUS_MAP: Record<BackendStatus, FrontendStatus> = {
+    PENDING:    'pending',
+    CONFIRMED:  'confirmed',
+    CHECKED_IN: 'checked_in',
+    CANCELLED:  'cancelled',
+    REJECTED:   'rejected',
+    COMPLETED:  'completed',
+};
+// ─────────────────────────────────────────────────────────────
+
+interface ReservationTourTypeResponse {
+    reservationTourTypeId: string;
+    name: string;
+    description: string;
+    duration: string;
+    adultPrice: number;
+    childPrice: number;
+    numberOfAdults: number;
+    numberOfChildren: number;
+    totalPrice: number;
+    numberOfNights: number;
+}
+
+interface ParticipantResponse {
+    participantId: string;
+    fullName: string;
+    age: number;
+    isAdult: boolean;
+}
+
+interface ReservationExtraResponse {
+    reservationExtraId: string;
+    reservationId: string;
+    name: string;
+    description: string;
+    duration: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    isActive: boolean;
+}
+
+interface ReservationResponse {
+    reservationId: string;
+    userId: string;
+    userName: string;
+    source: string;
+    checkInDate: string;
+    checkOutDate: string;
+    groupName: string;
+    groupLeaderName: string;
+    numberOfAdults: number;
+    numberOfChildren: number;
+    status: BackendStatus;
+    rejectionReason?: string;
+    totalAmount: number;
+    currency: string;
+    promoCode?: string;
+    demandeSpecial?: string;
+    tourTypes: ReservationTourTypeResponse[];
+    participants: ParticipantResponse[];
+    extras: ReservationExtraResponse[];
+    totalExtrasAmount: number;
+    createdAt: string;
+    deletedAt?: string;
+}
 
 @Injectable({
     providedIn: 'root'
 })
 export class ReservationService {
-    private readonly STORAGE_KEY = 'sahara-reservations';
-    private readonly NOTIFS_KEY = 'sahara-notifications';
+    private readonly NOTIFS_KEY = 'sahara-camping-notifications';
+    private readonly API_URL = 'http://localhost:8080/api/reservations';
 
     private reservationsSubject = new BehaviorSubject<Reservation[]>([]);
     public reservations$ = this.reservationsSubject.asObservable();
@@ -19,307 +88,226 @@ export class ReservationService {
     private notificationsSubject = new BehaviorSubject<Notification[]>([]);
     public notifications$ = this.notificationsSubject.asObservable();
 
-    constructor() {
-        this.loadReservations();
+    private loadingSubject = new BehaviorSubject<boolean>(false);
+    public loading$ = this.loadingSubject.asObservable();
+
+    constructor(private http: HttpClient) {
         this.loadNotifications();
-        this.initializeMockData();
+        this.fetchAllReservations();
+    }
+    createReservation(payload: Record<string, unknown>): Observable<Reservation> {
+        return this.http.post<ReservationResponse>(this.API_URL, payload).pipe(
+            map(dto => {
+                const created = this.mapToReservation(dto);
+                // Add to local cache immediately
+                this.reservationsSubject.next([created, ...this.reservationsSubject.value]);
+                return created;
+            }),
+            catchError(err => {
+                console.error('Failed to create reservation:', err);
+                throw err;
+            })
+        );
     }
 
-    private loadReservations(): void {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        if (stored) {
-            this.reservationsSubject.next(JSON.parse(stored));
-        }
+    // ── Mapping ───────────────────────────────────────────────
+
+    private mapToReservation(dto: ReservationResponse): Reservation {
+        const adults   = dto.numberOfAdults  ?? 0;
+        const children = dto.numberOfChildren ?? 0;
+
+        const extras: Extra[] = (dto.extras ?? [])
+            .filter(e => e.isActive)
+            .map(e => ({
+                id:                 e.reservationExtraId,
+                reservationExtraId: e.reservationExtraId,
+                reservationId:      e.reservationId,
+                type:               'other' as Extra['type'],
+                name:               e.name,
+                description:        e.description,
+                duration:           e.duration,
+                quantity:           e.quantity,
+                unitPrice:          e.unitPrice,
+                totalPrice:         e.totalPrice,
+                isActive:           e.isActive,
+            }));
+
+        const participants = (dto.participants ?? []).map(p => ({
+            name:    p.fullName,
+            age:     p.age,
+            isAdult: p.isAdult,
+        }));
+
+        const tourTypes: TourTypeSnapshot[] = (dto.tourTypes ?? []).map(t => ({
+            reservationTourTypeId: t.reservationTourTypeId,
+            name:                  t.name,
+            description:           t.description,
+            duration:              t.duration,
+            adultPrice:            t.adultPrice,
+            childPrice:            t.childPrice,
+            numberOfAdults:        t.numberOfAdults,
+            numberOfChildren:      t.numberOfChildren,
+            totalPrice:            t.totalPrice,
+            numberOfNights:        t.numberOfNights ?? null,
+        }));
+
+        const primaryTour    = tourTypes[0];
+        const grandTotal     = (dto.totalAmount ?? 0) + (dto.totalExtrasAmount ?? 0);
+        const frontendStatus: Reservation['status'] = STATUS_MAP[dto.status] ?? 'pending';
+
+        return {
+            id:                dto.reservationId,
+            reservationId:     dto.reservationId,
+            partnerId:         dto.userId,
+            partnerName:       dto.userName,
+            userName:          dto.userName,
+            groupName:         dto.groupName,
+            groupLeaderName:   dto.groupLeaderName,
+            numberOfPeople:    adults + children,
+            adults,
+            children,
+            numberOfAdults:    adults,
+            numberOfChildren:  children,
+            checkInDate:       dto.checkInDate,
+            checkOutDate:      dto.checkOutDate,
+            status:            frontendStatus,
+            rejectionReason:   dto.rejectionReason,
+            promoCode:         dto.promoCode,
+            demandeSpecial:    dto.demandeSpecial,
+            currency:          dto.currency,
+            totalAmount:       dto.totalAmount,
+            totalExtrasAmount: dto.totalExtrasAmount,
+            deletedAt:         dto.deletedAt ?? null,
+            tourTypes,
+            groupInfo: {
+                participants,
+                specialRequests:  dto.demandeSpecial ?? undefined,
+                tourType:         primaryTour?.name,
+                leaderName:       dto.groupLeaderName,
+                groupLeaderName:  dto.groupLeaderName,
+                groupName:        dto.groupName,
+            },
+            payment: {
+                totalAmount:  grandTotal,
+                paidAmount:   0,
+                currency:     (dto.currency as 'TND' | 'EUR' | 'USD') ?? 'TND',
+                paymentStatus: 'pending',
+                transactions:  [],
+            },
+            extras,
+            loyaltyPointsEarned: Math.floor(grandTotal * 0.1),
+            createdAt:  dto.createdAt,
+            updatedAt:  dto.createdAt,
+        };
     }
 
-    private saveReservations(reservations: Reservation[]): void {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(reservations));
-        this.reservationsSubject.next(reservations);
+    // ── Fetch ─────────────────────────────────────────────────
+
+    fetchAllReservations(): void {
+        this.loadingSubject.next(true);
+        this.http.get<ReservationResponse[]>(this.API_URL).pipe(
+            tap(dtos => {
+                this.reservationsSubject.next(dtos.map(d => this.mapToReservation(d)));
+                this.loadingSubject.next(false);
+            }),
+            catchError(err => {
+                console.error('Failed to load reservations:', err);
+                this.loadingSubject.next(false);
+                return of([]);
+            })
+        ).subscribe();
     }
 
-    private loadNotifications(): void {
-        const stored = localStorage.getItem(this.NOTIFS_KEY);
-        if (stored) {
-            this.notificationsSubject.next(JSON.parse(stored));
-        }
+    fetchReservationById(id: string): Observable<Reservation> {
+        return this.http.get<ReservationResponse>(`${this.API_URL}/${id}`).pipe(
+            map(dto => this.mapToReservation(dto))
+        );
     }
 
-    private saveNotifications(notifications: Notification[]): void {
-        localStorage.setItem(this.NOTIFS_KEY, JSON.stringify(notifications));
-        this.notificationsSubject.next(notifications);
+    // ── Fetch by status (for groups page) ────────────────────
+
+    fetchByStatus(status: BackendStatus): Observable<Reservation[]> {
+        return this.http.get<ReservationResponse[]>(`${this.API_URL}/status/${status}`).pipe(
+            map(dtos => dtos.map(d => this.mapToReservation(d))),
+            catchError(err => {
+                console.error(`Failed to load reservations with status ${status}:`, err);
+                return of([]);
+            })
+        );
     }
 
-    private initializeMockData(): void {
-        const reservations = this.reservationsSubject.value;
-        if (reservations.length < 30 || !localStorage.getItem('sahara-mock-v4-real-data')) {
-            localStorage.setItem('sahara-mock-v4-real-data', 'true');
-            const today = new Date();
-            const mockReservations: Reservation[] = [];
+    // ── Status update ─────────────────────────────────────────
 
-            // 1. Pending Reservations (15 items) - Future Dates
-            for (let i = 0; i < 15; i++) {
-                const checkIn = new Date(today);
-                checkIn.setDate(today.getDate() + 3 + i); // Starts 3 days from now
-                const duration = 2 + (i % 3);
-                const checkOut = new Date(checkIn);
-                checkOut.setDate(checkIn.getDate() + duration);
+    updateStatus(id: string, status: BackendStatus, rejectionReason?: string): Observable<Reservation> {
+        let params = `?status=${status}`;
+        if (rejectionReason) params += `&rejectionReason=${encodeURIComponent(rejectionReason)}`;
 
-                const partner = PARTNERS[i % PARTNERS.length];
-                const tourType = TOUR_TYPES[i % TOUR_TYPES.length];
-                const groupName = GROUP_NAMES[i % GROUP_NAMES.length];
-                const numPeople = 5 + (i % 25); // Realistic group sizes: 5-30 people
-                const numAdults = Math.ceil(numPeople * 0.7);
-                const numChildren = numPeople - numAdults;
-
-                mockReservations.push({
-                    id: `pending-${i + 1}`,
-                    partnerId: partner.id,
-                    partnerName: partner.name,
-                    numberOfPeople: numPeople,
-                    adults: numAdults,
-                    children: numChildren,
-                    checkInDate: checkIn.toISOString(),
-                    checkOutDate: checkOut.toISOString(),
-                    status: 'pending',
-                    groupInfo: {
-                        participants: [{ name: groupName, age: 40, isAdult: true }],
-                        leaderName: groupName,
-                        tourType: tourType.name
-                    },
-                    payment: {
-                        totalAmount: (tourType.prixPassagere * numAdults) + (tourType.prixPassagere * 0.5 * numChildren),
-                        paidAmount: 0,
-                        currency: 'TND',
-                        paymentStatus: 'pending',
-                        transactions: []
-                    },
-                    extras: [],
-                    loyaltyPointsEarned: 0,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-            }
-
-            // 2. Confirmed Groups (15 items) - Mix of near future and next month
-            for (let i = 0; i < 15; i++) {
-                const checkIn = new Date(today);
-                // First 3 are TODAY for testing arrivals
-                if (i < 3) {
-                    checkIn.setHours(0, 0, 0, 0);
-                } else {
-                    checkIn.setDate(today.getDate() + 1 + (i * 2));
-                }
-                const duration = 2;
-                const checkOut = new Date(checkIn);
-                checkOut.setDate(checkIn.getDate() + duration);
-
-                const partner = PARTNERS[(i + 5) % PARTNERS.length];
-                const tourType = TOUR_TYPES[(i + 7) % TOUR_TYPES.length];
-                const groupName = GROUP_NAMES[(i + 10) % GROUP_NAMES.length];
-                const numPeople = 8 + (i % 18); // Realistic group sizes: 8-25 people
-                const numAdults = Math.ceil(numPeople * 0.75);
-                const numChildren = numPeople - numAdults;
-
-                const totalAmount = (tourType.prixPassagere * numAdults) + (tourType.prixPassagere * 0.5 * numChildren);
-                const paidAmount = totalAmount * 0.5; // 50% paid
-
-                mockReservations.push({
-                    id: `confirmed-${i + 1}`,
-                    partnerId: partner.id,
-                    partnerName: partner.name,
-                    numberOfPeople: numPeople,
-                    adults: numAdults,
-                    children: numChildren,
-                    checkInDate: checkIn.toISOString(),
-                    checkOutDate: checkOut.toISOString(),
-                    status: 'confirmed',
-                    groupInfo: {
-                        participants: [{ name: groupName, age: 40, isAdult: true }],
-                        leaderName: groupName,
-                        tourType: tourType.name
-                    },
-                    payment: {
-                        totalAmount: totalAmount,
-                        paidAmount: paidAmount,
-                        currency: 'TND',
-                        paymentStatus: 'partial',
-                        transactions: [{ id: `txn-${i}`, amount: paidAmount, date: new Date().toISOString(), method: 'transfer', status: 'completed' }]
-                    },
-                    extras: [],
-                    loyaltyPointsEarned: Math.floor(totalAmount * 0.1),
-                    createdAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5).toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-            }
-
-            // 3. Arrived/Completed (20 items) - Past/Current
-            // Increased from 10 to 20 to fill the default view
-            for (let i = 0; i < 20; i++) {
-                const checkIn = new Date(today);
-                checkIn.setDate(today.getDate() - (i % 5)); // Recent arrivals within last 5 days
-                const duration = 3;
-                const checkOut = new Date(checkIn);
-                checkOut.setDate(checkIn.getDate() + duration);
-
-                const partner = PARTNERS[(i + 3) % PARTNERS.length];
-                const tourType = TOUR_TYPES[(i + 2) % TOUR_TYPES.length];
-                const groupName = GROUP_NAMES[(i + 15) % GROUP_NAMES.length];
-                const numPeople = 6 + (i % 20); // Realistic group sizes: 6-25 people
-                const numAdults = Math.ceil(numPeople * 0.8);
-                const numChildren = numPeople - numAdults;
-
-                const baseAmount = (tourType.prixPassagere * numAdults) + (tourType.prixPassagere * 0.5 * numChildren);
-
-                const transactions: Transaction[] = [];
-                // Add onsite payments for the first 10 arrived groups
-                const extraAmount = i < 10 ? 150 + (i * 50) : 0;
-                if (i < 10) {
-                    transactions.push({
-                        id: `onsite-${i}`,
-                        amount: extraAmount,
-                        date: new Date().toISOString(),
-                        method: 'onsite',
-                        status: 'completed',
-                        description: 'Paiement complémentaire (Extras/Bar)'
-                    });
-                }
-
-                // Vary payment status: some are fully paid, some partial
-                const totalAmount = baseAmount + extraAmount;
-                const paidAmount = i % 3 === 0 ? totalAmount : totalAmount * 0.6; // Every 3rd is fully paid, others 60% paid
-
-                mockReservations.push({
-                    id: `arrived-${i + 1}`,
-                    partnerId: partner.id,
-                    partnerName: partner.name,
-                    numberOfPeople: numPeople,
-                    adults: numAdults,
-                    children: numChildren,
-                    checkInDate: checkIn.toISOString(),
-                    checkOutDate: checkOut.toISOString(),
-                    status: 'arrived',
-                    groupInfo: {
-                        participants: [{ name: groupName, age: 35, isAdult: true }],
-                        leaderName: groupName,
-                        tourType: tourType.name
-                    },
-                    payment: {
-                        totalAmount: totalAmount,
-                        paidAmount: paidAmount,
-                        currency: 'TND',
-                        paymentStatus: paidAmount >= totalAmount ? 'completed' : 'partial',
-                        transactions: transactions
-                    },
-                    extras: i < 10 ? [{ id: `ext-${i}`, name: 'Quad Bike', type: 'quad', quantity: 1, unitPrice: 100, totalPrice: 100 }] : [],
-                    loyaltyPointsEarned: Math.floor(totalAmount * 0.1),
-                    createdAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 10).toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-            }
-
-            this.saveReservations(mockReservations);
-        }
+        return this.http.patch<ReservationResponse>(`${this.API_URL}/${id}/status${params}`, {}).pipe(
+            map(dto => {
+                const updated = this.mapToReservation(dto);
+                this.updateLocalCache(updated);
+                return updated;
+            }),
+            catchError(err => {
+                console.error('Failed to update status:', err);
+                throw err;
+            })
+        );
     }
 
-    private initializeNotifications(): void {
-        const notifs = this.notificationsSubject.value;
-        if (notifs.length === 0) {
-            const today = new Date();
-            const mockNotifications: Notification[] = [
-                {
-                    id: '1',
-                    partnerId: 'p1',
-                    title: 'Reservation Confirmed',
-                    message: 'Your reservation #confirmed-1 has been approved by admin.',
-                    timestamp: new Date().toISOString(),
-                    isRead: false,
-                    type: 'reservation_status'
-                },
-                {
-                    id: '2',
-                    partnerId: 'p1',
-                    title: 'Payment Received',
-                    message: 'We have received your transfer of 600 TND for reservation #confirmed-1.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-                    isRead: false,
-                    type: 'payment'
-                },
-                {
-                    id: '3',
-                    partnerId: 'p1',
-                    title: 'New Feature Alert',
-                    message: 'Check out the new Calendar view to manage your availability!',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-                    isRead: false,
-                    type: 'system'
-                },
-                {
-                    id: '4',
-                    partnerId: 'p1',
-                    title: 'Points Earned',
-                    message: 'You earned 120 Loyalty Points from your last booking.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-                    isRead: true,
-                    type: 'system'
-                },
-                {
-                    id: '5',
-                    partnerId: 'p1',
-                    title: 'Reservation Rejected',
-                    message: 'Reservation #pending-x was rejected due to full capacity.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-                    isRead: true,
-                    type: 'reservation_status'
-                },
-                {
-                    id: '6',
-                    partnerId: 'p1',
-                    title: 'Maintenance Update',
-                    message: 'System will be under maintenance on Sunday at 2 AM.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
-                    isRead: true,
-                    type: 'system'
-                },
-                {
-                    id: '7',
-                    partnerId: 'p1',
-                    title: 'Invoice Generated',
-                    message: 'Invoice #INV-2024-001 is now available for download.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24 * 4).toISOString(),
-                    isRead: true,
-                    type: 'payment'
-                },
-                {
-                    id: '8',
-                    partnerId: 'p2',
-                    title: 'Welcome Partner',
-                    message: 'Welcome to the Sahara Tourism platform!',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-                    isRead: true,
-                    type: 'system'
-                },
-                {
-                    id: '9',
-                    partnerId: 'p1',
-                    title: 'Seasonal Promo',
-                    message: 'Use code SAHARA10 for 10% off next week bookings.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-                    isRead: true,
-                    type: 'system'
-                },
-                {
-                    id: '10',
-                    partnerId: 'p1',
-                    title: 'Group Arrival',
-                    message: 'Group "Desert Fox" has arrived safely at camp.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 5).toISOString(),
-                    isRead: false,
-                    type: 'reservation_status'
-                }
-            ];
-            this.notificationsSubject.next(mockNotifications);
-        }
+    confirmReservation(id: string): Observable<Reservation> {
+        return this.updateStatus(id, 'CONFIRMED').pipe(
+            tap(updated => this.addNotification({
+                partnerId:     updated.partnerId ?? 'unknown',
+                type:          'reservation_status',
+                title:         'Reservation Confirmed',
+                message:       `Reservation #${id.substring(0, 6)} confirmed.`,
+                link:          `/group/${id}`,
+                reservationId: id,
+            }))
+        );
     }
+
+    rejectReservation(id: string, reason?: string): Observable<Reservation> {
+        return this.updateStatus(id, 'REJECTED', reason).pipe(
+            tap(updated => this.addNotification({
+                partnerId:     updated.partnerId ?? 'unknown',
+                type:          'reservation_status',
+                title:         'Reservation Rejected',
+                message:       `Reservation #${id.substring(0, 6)} rejected.`,
+                link:          `/group/${id}`,
+                reservationId: id,
+            }))
+        );
+    }
+
+    markAsArrived(id: string): Observable<Reservation> {
+        return this.updateStatus(id, 'CHECKED_IN').pipe(
+            tap(updated => this.addNotification({
+                partnerId:     updated.partnerId ?? 'unknown',
+                type:          'reservation_status',
+                title:         'Group Checked In',
+                message:       `Group checked in for reservation #${id.substring(0, 6)}.`,
+                link:          `/group/${id}`,
+                reservationId: id,
+            }))
+        );
+    }
+
+    checkOutReservation(id: string): Observable<Reservation> {
+        return this.updateStatus(id, 'COMPLETED').pipe(
+            tap(updated => this.addNotification({
+                partnerId:     updated.partnerId ?? 'unknown',
+                type:          'reservation_status',
+                title:         'Check-out Completed',
+                message:       `Reservation #${id.substring(0, 6)} completed.`,
+                link:          `/group/${id}`,
+                reservationId: id,
+            }))
+        );
+    }
+
+    // ── Queries ───────────────────────────────────────────────
 
     getAllReservations(): Observable<Reservation[]> {
         return this.reservations$;
@@ -333,7 +321,6 @@ export class ReservationService {
         return this.reservationsSubject.value.filter(r => r.status === status);
     }
 
-    // New filtering methods
     getReservationsForToday(): Reservation[] {
         return this.reservationsSubject.value.filter(r => isToday(r.checkInDate));
     }
@@ -346,196 +333,146 @@ export class ReservationService {
         return this.reservationsSubject.value.filter(r => isInDateRange(r.checkInDate, start, end));
     }
 
-    // Notification methods
-    getNotifications(): Observable<Notification[]> {
-        return this.notifications$;
+    // ── Local cache ───────────────────────────────────────────
+
+    private updateLocalCache(updated: Reservation): void {
+        const list = this.reservationsSubject.value;
+        const idx  = list.findIndex(r => r.id === updated.id);
+        if (idx !== -1) {
+            const next = [...list];
+            next[idx]  = updated;
+            this.reservationsSubject.next(next);
+        }
     }
 
-    getUnreadCount(partnerId?: string): number { // Optional partnerId filter
-        return this.notificationsSubject.value.filter(n => !n.isRead && (!partnerId || n.partnerId === partnerId)).length;
+    // ── Extras & Payments (local only until backend ready) ────
+
+    addExtra(reservationId: string, extra: Omit<Extra, 'id'>): void {
+        const list  = this.reservationsSubject.value;
+        const index = list.findIndex(r => r.id === reservationId);
+        if (index === -1) return;
+
+        const res        = list[index];
+        const newExtra: Extra = { ...extra, id: this.generateId() };
+        const next       = [...list];
+        next[index] = {
+            ...res,
+            extras:  [...res.extras, newExtra],
+            payment: { ...res.payment, totalAmount: res.payment.totalAmount + extra.totalPrice }
+        };
+        this.reservationsSubject.next(next);
+    }
+
+    removeExtra(reservationId: string, extraId: string): void {
+        const list  = this.reservationsSubject.value;
+        const index = list.findIndex(r => r.id === reservationId);
+        if (index === -1) return;
+
+        const res         = list[index];
+        const toRemove    = res.extras.find(e => e.id === extraId);
+        if (!toRemove) return;
+
+        const next        = [...list];
+        next[index] = {
+            ...res,
+            extras:  res.extras.filter(e => e.id !== extraId),
+            payment: { ...res.payment, totalAmount: res.payment.totalAmount - toRemove.totalPrice }
+        };
+        this.reservationsSubject.next(next);
+    }
+
+    addPayment(reservationId: string, transaction: Omit<Transaction, 'id'>): void {
+        const list  = this.reservationsSubject.value;
+        const index = list.findIndex(r => r.id === reservationId);
+        if (index === -1) return;
+
+        const res         = list[index];
+        const newTxn: Transaction = { ...transaction, id: this.generateId() };
+        const newPaid     = res.payment.paidAmount + transaction.amount;
+        const payStatus   = newPaid >= res.payment.totalAmount ? 'completed'
+                          : newPaid > 0                        ? 'partial' : 'pending';
+
+        const next        = [...list];
+        next[index] = {
+            ...res,
+            payment: {
+                ...res.payment,
+                paidAmount:    newPaid,
+                paymentStatus: payStatus,
+                transactions:  [...res.payment.transactions, newTxn],
+            }
+        };
+        this.reservationsSubject.next(next);
+    }
+
+    // ── Notifications ─────────────────────────────────────────
+
+    getNotifications(): Observable<Notification[]> { return this.notifications$; }
+
+    getUnreadCount(partnerId?: string): number {
+        return this.notificationsSubject.value
+            .filter(n => !n.isRead && (!partnerId || n.partnerId === partnerId)).length;
     }
 
     markAsRead(id: string): void {
-        const notifications = this.notificationsSubject.value.map(n =>
-            n.id === id ? { ...n, isRead: true } : n
+        this.saveNotifications(
+            this.notificationsSubject.value.map(n => n.id === id ? { ...n, isRead: true } : n)
         );
-        this.saveNotifications(notifications);
     }
 
     markAllAsRead(partnerId?: string): void {
-        const notifications = this.notificationsSubject.value.map(n =>
-            (!partnerId || n.partnerId === partnerId) ? { ...n, isRead: true } : n
+        this.saveNotifications(
+            this.notificationsSubject.value.map(n =>
+                (!partnerId || n.partnerId === partnerId) ? { ...n, isRead: true } : n
+            )
         );
-        this.saveNotifications(notifications);
     }
 
-    private addNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>): void {
-        const newNotification: Notification = {
-            ...notification,
-            id: this.generateId(),
-            timestamp: new Date().toISOString(),
-            isRead: false
-        };
-        const notifications = [newNotification, ...this.notificationsSubject.value];
-        this.saveNotifications(notifications);
+    private addNotification(n: Omit<Notification, 'id' | 'timestamp' | 'isRead'>): void {
+        this.saveNotifications([
+            { ...n, id: this.generateId(), timestamp: new Date().toISOString(), isRead: false },
+            ...this.notificationsSubject.value
+        ]);
     }
 
-    // CRUD operations
-    createReservation(reservation: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt'>): Reservation {
-        const newReservation: Reservation = {
-            ...reservation,
-            id: this.generateId(),
-            loyaltyPointsEarned: Math.floor(reservation.payment.totalAmount * 0.1), // 1 point per 10 TND
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-
-        const reservations = [...this.reservationsSubject.value, newReservation];
-        this.saveReservations(reservations);
-        return newReservation;
+    private loadNotifications(): void {
+        const stored = localStorage.getItem(this.NOTIFS_KEY);
+        if (stored) this.notificationsSubject.next(JSON.parse(stored));
     }
 
-    updateReservation(id: string, updates: Partial<Reservation>): Reservation | undefined {
-        const reservations = this.reservationsSubject.value;
-        const index = reservations.findIndex(r => r.id === id);
-
-        if (index === -1) return undefined;
-
-        const updatedReservation = {
-            ...reservations[index],
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
-
-        reservations[index] = updatedReservation;
-        this.saveReservations(reservations);
-        return updatedReservation;
-    }
-
-    confirmReservation(id: string): Reservation | undefined {
-        const res = this.updateReservation(id, { status: 'confirmed' });
-        if (res) {
-            this.addNotification({
-                partnerId: res.partnerId || 'unknown',
-                type: 'reservation_status',
-                title: 'Reservation Confirmed',
-                message: `Reservation #${id.substring(0, 6)} has been confirmed!`,
-                link: '/my-reservations',
-                reservationId: id
-            });
-        }
-        return res;
-    }
-
-    rejectReservation(id: string): Reservation | undefined {
-        const res = this.updateReservation(id, { status: 'rejected' });
-        if (res) {
-            this.addNotification({
-                partnerId: res.partnerId || 'unknown',
-                type: 'reservation_status',
-                title: 'Reservation Rejected',
-                message: `Reservation #${id.substring(0, 6)} was rejected.`,
-                link: '/my-reservations',
-                reservationId: id
-            });
-        }
-        return res;
-    }
-
-    markAsArrived(id: string): Reservation | undefined {
-        return this.updateReservation(id, { status: 'arrived' });
-    }
-
-    checkOutReservation(id: string): Reservation | undefined {
-        const res = this.updateReservation(id, { status: 'checked-out' });
-        if (res) {
-            this.addNotification({
-                partnerId: res.partnerId || 'unknown',
-                type: 'reservation_status',
-                title: 'Check-out Completed',
-                message: `Reservation #${id.substring(0, 6)} has checked out.`,
-                link: `/payment-history`,
-                reservationId: id
-            });
-        }
-        return res;
-    }
-
-    addExtra(reservationId: string, extra: Omit<Extra, 'id'>): Reservation | undefined {
-        const reservation = this.getReservationById(reservationId);
-        if (!reservation) return undefined;
-
-        const newExtra: Extra = {
-            ...extra,
-            id: this.generateId()
-        };
-
-        const updatedExtras = [...reservation.extras, newExtra];
-
-        return this.updateReservation(reservationId, {
-            extras: updatedExtras,
-            payment: {
-                ...reservation.payment,
-                totalAmount: reservation.payment.totalAmount + extra.totalPrice
-            }
-        });
-    }
-
-    removeExtra(reservationId: string, extraId: string): Reservation | undefined {
-        const reservation = this.getReservationById(reservationId);
-        if (!reservation) return undefined;
-
-        const extraToRemove = reservation.extras.find(e => e.id === extraId);
-        if (!extraToRemove) return undefined;
-
-        const updatedExtras = reservation.extras.filter(e => e.id !== extraId);
-
-        return this.updateReservation(reservationId, {
-            extras: updatedExtras,
-            payment: {
-                ...reservation.payment,
-                totalAmount: reservation.payment.totalAmount - extraToRemove.totalPrice
-            }
-        });
-    }
-
-    addPayment(reservationId: string, transaction: Omit<Transaction, 'id'>): Reservation | undefined {
-        const reservation = this.getReservationById(reservationId);
-        if (!reservation) return undefined;
-
-        const newTransaction: Transaction = {
-            ...transaction,
-            id: this.generateId()
-        };
-
-        const updatedTransactions = [...reservation.payment.transactions, newTransaction];
-        const newPaidAmount = reservation.payment.paidAmount + transaction.amount;
-        const paymentStatus = newPaidAmount >= reservation.payment.totalAmount ? 'completed' :
-            newPaidAmount > 0 ? 'partial' : 'pending';
-
-        const res = this.updateReservation(reservationId, {
-            payment: {
-                ...reservation.payment,
-                paidAmount: newPaidAmount,
-                paymentStatus,
-                transactions: updatedTransactions
-            }
-        });
-
-        if (res && paymentStatus === 'completed') {
-            this.addNotification({
-                partnerId: res.partnerId || 'unknown',
-                type: 'payment',
-                title: 'Payment Completed',
-                message: `Payment completed for reservation #${reservationId.substring(0, 6)}.`,
-                link: `/payment/${reservationId}`,
-                reservationId: reservationId
-            });
-        }
-        return res;
+    private saveNotifications(notifications: Notification[]): void {
+        localStorage.setItem(this.NOTIFS_KEY, JSON.stringify(notifications));
+        this.notificationsSubject.next(notifications);
     }
 
     private generateId(): string {
         return Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+
+
+        // ── Extras Catalog ────────────────────────────────────────────
+
+    fetchExtrasCatalog(): Observable<ExtraCatalog[]> {
+        return this.http.get<ExtraCatalog[]>('http://localhost:8080/api/extras').pipe(
+            catchError(err => {
+                console.error('Failed to load extras catalog:', err);
+                return of([]);
+            })
+        );
+    }
+
+    addExtraToReservation(reservationId: string, extraId: string, quantity: number): Observable<Reservation> {
+        const body = { reservationId, extraId, quantity };
+        return this.http.post<ReservationResponse>('http://localhost:8080/api/reservation-extras', body).pipe(
+            map(dto => {
+                const updated = this.mapToReservation(dto);
+                this.updateLocalCache(updated);
+                return updated;
+            }),
+            catchError(err => {
+                console.error('Failed to add extra:', err);
+                throw err;
+            })
+        );
     }
 }

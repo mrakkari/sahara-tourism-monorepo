@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ReservationService } from '../../services/reservation.service';
-import { Reservation, Extra } from '../../models/reservation.model';
+import { Reservation, Extra, ExtraCatalog } from '../../models/reservation.model';
 import { NotificationService } from '../../services/notification.service';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
@@ -36,6 +36,9 @@ export class GroupDetailComponent implements OnInit {
   paymentForm: FormGroup;
   extraTotal = 0;
   showExtraForm = false;
+  extrasCatalog: ExtraCatalog[] = [];
+  selectedExtraId = '';
+  selectedExtra?: ExtraCatalog;
 
   constructor(
     private route: ActivatedRoute,
@@ -45,8 +48,6 @@ export class GroupDetailComponent implements OnInit {
     private fb: FormBuilder
   ) {
     this.extraForm = this.fb.group({
-      type: ['other', Validators.required],
-      name: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unitPrice: [100, [Validators.required, Validators.min(0)]]
     });
@@ -58,32 +59,44 @@ export class GroupDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.loadReservation(id);
-    }
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id) {
+          this.loadReservation(id);
+      }
+      this.loadExtrasCatalog();
+  }
+  loadExtrasCatalog(): void {
+    this.reservationService.fetchExtrasCatalog().subscribe({
+        next: (catalog) => {
+            this.extrasCatalog = catalog.filter(e => e.isActive);
+        },
+        error: (err) => console.error('Failed to load catalog:', err)
+    });
+  }
+
+  onExtraSelected(): void {
+      this.selectedExtra = this.extrasCatalog.find(e => e.extraId === this.selectedExtraId);
+      // Reset quantity when selection changes
+      this.extraForm.patchValue({ quantity: 1 });
+      this.calculateExtraTotal();
+  }
+
+  calculateExtraTotal(): void {
+      const quantity  = this.extraForm.get('quantity')?.value || 0;
+      const unitPrice = this.selectedExtra?.unitPrice || 0;
+      this.extraTotal = quantity * unitPrice;
   }
 
   prevId?: string;
   nextId?: string;
 
   loadReservation(id: string): void {
-    this.reservationService.getAllReservations().subscribe((allReservations: Reservation[]) => {
-      this.reservation = this.reservationService.getReservationById(id);
-
-      // Sort to match the main list: Arrived first, then by date
-      const sorted = [...allReservations].sort((a, b) => {
-        if (a.status === 'arrived' && b.status !== 'arrived') return -1;
-        if (a.status !== 'arrived' && b.status === 'arrived') return 1;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      this.reservationService.fetchReservationById(id).subscribe({
+          next: (reservation) => {
+              this.reservation = reservation;
+          },
+          error: (err) => console.error('Failed to load reservation:', err)
       });
-
-      const currentIndex = sorted.findIndex(r => r.id === id);
-      if (currentIndex !== -1) {
-        this.prevId = currentIndex > 0 ? sorted[currentIndex - 1].id : undefined;
-        this.nextId = currentIndex < sorted.length - 1 ? sorted[currentIndex + 1].id : undefined;
-      }
-    });
   }
 
   navigateTo(targetId: string | undefined): void {
@@ -118,30 +131,32 @@ export class GroupDetailComponent implements OnInit {
     }
   }
 
-  calculateExtraTotal(): void {
-    const quantity = this.extraForm.get('quantity')?.value || 0;
-    const unitPrice = this.extraForm.get('unitPrice')?.value || 0;
-    this.extraTotal = quantity * unitPrice;
-  }
+
 
   addExtra(): void {
-    if (!this.reservation || this.extraForm.invalid) return;
+      if (!this.reservation || !this.selectedExtraId || this.extraForm.invalid) return;
 
-    const value = this.extraForm.value;
-    const extra: Omit<Extra, 'id'> = {
-      type: value.type,
-      name: value.name,
-      quantity: value.quantity,
-      unitPrice: value.unitPrice,
-      totalPrice: value.quantity * value.unitPrice
-    };
+      const quantity = this.extraForm.get('quantity')?.value;
 
-    this.reservationService.addExtra(this.reservation.id, extra);
-    this.notificationService.showSuccess('✅ Extra ajouté au groupe.');
-    this.loadReservation(this.reservation.id);
-    this.extraForm.reset({ quantity: 1, unitPrice: 0, type: 'other', name: '' });
-    this.extraTotal = 0;
-    this.showExtraForm = false;
+      this.reservationService.addExtraToReservation(
+          this.reservation.id,
+          this.selectedExtraId,
+          quantity
+      ).subscribe({
+          next: (updated) => {
+              this.reservation = updated;
+              this.notificationService.showSuccess('✅ Extra ajouté au groupe.');
+              this.selectedExtraId = '';
+              this.selectedExtra = undefined;
+              this.extraForm.reset({ quantity: 1 });
+              this.extraTotal = 0;
+              this.showExtraForm = false;
+          },
+          error: (err) => {
+              console.error('Failed to add extra:', err);
+              this.notificationService.showError('❌ Erreur lors de l\'ajout de l\'extra.');
+          }
+      });
   }
 
   removeExtra(extraId: string): void {
@@ -169,21 +184,25 @@ export class GroupDetailComponent implements OnInit {
   }
 
   markArrived(): void {
-    if (!this.reservation || !confirm("Enregistrer l'arrivée effective du groupe ?")) return;
-
-    this.reservationService.markAsArrived(this.reservation.id);
-    this.notificationService.showSuccess('✅ Arrivée confirmée !');
-    this.loadReservation(this.reservation.id);
+      if (!this.reservation || !confirm("Enregistrer l'arrivée effective du groupe ?")) return;
+      this.reservationService.markAsArrived(this.reservation.id).subscribe({
+          next: (updated) => {
+              this.reservation = updated;
+              this.notificationService.showSuccess('✅ Arrivée confirmée !');
+          },
+          error: (err) => console.error('Check-in failed:', err)
+      });
   }
 
   checkOut(): void {
-    if (!this.reservation || !confirm('Confirmer le départ du groupe et archiver ?')) {
-      return;
-    }
-
-    this.reservationService.checkOutReservation(this.reservation.id);
-    this.notificationService.showSuccess('👋 Départ enregistré. Dossier archivé.');
-    this.router.navigate(['/payment-history']);
+      if (!this.reservation || !confirm('Confirmer le départ du groupe et archiver ?')) return;
+      this.reservationService.checkOutReservation(this.reservation.id).subscribe({
+          next: () => {
+              this.notificationService.showSuccess('👋 Départ enregistré. Dossier archivé.');
+              this.router.navigate(['/']);
+          },
+          error: (err) => console.error('Checkout failed:', err)
+      });
   }
 
   formatDate(dateString: string): string {
@@ -223,4 +242,6 @@ export class GroupDetailComponent implements OnInit {
     };
     return icons[type] || '🎯';
   }
+
+  
 }
