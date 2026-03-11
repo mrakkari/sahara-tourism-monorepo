@@ -8,7 +8,7 @@ import { Reservation, Extra, ExtraCatalog } from '../../models/reservation.model
 import { NotificationService } from '../../services/notification.service';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
-
+import { forkJoin } from 'rxjs';
 @Component({
   selector: 'app-group-detail',
   standalone: true,
@@ -37,8 +37,10 @@ export class GroupDetailComponent implements OnInit {
   extraTotal = 0;
   showExtraForm = false;
   extrasCatalog: ExtraCatalog[] = [];
-  selectedExtraId = '';
-  selectedExtra?: ExtraCatalog;
+ // selectedExtraId = '';
+  //selectedExtra?: ExtraCatalog;
+  selectedExtraId: string | null = null;
+  pendingExtras: { catalog: ExtraCatalog; quantity: number }[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -49,7 +51,7 @@ export class GroupDetailComponent implements OnInit {
   ) {
     this.extraForm = this.fb.group({
       quantity: [1, [Validators.required, Validators.min(1)]],
-      unitPrice: [100, [Validators.required, Validators.min(0)]]
+    //  unitPrice: [100, [Validators.required, Validators.min(0)]]
     });
 
     this.paymentForm = this.fb.group({
@@ -63,29 +65,18 @@ export class GroupDetailComponent implements OnInit {
       if (id) {
           this.loadReservation(id);
       }
-      this.loadExtrasCatalog();
-  }
-  loadExtrasCatalog(): void {
-    this.reservationService.fetchExtrasCatalog().subscribe({
-        next: (catalog) => {
-            this.extrasCatalog = catalog.filter(e => e.isActive);
-        },
-        error: (err) => console.error('Failed to load catalog:', err)
-    });
+      this.loadCatalog();  // ← only this one
   }
 
-  onExtraSelected(): void {
+
+ /* onExtraSelected(): void {
       this.selectedExtra = this.extrasCatalog.find(e => e.extraId === this.selectedExtraId);
       // Reset quantity when selection changes
       this.extraForm.patchValue({ quantity: 1 });
       this.calculateExtraTotal();
-  }
+  }*/
 
-  calculateExtraTotal(): void {
-      const quantity  = this.extraForm.get('quantity')?.value || 0;
-      const unitPrice = this.selectedExtra?.unitPrice || 0;
-      this.extraTotal = quantity * unitPrice;
-  }
+
 
   prevId?: string;
   nextId?: string;
@@ -94,6 +85,18 @@ export class GroupDetailComponent implements OnInit {
       this.reservationService.fetchReservationById(id).subscribe({
           next: (reservation) => {
               this.reservation = reservation;
+              // Rebuild prev/next navigation from cached list
+              const all = this.reservationService['reservationsSubject'].value;
+              const sorted = [...all]
+                  .filter(r => r.status === 'confirmed' || r.status === 'checked_in')
+                  .sort((a, b) => {
+                      if (a.status === 'checked_in' && b.status !== 'checked_in') return -1;
+                      if (b.status === 'checked_in' && a.status !== 'checked_in') return 1;
+                      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                  });
+              const idx = sorted.findIndex(r => r.id === id);
+              this.prevId = idx > 0 ? sorted[idx - 1].id : undefined;
+              this.nextId = idx < sorted.length - 1 ? sorted[idx + 1].id : undefined;
           },
           error: (err) => console.error('Failed to load reservation:', err)
       });
@@ -104,35 +107,6 @@ export class GroupDetailComponent implements OnInit {
       this.router.navigate(['/group', targetId]);
     }
   }
-
-  updateExtraName(): void {
-    const type = this.extraForm.get('type')?.value;
-    const names: Record<string, string> = {
-      quad: 'Sortie Quad 1h',
-      '4x4': 'Excursion 4x4 Sahara',
-      meal: 'Pack Repas Royal',
-      dromedary: 'Balade Chameau (Coucher Soleil)',
-      other: ''
-    };
-    const prices: Record<string, number> = {
-      quad: 120,
-      '4x4': 250,
-      meal: 80,
-      dromedary: 60,
-      other: 0
-    };
-
-    if (names[type] !== undefined) {
-      this.extraForm.patchValue({
-        name: names[type] || '',
-        unitPrice: prices[type] || 0
-      });
-      this.calculateExtraTotal();
-    }
-  }
-
-
-
   addExtra(): void {
       if (!this.reservation || !this.selectedExtraId || this.extraForm.invalid) return;
 
@@ -146,8 +120,7 @@ export class GroupDetailComponent implements OnInit {
           next: (updated) => {
               this.reservation = updated;
               this.notificationService.showSuccess('✅ Extra ajouté au groupe.');
-              this.selectedExtraId = '';
-              this.selectedExtra = undefined;
+              this.selectedExtraId = null;
               this.extraForm.reset({ quantity: 1 });
               this.extraTotal = 0;
               this.showExtraForm = false;
@@ -159,13 +132,23 @@ export class GroupDetailComponent implements OnInit {
       });
   }
 
-  removeExtra(extraId: string): void {
-    if (!this.reservation || !confirm('Retirer cet extra de la facturation ?')) return;
+  removeExtra(extra: Extra): void {
+      if (!this.reservation || !confirm('Retirer cet extra de la facturation ?')) return;
 
-    this.reservationService.removeExtra(this.reservation.id, extraId);
-    this.notificationService.showInfo('Extra retiré');
-    this.loadReservation(this.reservation.id);
+      const extraId = extra.reservationExtraId ?? extra.id;
+
+      this.reservationService.deleteExtra(extraId).subscribe({
+          next: () => {
+              this.notificationService.showSuccess('✅ Extra retiré avec succès');
+              this.loadReservation(this.reservation!.id);
+          },
+          error: (err: unknown) => {
+              console.error('Failed to delete extra:', err);
+              this.notificationService.showSuccess('❌ Erreur lors de la suppression.');
+          }
+      });
   }
+
 
   addOnsitePayment(): void {
     if (!this.reservation || this.paymentForm.invalid) return;
@@ -242,6 +225,110 @@ export class GroupDetailComponent implements OnInit {
     };
     return icons[type] || '🎯';
   }
+    // ── Catalog ───────────────────────────────────────────────────
+  loadCatalog(): void {
+      this.reservationService.fetchExtrasCatalog().subscribe({
+          next: (catalog) => this.extrasCatalog = catalog.filter(e => e.isActive),
+          error: (err) => console.error('Failed to load catalog:', err)
+      });
+  }
+
+  // ── Computed ──────────────────────────────────────────────────
+  get selectedExtra(): ExtraCatalog | null {
+      return this.extrasCatalog.find(e => e.extraId === this.selectedExtraId) ?? null;
+  }
+
+  get totalGroupSize(): number {
+      return (this.reservation?.adults ?? 0) + (this.reservation?.children ?? 0);
+  }
+
+  get cartTotal(): number {
+      return this.pendingExtras.reduce(
+          (sum, e) => sum + e.catalog.unitPrice * e.quantity, 0
+      );
+  }
+
+  // ── Selection ─────────────────────────────────────────────────
+  onExtraSelected(extraId: string): void {
+      // If already in cart, don't re-select
+      if (this.isExtraInCart(extraId)) return;
+      this.selectedExtraId = extraId;
+      this.extraForm.patchValue({ quantity: 1 });
+      this.calculateExtraTotal();
+  }
+
+  isExtraInCart(extraId: string): boolean {
+      return this.pendingExtras.some(e => e.catalog.extraId === extraId);
+  }
+
+  selectAllGroup(): void {
+      this.extraForm.patchValue({ quantity: this.totalGroupSize });
+      this.calculateExtraTotal();
+  }
+
+  calculateExtraTotal(): void {
+      const quantity  = this.extraForm.get('quantity')?.value || 0;
+      const unitPrice = this.selectedExtra?.unitPrice || 0;
+      this.extraTotal = quantity * unitPrice;
+  }
+
+  // ── Cart ──────────────────────────────────────────────────────
+  addToCart(): void {
+      if (!this.selectedExtra || this.extraForm.invalid) return;
+
+      const quantity = this.extraForm.get('quantity')?.value || 1;
+      const existing = this.pendingExtras.find(
+          e => e.catalog.extraId === this.selectedExtra!.extraId
+      );
+
+      if (existing) {
+          existing.quantity = quantity;
+      } else {
+          this.pendingExtras.push({ catalog: this.selectedExtra, quantity });
+      }
+
+      // Reset selection for next pick
+      this.selectedExtraId = null;
+      this.extraForm.patchValue({ quantity: 1 });
+      this.extraTotal = 0;
+  }
+
+  removeFromCart(extraId: string): void {
+      this.pendingExtras = this.pendingExtras.filter(
+          e => e.catalog.extraId !== extraId
+      );
+  }
+
+  // ── Submit all cart items ─────────────────────────────────────
+  submitExtras(): void {
+      if (!this.reservation || this.pendingExtras.length === 0) return;
+
+      const calls = this.pendingExtras.map(e =>
+          this.reservationService.addExtraToReservation(
+              this.reservation!.id,
+              e.catalog.extraId,
+              e.quantity
+          )
+      );
+
+      forkJoin(calls).subscribe({
+          next: () => {
+              const count = this.pendingExtras.length;
+              this.pendingExtras = [];
+              this.showExtraForm = false;
+              this.notificationService.showSuccess(
+                  `✅ ${count} extra(s) ajouté(s) avec succès !`
+              );
+              this.loadReservation(this.reservation!.id);
+          },
+          error: (err: unknown) => {
+              console.error('Failed to submit extras:', err);
+              this.notificationService.showSuccess('❌ Erreur lors de l\'ajout.');
+              this.loadReservation(this.reservation!.id);
+          }
+      });
+  }
+
 
   
 }

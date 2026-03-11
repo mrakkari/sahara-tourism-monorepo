@@ -95,25 +95,48 @@
       </app-glass-card>
 
       <!-- Payment Card -->
+      <!-- Payment Card -->
       <app-glass-card class="payment-section" [gradient]="true">
         <h2 class="section-title">💰 État des Paiements</h2>
 
         <div class="payment-overview">
-          <div class="amount-row total">
-            <span>Total dû</span>
-            <strong>{{ reservation.payment.totalAmount | number:'1.0-2' }} TND</strong>
+
+          <!-- Tours subtotal -->
+          <div class="amount-row">
+            <span>Montant Tours</span>
+            <strong>{{ reservation.totalAmount | number:'1.0-2' }} TND</strong>
           </div>
+
+          <!-- Extras subtotal -->
+          <div class="amount-row">
+            <span>Montant Extras</span>
+            <strong>{{ reservation.totalExtrasAmount | number:'1.0-2' }} TND</strong>
+          </div>
+
+          <div class="amount-divider"></div>
+
+          <!-- Grand total -->
+          <div class="amount-row total">
+            <span>Total Général</span>
+            <strong>{{ (reservation.totalAmount || 0) + (reservation.totalExtrasAmount || 0) | number:'1.0-2' }} TND</strong>
+          </div>
+
+          <div class="amount-divider"></div>
+
+          <!-- Paid — kept for future use -->
           <div class="amount-row paid">
             <span>Déjà réglé</span>
             <strong>{{ reservation.payment.paidAmount | number:'1.0-2' }} TND</strong>
           </div>
-          <div class="amount-divider"></div>
+
+          <!-- Remaining -->
           <div class="amount-row remaining">
             <span>Reste à payer</span>
             <strong [class.highlight]="getRemainingAmount() > 0">
               {{ getRemainingAmount() | number:'1.0-2' }} TND
             </strong>
           </div>
+
         </div>
 
         <div class="progress-container">
@@ -133,22 +156,22 @@
           </div>
         </div>
 
-        <!-- On-site payment form — only when checked_in and amount remaining -->
+        <!-- On-site payment form -->
         <div class="onsite-form-glass"
-             *ngIf="reservation.status === 'checked_in' && getRemainingAmount() > 0">
+            *ngIf="reservation.status === 'checked_in' && getRemainingAmount() > 0">
           <h3>Enregistrer un Paiement Local</h3>
           <form [formGroup]="paymentForm" (ngSubmit)="addOnsitePayment()">
             <div class="form-row">
               <div class="input-group">
                 <label>Montant (TND)</label>
                 <input type="number" formControlName="amount"
-                       class="premium-input" placeholder="0.00">
+                      class="premium-input" placeholder="0.00">
               </div>
             </div>
             <div class="input-group">
               <label>Commentaire</label>
               <input type="text" formControlName="description"
-                     class="premium-input" placeholder="Ex: Espèces, Chèque...">
+                    class="premium-input" placeholder="Ex: Espèces, Chèque...">
             </div>
             <button type="submit" class="btn-premium emerald btn-full"
                     [disabled]="paymentForm.invalid">
@@ -171,59 +194,89 @@
         </div>
 
         <!-- Add extra form — only when checked_in -->
+        <!-- Add extra form — only when checked_in -->
         <div class="add-extra-trigger" *ngIf="reservation.status === 'checked_in'">
           <h3 (click)="showExtraForm = !showExtraForm" class="form-toggle">
-            {{ showExtraForm ? '− Fermer le formulaire' : '+ Ajouter une prestation' }}
+            {{ showExtraForm ? '− Fermer' : '+ Ajouter des prestations' }}
           </h3>
 
           <div class="extra-form-box" *ngIf="showExtraForm">
 
-              <!-- Catalog selector -->
-              <div class="extras-catalog">
-                  <div class="catalog-item"
-                      *ngFor="let e of extrasCatalog"
-                      [class.selected]="selectedExtraId === e.extraId"
-                      (click)="selectedExtraId = e.extraId; onExtraSelected()">
-                      <div class="catalog-item-header">
-                          <span class="catalog-name">{{ e.name }}</span>
-                          <span class="catalog-price">{{ e.unitPrice }} TND</span>
-                      </div>
-                      <div class="catalog-meta">
-                          <span class="catalog-desc" *ngIf="e.description">{{ e.description }}</span>
-                          <span class="catalog-duration" *ngIf="e.duration">⏱ {{ e.duration }}</span>
-                      </div>
-                  </div>
+            <!-- Catalog grid -->
+            <p class="catalog-hint">Sélectionnez un ou plusieurs services :</p>
+            <div class="extras-catalog">
+              <div class="catalog-item"
+                  *ngFor="let e of extrasCatalog"
+                  [class.selected]="selectedExtraId === e.extraId"
+                  [class.in-cart]="isExtraInCart(e.extraId)"
+                  (click)="onExtraSelected(e.extraId)">
+                <div class="catalog-item-header">
+                  <span class="catalog-name">{{ e.name }}</span>
+                  <span class="catalog-price">{{ e.unitPrice }} TND / pers.</span>
+                </div>
+                <div class="catalog-meta">
+                  <span class="catalog-desc" *ngIf="e.description">{{ e.description }}</span>
+                  <span class="catalog-duration" *ngIf="e.duration">⏱ {{ e.duration }}</span>
+                  <span class="in-cart-badge" *ngIf="isExtraInCart(e.extraId)">✓ Dans le panier</span>
+                </div>
               </div>
+            </div>
 
-              <!-- Quantity + submit — only shown after selection -->
-              <div class="quantity-row" *ngIf="selectedExtra" [formGroup]="extraForm">
-                  <div class="selected-extra-summary">
-                      <span class="sel-name">{{ selectedExtra.name }}</span>
-                      <span class="sel-unit">{{ selectedExtra.unitPrice }} TND / pers.</span>
-                  </div>
-                  <div class="qty-controls">
-                      <div class="input-group">
-                          <label>Quantité</label>
-                          <input type="number" formControlName="quantity"
-                                class="premium-input"
-                                min="1"
-                                (input)="calculateExtraTotal()">
-                      </div>
-                      <div class="extra-preview">
-                          <span class="l">TOTAL</span>
-                          <span class="v">{{ extraTotal }} TND</span>
-                      </div>
-                  </div>
-                  <button class="btn-premium primary btn-full"
-                          [disabled]="extraForm.invalid"
-                          (click)="addExtra()">
-                      Ajouter au compte
-                  </button>
+            <!-- Quantity row — shown after selecting a catalog item -->
+            <div class="quantity-row" *ngIf="selectedExtra" [formGroup]="extraForm">
+              <div class="selected-extra-summary">
+                <span class="sel-name">{{ selectedExtra.name }}</span>
+                <span class="sel-unit">{{ selectedExtra.unitPrice }} TND / pers.</span>
               </div>
+              <div class="qty-controls">
+                <div class="input-group">
+                  <label>Nombre de personnes</label>
+                  <input type="number" formControlName="quantity"
+                        class="premium-input" min="1"
+                        (input)="calculateExtraTotal()">
+                </div>
+                <button class="btn-all-group" type="button" (click)="selectAllGroup()">
+                  👥 Tout le groupe ({{ totalGroupSize }})
+                </button>
+                <div class="extra-preview">
+                  <span class="l">TOTAL</span>
+                  <span class="v">{{ extraTotal }} TND</span>
+                </div>
+              </div>
+              <button class="btn-premium primary btn-full" type="button"
+                      [disabled]="extraForm.invalid"
+                      (click)="addToCart()">
+                + Ajouter au panier
+              </button>
+            </div>
 
-              <div class="no-selection-hint" *ngIf="!selectedExtra">
-                  Sélectionnez un service ci-dessus
+            <div class="no-selection-hint"
+                *ngIf="!selectedExtra && pendingExtras.length === 0">
+              Sélectionnez un service ci-dessus
+            </div>
+
+            <!-- Cart -->
+            <div class="cart-section" *ngIf="pendingExtras.length > 0">
+              <h4 class="cart-title">🛒 Panier ({{ pendingExtras.length }})</h4>
+              <div class="cart-item" *ngFor="let item of pendingExtras">
+                <span class="cart-name">{{ item.catalog.name }}</span>
+                <span class="cart-qty">× {{ item.quantity }} pers.</span>
+                <span class="cart-price">
+                  {{ item.catalog.unitPrice * item.quantity | number:'1.0-2' }} TND
+                </span>
+                <button class="btn-del-cart" type="button"
+                        (click)="removeFromCart(item.catalog.extraId)">×</button>
               </div>
+              <div class="cart-total-row">
+                <span>Total panier</span>
+                <span class="cart-total-amount">{{ cartTotal | number:'1.0-2' }} TND</span>
+              </div>
+              <button class="btn-premium emerald btn-full" type="button"
+                      (click)="submitExtras()">
+                ✅ Confirmer {{ pendingExtras.length }} extra(s)
+              </button>
+            </div>
+
           </div>
         </div>
 
@@ -238,7 +291,7 @@
             <div class="ex-total">{{ extra.totalPrice }} TND</div>
             <button class="btn-del"
                     *ngIf="reservation.status === 'checked_in'"
-                    (click)="removeExtra(extra.id)">×</button>
+                    (click)="removeExtra(extra)">×</button>
           </div>
 
           <!-- Extras total row -->

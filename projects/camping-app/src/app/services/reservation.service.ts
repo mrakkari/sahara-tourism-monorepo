@@ -475,4 +475,17 @@ export class ReservationService {
             })
         );
     }
+
+
+
+    deleteExtra(reservationExtraId: string): Observable<void> {
+        return this.http.delete<void>(
+            `http://localhost:8080/api/reservation-extras/${reservationExtraId}`
+        ).pipe(
+            catchError(err => {
+                console.error('Failed to delete extra:', err);
+                throw err;
+            })
+        );
+    }
 }
