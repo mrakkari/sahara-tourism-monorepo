@@ -11,7 +11,7 @@ import { GlassCardComponent } from '../../shared/components/glass-card/glass-car
 import { IMAGES } from '../../core/constants/images';
 import { TourType } from '../../models/tour.model';
 import { ExtraResponse } from '../../models/extra.model';
-import { ReservationRequest } from '../../models/reservation-api.model';
+import { ReservationRequest, ReservationResponse } from '../../models/reservation-api.model';
 
 @Component({
   selector: 'app-create-reservation',
@@ -41,6 +41,8 @@ export class CreateReservationComponent implements OnInit {
   selectedExtras: Record<string, number> = {};
   tourTypes: TourType[] = [];
   isLoadingTourTypes = false;
+  editMode = false;
+  editReservationId: string | null = null;
 
   steps = [
     { label: 'Expérience' },
@@ -67,26 +69,91 @@ export class CreateReservationComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadTourTypes();
-    this.loadExtras();
-    this.addParticipant();
+      this.loadTourTypes();
+      this.loadExtras();
+      this.addParticipant();
+
+      // ── Edit mode: read reservation from router state ──
+      const state = history.state;
+      if (state?.editMode && state?.reservation) {
+          this.editMode = true;
+          this.editReservationId = state.reservation.reservationId;
+          // prefill is called after tourTypes load (inside loadTourTypes)
+      }
   }
 
   // ─── Loaders ──────────────────────────────────────────────
 
   private loadTourTypes(): void {
-    this.isLoadingTourTypes = true;
-    this.reservationService.getAllTourTypes().subscribe({
-      next: (data) => {
-        this.tourTypes = data;
-        this.isLoadingTourTypes = false;
-        this.handleQueryParams();
-      },
-      error: (err) => {
-        console.error('Failed to load tour types', err);
-        this.isLoadingTourTypes = false;
+      this.isLoadingTourTypes = true;
+      this.reservationService.getAllTourTypes().subscribe({
+          next: (data) => {
+              this.tourTypes = data;
+              this.isLoadingTourTypes = false;
+              this.handleQueryParams();
+
+              // ── Prefill form if in edit mode ──
+              const state = history.state;
+              if (state?.editMode && state?.reservation) {
+                  this.prefillForm(state.reservation);
+              }
+          },
+          error: (err) => {
+              console.error('Failed to load tour types', err);
+              this.isLoadingTourTypes = false;
+          }
+      });
+  }
+  private prefillForm(res: ReservationResponse): void {
+      // ── Simple fields ──
+      this.reservationForm.patchValue({
+          groupLeaderName: res.groupLeaderName || '',
+          groupName:       res.groupName || '',
+          checkInDate:     res.checkInDate,
+          checkOutDate:    res.checkOutDate,
+          adults:          res.numberOfAdults || 2,
+          children:        res.numberOfChildren || 0,
+          specialRequests: res.demandeSpecial || '',
+          promoCode:       res.promoCode || ''
+      });
+
+      // ── Tour types ──
+      // Clear the array first then rebuild from the saved snapshot
+      while (this.tourTypesArray.length > 0) this.tourTypesArray.removeAt(0);
+      (res.tourTypes || []).forEach(t => {
+          // find the real tourTypeId from catalog by matching name
+          const found = this.tourTypes.find(tt => tt.name === t.name);
+          if (found) {
+              this.tourTypesArray.push(this.fb.group({
+                  tourTypeId:      [found.tourTypeId],
+                  numberOfAdults:  [t.numberOfAdults || 0],
+                  numberOfChildren:[t.numberOfChildren || 0]
+              }));
+          }
+      });
+
+      // ── Extras ──
+      (res.extras || []).forEach(e => {
+          // find the real extraId from catalog by matching name
+          const found = this.availableExtras.find(ae => ae.name === e.name);
+          if (found) {
+              this.selectedExtras[found.extraId] = e.quantity || 1;
+          }
+      });
+
+      // ── Participants ──
+      while (this.participants.length > 0) this.participants.removeAt(0);
+      if (res.participants && res.participants.length > 0) {
+          res.participants.forEach(p => {
+              this.participants.push(this.fb.group({
+                  fullName: [p.fullName],
+                  age:      [p.age],
+                  isAdult:  [p.isAdult]
+              }));
+          });
+      } else {
+          this.addParticipant(); // add at least one empty row
       }
-    });
   }
 
   private handleQueryParams(): void {
@@ -445,59 +512,92 @@ export class CreateReservationComponent implements OnInit {
   // ─── Submit ────────────────────────────────────────────────
 
   onSubmit(): void {
-    if (this.reservationForm.invalid) {
-      this.notificationService.showError('Veuillez remplir tous les champs requis');
-      return;
-    }
+      if (this.reservationForm.invalid) {
+          this.notificationService.showError('Veuillez remplir tous les champs requis');
+          return;
+      }
 
-    this.isSubmitting = true;
-    const formValue = this.reservationForm.value;
-    const userId = JSON.parse(localStorage.getItem('auth_user') || '{}')?.userId ?? undefined;
+      this.isSubmitting = true;
+      const formValue = this.reservationForm.value;
 
-    const participants = (formValue.participants || [])
-      .filter((p: any) => p.fullName?.trim())
-      .map((p: any) => ({
-        fullName: p.fullName.trim(),
-        age: p.age ?? 18,
-        isAdult: p.isAdult ?? true
+      const participants = (formValue.participants || [])
+          .filter((p: any) => p.fullName?.trim())
+          .map((p: any) => ({
+              fullName: p.fullName.trim(),
+              age:      p.age ?? 18,
+              isAdult:  p.isAdult ?? true
+          }));
+
+      const extras = this.availableExtras
+          .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
+          .map(e => ({ extraId: e.extraId, quantity: this.selectedExtras[e.extraId] }));
+
+      const tourTypes = this.tourTypesArray.controls.map(ctrl => ({
+          tourTypeId:      ctrl.get('tourTypeId')?.value,
+          numberOfAdults:  ctrl.get('numberOfAdults')?.value ?? formValue.adults,
+          numberOfChildren:ctrl.get('numberOfChildren')?.value ?? formValue.children
       }));
 
-    const extras = this.availableExtras
-      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
-      .map(e => ({ extraId: e.extraId, quantity: this.selectedExtras[e.extraId] }));
+      // ── EDIT MODE → PUT ──────────────────────────────────────
+      if (this.editMode && this.editReservationId) {
+          const updateRequest = {
+              checkInDate:      formValue.checkInDate,
+              checkOutDate:     formValue.checkOutDate,
+              groupName:        formValue.groupName || formValue.groupLeaderName,
+              groupLeaderName:  formValue.groupLeaderName,
+              numberOfAdults:   formValue.adults,
+              numberOfChildren: formValue.children,
+              demandeSpecial:   formValue.specialRequests || undefined,
+              promoCode:        this.appliedPromoCode || undefined,
+              currency:         'TND',
+              tourTypes,
+              participants:     participants.length > 0 ? participants : undefined,
+              extras:           extras.length > 0 ? extras : undefined
+          };
 
-    const request: ReservationRequest = {
-      userId,
-      source: 'PARTNER_APP',
-      checkInDate: formValue.checkInDate,
-      checkOutDate: formValue.checkOutDate,
-      groupLeaderName: formValue.groupLeaderName,
-      demandeSpecial: formValue.specialRequests || undefined,
-      groupName: formValue.groupName || formValue.groupLeaderName,
-      numberOfAdults: formValue.adults,
-      numberOfChildren: formValue.children,
-      currency: 'TND',
-      promoCode: this.appliedPromoCode || undefined,
-      tourTypes: this.tourTypesArray.controls.map(ctrl => ({
-        tourTypeId: ctrl.get('tourTypeId')?.value,
-        numberOfAdults: ctrl.get('numberOfAdults')?.value ?? formValue.adults,
-        numberOfChildren: ctrl.get('numberOfChildren')?.value ?? formValue.children
-      })),
-      participants: participants.length > 0 ? participants : undefined,
-      extras: extras.length > 0 ? extras : undefined
-    };
-
-    this.reservationService.createReservation(request).subscribe({
-      next: () => {
-        this.notificationService.showSuccess('✅ Réservation créée avec succès !');
-        setTimeout(() => this.router.navigate(['/']), 1500);
-      },
-      error: (err) => {
-        console.error('Reservation creation failed:', err);
-        const msg = err?.error?.message || err?.error?.error || 'Erreur lors de la création';
-        this.notificationService.showError(msg);
-        this.isSubmitting = false;
+          this.reservationService.updateReservation(this.editReservationId, updateRequest).subscribe({
+              next: () => {
+                  this.notificationService.showSuccess('✅ Réservation mise à jour avec succès !');
+                  setTimeout(() => this.router.navigate(['/historique']), 1500);
+              },
+              error: (err) => {
+                  const msg = err?.error?.message || 'Erreur lors de la mise à jour';
+                  this.notificationService.showError(msg);
+                  this.isSubmitting = false;
+              }
+          });
+          return;
       }
-    });
+
+      // ── CREATE MODE → POST ───────────────────────────────────
+      const userId = JSON.parse(localStorage.getItem('auth_user') || '{}')?.userId ?? undefined;
+      const request: ReservationRequest = {
+          userId,
+          source:           'PARTNER_APP',
+          checkInDate:      formValue.checkInDate,
+          checkOutDate:     formValue.checkOutDate,
+          groupLeaderName:  formValue.groupLeaderName,
+          demandeSpecial:   formValue.specialRequests || undefined,
+          groupName:        formValue.groupName || formValue.groupLeaderName,
+          numberOfAdults:   formValue.adults,
+          numberOfChildren: formValue.children,
+          currency:         'TND',
+          promoCode:        this.appliedPromoCode || undefined,
+          tourTypes,
+          participants:     participants.length > 0 ? participants : undefined,
+          extras:           extras.length > 0 ? extras : undefined
+      };
+
+      this.reservationService.createReservation(request).subscribe({
+          next: () => {
+              this.notificationService.showSuccess('✅ Réservation créée avec succès !');
+              setTimeout(() => this.router.navigate(['/']), 1500);
+          },
+          error: (err) => {
+              const msg = err?.error?.message || err?.error?.error || 'Erreur lors de la création';
+              this.notificationService.showError(msg);
+              this.isSubmitting = false;
+          }
+      });
   }
 }

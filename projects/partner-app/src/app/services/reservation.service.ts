@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
-import { Reservation, Transaction, Notification } from '../models/reservation.model';
-import { Extra, ExtraResponse } from '../models/extra.model';
+import { Notification } from '../models/reservation.model';
+import { ExtraResponse } from '../models/extra.model';
 import { isToday, isTomorrow, isInDateRange } from '../utils/date-utils';
 import { HttpClient } from '@angular/common/http';
 import { TourType } from '../models/tour.model';
@@ -12,28 +12,22 @@ import { ReservationRequest, ReservationResponse } from '../models/reservation-a
     providedIn: 'root'
 })
 export class ReservationService {
-    private readonly STORAGE_KEY = 'sahara-reservations';
     private readonly NOTIFS_KEY = 'sahara-notifications';
     private apiUrl = 'http://localhost:8080/api';
-
-    private reservationsSubject = new BehaviorSubject<Reservation[]>([]);
-    public reservations$ = this.reservationsSubject.asObservable();
 
     private notificationsSubject = new BehaviorSubject<Notification[]>([]);
     public notifications$ = this.notificationsSubject.asObservable();
 
     constructor(private http: HttpClient) {
-        this.loadReservations();
         this.loadNotifications();
     }
 
-    // ─── My Reservations (Partner API) ───────────────────────────
+    // ─── My Reservations ──────────────────────────────────────────
     getMyReservations(): Observable<ReservationResponse[]> {
         return this.http.get<ReservationResponse[]>(this.apiUrl + '/reservations/my-reservations');
     }
 
     // ─── Tour Types ───────────────────────────────────────────────
-
     getAllTourTypes(): Observable<TourType[]> {
         return this.http.get<TourType[]>(this.apiUrl + '/tour-types').pipe(
             map(tourTypes => tourTypes.map(tt => ({
@@ -44,17 +38,13 @@ export class ReservationService {
     }
 
     // ─── Extras ───────────────────────────────────────────────────
-
     getActiveExtras(): Observable<ExtraResponse[]> {
         return this.http.get<ExtraResponse[]>(this.apiUrl + '/extras').pipe(
             map(extras => extras.filter(e => e.isActive))
         );
     }
 
-    // ─── Create Reservation — REAL BACKEND API ────────────────────
-    // Replaces old local-storage-only createReservation.
-    // Called from CreateReservationComponent.onSubmit()
-
+    // ─── Create Reservation ───────────────────────────────────────
     createReservation(request: ReservationRequest): Observable<ReservationResponse> {
         return this.http.post<ReservationResponse>(
             this.apiUrl + '/reservations',
@@ -62,254 +52,23 @@ export class ReservationService {
         );
     }
 
-    // ─── Local storage helpers ────────────────────────────────────
-
-    private loadReservations(): void {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        if (stored) {
-            this.reservationsSubject.next(JSON.parse(stored));
-        }
+    // ─── Update Reservation (CLIENT / PARTENAIRE) ─────────────────
+    updateReservation(reservationId: string, request: any): Observable<ReservationResponse> {
+        return this.http.put<ReservationResponse>(
+            `${this.apiUrl}/reservations/${reservationId}`,
+            request
+        );
     }
 
-    private saveReservations(reservations: Reservation[]): void {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(reservations));
-        this.reservationsSubject.next(reservations);
+    // ─── Cancel Reservation ───────────────────────────────────────
+    cancelReservation(reservationId: string): Observable<ReservationResponse> {
+        return this.http.patch<ReservationResponse>(
+            `${this.apiUrl}/reservations/${reservationId}/status?status=CANCELLED`,
+            {}
+        );
     }
 
-    private loadNotifications(): void {
-        const stored = localStorage.getItem(this.NOTIFS_KEY);
-        if (stored) {
-            this.notificationsSubject.next(JSON.parse(stored));
-        }
-    }
-
-    private saveNotifications(notifications: Notification[]): void {
-        localStorage.setItem(this.NOTIFS_KEY, JSON.stringify(notifications));
-        this.notificationsSubject.next(notifications);
-    }
-
-    private initializeNotifications(): void {
-        const notifs = this.notificationsSubject.value;
-        if (notifs.length === 0) {
-            const today = new Date();
-            const mockNotifications: Notification[] = [
-                {
-                    id: '1', partnerId: 'partner-001',
-                    title: 'Reservation Confirmed',
-                    message: 'Your reservation #confirmed-1 has been approved by admin.',
-                    timestamp: new Date().toISOString(), isRead: false, type: 'reservation_status'
-                },
-                {
-                    id: '2', partnerId: 'partner-001',
-                    title: 'Payment Received',
-                    message: 'We have received your transfer of 600 TND for reservation #confirmed-1.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 30).toISOString(), isRead: false, type: 'payment'
-                },
-                {
-                    id: '3', partnerId: 'partner-001',
-                    title: 'New Feature Alert',
-                    message: 'Check out the new Calendar view to manage your availability!',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 2).toISOString(), isRead: false, type: 'system'
-                },
-                {
-                    id: '4', partnerId: 'partner-001',
-                    title: 'Points Earned',
-                    message: 'You earned 120 Loyalty Points from your last booking.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24).toISOString(), isRead: true, type: 'system'
-                },
-                {
-                    id: '5', partnerId: 'partner-001',
-                    title: 'Reservation Rejected',
-                    message: 'Reservation #pending-x was rejected due to full capacity.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 48).toISOString(), isRead: true, type: 'reservation_status'
-                },
-                {
-                    id: '6', partnerId: 'partner-001',
-                    title: 'Maintenance Update',
-                    message: 'System will be under maintenance on Sunday at 2 AM.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24 * 3).toISOString(), isRead: true, type: 'system'
-                },
-                {
-                    id: '7', partnerId: 'partner-001',
-                    title: 'Invoice Generated',
-                    message: 'Invoice #INV-2024-001 is now available for download.',
-                    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(), isRead: true, type: 'payment'
-                },
-                {
-                    id: '8', partnerId: 'p2',
-                    title: 'Welcome Partner',
-                    message: 'Welcome to the Sahara Tourism platform!',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24 * 10).toISOString(), isRead: true, type: 'system'
-                },
-                {
-                    id: '9', partnerId: 'partner-001',
-                    title: 'Seasonal Promo',
-                    message: 'Use code SAHARA10 for 10% off next week bookings.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 24 * 5).toISOString(), isRead: true, type: 'system'
-                },
-                {
-                    id: '10', partnerId: 'partner-001',
-                    title: 'Group Arrival',
-                    message: 'Group "Desert Fox" has arrived safely at camp.',
-                    timestamp: new Date(today.getTime() - 1000 * 60 * 60 * 5).toISOString(), isRead: false, type: 'reservation_status'
-                }
-            ];
-            this.saveNotifications(mockNotifications);
-        }
-    }
-
-    // ─── Queries ──────────────────────────────────────────────────
-
-    getAllReservations(): Observable<Reservation[]> {
-        return this.reservations$;
-    }
-
-    getReservationById(id: string): Reservation | undefined {
-        return this.reservationsSubject.value.find(r => r.id === id);
-    }
-
-    getReservationsByStatus(status: Reservation['status']): Reservation[] {
-        return this.reservationsSubject.value.filter(r => r.status === status);
-    }
-
-    getReservationsByPartner(partnerId: string): Reservation[] {
-        return this.reservationsSubject.value.filter(r => r.partnerId === partnerId);
-    }
-
-    getReservationsForToday(): Reservation[] {
-        return this.reservationsSubject.value.filter(r => isToday(r.checkInDate));
-    }
-
-    getReservationsForTomorrow(): Reservation[] {
-        return this.reservationsSubject.value.filter(r => isTomorrow(r.checkInDate));
-    }
-
-    getReservationsByDateRange(start?: Date, end?: Date): Reservation[] {
-        return this.reservationsSubject.value.filter(r => isInDateRange(r.checkInDate, start, end));
-    }
-
-    // ─── Mutations (local mock, used until reservations API is fully integrated) ───
-
-    updateReservation(id: string, updates: Partial<Reservation>): Reservation | undefined {
-        const reservations = this.reservationsSubject.value;
-        const index = reservations.findIndex(r => r.id === id);
-        if (index === -1) return undefined;
-
-        const updatedReservation = {
-            ...reservations[index],
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
-
-        if (updates.payment?.totalAmount) {
-            updatedReservation.totalPrice = updates.payment.totalAmount;
-        }
-
-        reservations[index] = updatedReservation;
-        this.saveReservations(reservations);
-        return updatedReservation;
-    }
-
-    confirmReservation(id: string): Reservation | undefined {
-        const res = this.updateReservation(id, { status: 'confirmed' });
-        if (res) {
-            this.addNotification({
-                partnerId: res.partnerId || 'unknown',
-                type: 'reservation_status',
-                title: 'Reservation Confirmed',
-                message: `Reservation #${id.substring(0, 6)} has been confirmed!`,
-                link: '/my-reservations',
-                reservationId: id
-            });
-        }
-        return res;
-    }
-
-    rejectReservation(id: string): Reservation | undefined {
-        const res = this.updateReservation(id, { status: 'rejected' });
-        if (res) {
-            this.addNotification({
-                partnerId: res.partnerId || 'unknown',
-                type: 'reservation_status',
-                title: 'Reservation Rejected',
-                message: `Reservation #${id.substring(0, 6)} was rejected.`,
-                link: '/my-reservations',
-                reservationId: id
-            });
-        }
-        return res;
-    }
-
-    markAsArrived(id: string): Reservation | undefined {
-        return this.updateReservation(id, { status: 'arrived' });
-    }
-
-    addExtra(reservationId: string, extra: Omit<Extra, 'extraId'>): Reservation | undefined {
-        const reservation = this.getReservationById(reservationId);
-        if (!reservation) return undefined;
-
-        const newExtra: Extra = { ...extra, extraId: this.generateId() };
-        const updatedExtras = [...reservation.extras, newExtra];
-        const newTotalAmount = reservation.payment.totalAmount + extra.totalPrice;
-
-        return this.updateReservation(reservationId, {
-            extras: updatedExtras,
-            payment: { ...reservation.payment, totalAmount: newTotalAmount },
-            totalPrice: newTotalAmount
-        });
-    }
-
-    removeExtra(reservationId: string, extraId: string): Reservation | undefined {
-        const reservation = this.getReservationById(reservationId);
-        if (!reservation) return undefined;
-
-        const extraToRemove = reservation.extras.find(e => e.extraId === extraId);
-        if (!extraToRemove) return undefined;
-
-        const updatedExtras = reservation.extras.filter(e => e.extraId !== extraId);
-        const newTotalAmount = reservation.payment.totalAmount - extraToRemove.totalPrice;
-
-        return this.updateReservation(reservationId, {
-            extras: updatedExtras,
-            payment: { ...reservation.payment, totalAmount: newTotalAmount },
-            totalPrice: newTotalAmount
-        });
-    }
-
-    addPayment(reservationId: string, transaction: Omit<Transaction, 'id'>): Reservation | undefined {
-        const reservation = this.getReservationById(reservationId);
-        if (!reservation) return undefined;
-
-        const newTransaction: Transaction = { ...transaction, id: this.generateId() };
-        const updatedTransactions = [...reservation.payment.transactions, newTransaction];
-        const newPaidAmount = reservation.payment.paidAmount + transaction.amount;
-        const paymentStatus = newPaidAmount >= reservation.payment.totalAmount ? 'completed'
-            : newPaidAmount > 0 ? 'partial' : 'pending';
-
-        const res = this.updateReservation(reservationId, {
-            payment: {
-                ...reservation.payment,
-                paidAmount: newPaidAmount,
-                paymentStatus,
-                transactions: updatedTransactions
-            }
-        });
-
-        if (res && paymentStatus === 'completed') {
-            this.addNotification({
-                partnerId: res.partnerId || 'unknown',
-                type: 'payment',
-                title: 'Payment Completed',
-                message: `Payment completed for reservation #${reservationId.substring(0, 6)}.`,
-                link: `/payment/${reservationId}`,
-                reservationId
-            });
-        }
-        return res;
-    }
-
-    // ─── Notifications ────────────────────────────────────────────
-
+    // ─── Notifications (local) ────────────────────────────────────
     getNotifications(): Observable<Notification[]> {
         return this.notifications$;
     }
@@ -334,14 +93,17 @@ export class ReservationService {
         this.saveNotifications(notifications);
     }
 
-    private addNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>): void {
-        const newNotification: Notification = {
-            ...notification,
-            id: this.generateId(),
-            timestamp: new Date().toISOString(),
-            isRead: false
-        };
-        this.saveNotifications([newNotification, ...this.notificationsSubject.value]);
+    // ─── Private helpers ──────────────────────────────────────────
+    private loadNotifications(): void {
+        const stored = localStorage.getItem(this.NOTIFS_KEY);
+        if (stored) {
+            this.notificationsSubject.next(JSON.parse(stored));
+        }
+    }
+
+    private saveNotifications(notifications: Notification[]): void {
+        localStorage.setItem(this.NOTIFS_KEY, JSON.stringify(notifications));
+        this.notificationsSubject.next(notifications);
     }
 
     private generateId(): string {

@@ -422,10 +422,11 @@
             </button>
             <button type="submit" class="nav-submit" *ngIf="currentStep === 3"
                     [disabled]="reservationForm.invalid || isSubmitting">
-              <span *ngIf="!isSubmitting">🏕️ Confirmer la réservation</span>
-              <span *ngIf="isSubmitting" class="submitting-state">
-                <span class="mini-spinner"></span> Envoi en cours...
-              </span>
+                <span *ngIf="!isSubmitting && !editMode">🏕️ Confirmer la réservation</span>
+                <span *ngIf="!isSubmitting && editMode">✏️ Mettre à jour la réservation</span>
+                <span *ngIf="isSubmitting" class="submitting-state">
+                    <span class="mini-spinner"></span> Envoi en cours...
+                </span>
             </button>
           </div>
 

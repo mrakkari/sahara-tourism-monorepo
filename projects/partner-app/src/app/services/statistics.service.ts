@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { ReservationService } from './reservation.service';
-import { InvoiceService } from './invoice.service';
-import { Reservation } from '../models/reservation.model';
+import { ReservationResponse } from '../models/reservation-api.model';
 import { TourType } from '../models/tour.model';
 
 export type StatisticsPeriod = 'month' | 'quarter' | 'year' | 'all';
@@ -29,14 +28,14 @@ export interface Statistics {
 }
 
 export interface TourTypeStats {
-    tourType: string; // string instead of TourType enum
+    tourType: string;
     count: number;
     revenue: number;
     percentage: number;
 }
 
 export interface TopTour {
-    tourType: string; // string instead of TourType enum
+    tourType: string;
     reservations: number;
     revenue: number;
     averageGroupSize: number;
@@ -47,17 +46,13 @@ export interface TopTour {
 })
 export class StatisticsService {
 
-    constructor(
-        private reservationService: ReservationService,
-        private invoiceService: InvoiceService
-    ) { }
+    constructor(private reservationService: ReservationService) {}
 
     getStatistics(period: StatisticsPeriod = 'all'): Observable<Statistics> {
-        // Fetch both tour types and reservations, then calculate
         return this.reservationService.getAllTourTypes().pipe(
             switchMap((tourTypes: TourType[]) => {
                 const tourTypeNames = tourTypes.map(t => t.name);
-                return this.reservationService.getAllReservations().pipe(
+                return this.reservationService.getMyReservations().pipe(
                     map(reservations => {
                         const filtered = this.filterByPeriod(reservations, period);
                         return this.calculateStatistics(filtered, tourTypeNames);
@@ -67,7 +62,8 @@ export class StatisticsService {
         );
     }
 
-    private filterByPeriod(reservations: Reservation[], period: StatisticsPeriod): Reservation[] {
+    // ─── Filter by period ─────────────────────────────────────────
+    private filterByPeriod(reservations: ReservationResponse[], period: StatisticsPeriod): ReservationResponse[] {
         if (period === 'all') return reservations;
 
         const now = new Date();
@@ -85,26 +81,32 @@ export class StatisticsService {
         });
     }
 
-    private calculateStatistics(reservations: Reservation[], tourTypeNames: string[]): Statistics {
-        const totalReservations = reservations.length;
-        const approvedReservations = reservations.filter(r => r.status === 'confirmed').length;
-        const pendingReservations = reservations.filter(r => r.status === 'pending').length;
-        const rejectedReservations = reservations.filter(r => r.status === 'rejected').length;
+    // ─── Calculate all statistics ─────────────────────────────────
+    private calculateStatistics(reservations: ReservationResponse[], tourTypeNames: string[]): Statistics {
 
-        const totalRevenue = reservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
+        const totalReservations  = reservations.length;
+        const approvedReservations = reservations.filter(r => r.status === 'CONFIRMED').length;
+        const pendingReservations  = reservations.filter(r => r.status === 'PENDING').length;
+        const rejectedReservations = reservations.filter(r => r.status === 'REJECTED').length;
+
+        // totalAmount = tours amount, totalExtrasAmount = extras
+        const totalRevenue   = reservations.reduce((sum, r) =>
+            sum + (r.totalAmount || 0) + (r.totalExtrasAmount || 0), 0);
         const invoicedAmount = totalRevenue;
-        const paidAmount = reservations
-            .filter(r => r.status === 'confirmed')
-            .reduce((sum, r) => sum + (r.payment?.paidAmount || 0), 0);
+
+        // Only CONFIRMED reservations count as "paid" for now
+        const paidAmount   = reservations
+            .filter(r => r.status === 'CONFIRMED')
+            .reduce((sum, r) => sum + (r.totalAmount || 0) + (r.totalExtrasAmount || 0), 0);
         const unpaidAmount = totalRevenue - paidAmount;
 
-        const totalParticipants = reservations.reduce((sum, r) => sum + r.numberOfPeople, 0);
-        const totalAdults = reservations.reduce((sum, r) => sum + r.adults, 0);
-        const totalChildren = reservations.reduce((sum, r) => sum + r.children, 0);
-        const averageGroupSize = totalReservations > 0 ? totalParticipants / totalReservations : 0;
+        const totalAdults   = reservations.reduce((sum, r) => sum + (r.numberOfAdults   || 0), 0);
+        const totalChildren = reservations.reduce((sum, r) => sum + (r.numberOfChildren || 0), 0);
+        const totalParticipants  = totalAdults + totalChildren;
+        const averageGroupSize   = totalReservations > 0 ? totalParticipants / totalReservations : 0;
 
         const tourTypeDistribution = this.calculateTourTypeDistribution(reservations, tourTypeNames, totalRevenue);
-        const topPerformingTours = this.calculateTopPerformingTours(reservations, tourTypeNames);
+        const topPerformingTours   = this.calculateTopPerformingTours(reservations, tourTypeNames);
 
         return {
             totalReservations,
@@ -124,38 +126,62 @@ export class StatisticsService {
         };
     }
 
-    private calculateTourTypeDistribution(reservations: Reservation[], tourTypeNames: string[], totalRevenue: number): TourTypeStats[] {
-        const distribution: TourTypeStats[] = [];
+    // ─── Tour type distribution ───────────────────────────────────
+    // ReservationResponse has tourTypes[] array (snapshots),
+    // so we match by name across all tour type snapshots
+    private calculateTourTypeDistribution(
+        reservations: ReservationResponse[],
+        tourTypeNames: string[],
+        totalRevenue: number
+    ): TourTypeStats[] {
+        return tourTypeNames
+            .map(tourType => {
+                // A reservation "has" this tour type if any of its snapshots match by name
+                const matching = reservations.filter(r =>
+                    r.tourTypes?.some(t => t.name === tourType)
+                );
+                const count   = matching.length;
+                const revenue = matching.reduce((sum, r) => {
+                    const tourTotal = r.tourTypes
+                        ?.filter(t => t.name === tourType)
+                        .reduce((s, t) => s + (t.totalPrice || 0), 0) || 0;
+                    return sum + tourTotal;
+                }, 0);
+                const percentage = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
 
-        tourTypeNames.forEach((tourType: string) => {
-            const tourReservations = reservations.filter(r => r.tourType === tourType);
-            const count = tourReservations.length;
-            const revenue = tourReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
-            const percentage = totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
-
-            if (count > 0) {
-                distribution.push({ tourType, count, revenue, percentage });
-            }
-        });
-
-        return distribution.sort((a, b) => b.revenue - a.revenue);
+                return { tourType, count, revenue, percentage };
+            })
+            .filter(s => s.count > 0)
+            .sort((a, b) => b.revenue - a.revenue);
     }
 
-    private calculateTopPerformingTours(reservations: Reservation[], tourTypeNames: string[]): TopTour[] {
-        const topTours: TopTour[] = [];
+    // ─── Top performing tours ─────────────────────────────────────
+    private calculateTopPerformingTours(
+        reservations: ReservationResponse[],
+        tourTypeNames: string[]
+    ): TopTour[] {
+        return tourTypeNames
+            .map(tourType => {
+                const matching = reservations.filter(r =>
+                    r.tourTypes?.some(t => t.name === tourType)
+                );
+                if (matching.length === 0) return null;
 
-        tourTypeNames.forEach((tourType: string) => {
-            const tourReservations = reservations.filter(r => r.tourType === tourType);
-            if (tourReservations.length === 0) return;
+                const reservationCount = matching.length;
+                const revenue = matching.reduce((sum, r) => {
+                    const tourTotal = r.tourTypes
+                        ?.filter(t => t.name === tourType)
+                        .reduce((s, t) => s + (t.totalPrice || 0), 0) || 0;
+                    return sum + tourTotal;
+                }, 0);
+                const totalParticipants = matching.reduce((sum, r) =>
+                    sum + (r.numberOfAdults || 0) + (r.numberOfChildren || 0), 0);
+                const averageGroupSize = totalParticipants / reservationCount;
 
-            const reservationCount = tourReservations.length;
-            const revenue = tourReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
-            const totalParticipants = tourReservations.reduce((sum, r) => sum + r.numberOfPeople, 0);
-            const averageGroupSize = totalParticipants / reservationCount;
-
-            topTours.push({ tourType, reservations: reservationCount, revenue, averageGroupSize });
-        });
-
-        return topTours.sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+                return { tourType, reservations: reservationCount, revenue, averageGroupSize };
+            })
+            .filter((t): t is TopTour => t !== null)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
     }
 }

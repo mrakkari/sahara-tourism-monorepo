@@ -16,7 +16,8 @@
   <div *ngIf="reservations.length > 0" class="reservations-grid">
     <div *ngFor="let reservation of reservations" class="reservation-card">
       <div class="card-header" [class]="'status-' + reservation.status">
-        <h3>{{ reservation.partnerName }}</h3>
+        <!-- partnerName → groupLeaderName -->
+        <h3>{{ reservation.groupLeaderName }}</h3>
         <span class="status-badge" [class]="'badge-' + reservation.status">
           {{ getStatusLabel(reservation.status) }}
         </span>
@@ -25,7 +26,8 @@
       <div class="card-body">
         <div class="info-row">
           <span class="label">👥 People:</span>
-          <span>{{ reservation.adults }} adults, {{ reservation.children }} children</span>
+          <!-- adults/children → numberOfAdults/numberOfChildren -->
+          <span>{{ reservation.numberOfAdults }} adults, {{ reservation.numberOfChildren }} children</span>
         </div>
         <div class="info-row">
           <span class="label">📅 Check-in:</span>
@@ -37,32 +39,27 @@
         </div>
         <div class="info-row">
           <span class="label">🏜️ Tour:</span>
-          <span>{{ getTourLabel(reservation.groupInfo.tourType) }}</span>
+          <!-- groupInfo.tourType → getTourLabel(reservation) -->
+          <span>{{ getTourLabel(reservation) }}</span>
         </div>
         <div class="info-row">
           <span class="label">💰 Total:</span>
-          <span class="price">{{ reservation.payment.totalAmount }} TND</span>
+          <!-- payment.totalAmount → getTotalAmount() -->
+          <span class="price">{{ getTotalAmount(reservation) }} TND</span>
         </div>
         <div class="info-row">
-          <span class="label">💳 Paid:</span>
-          <span [class]="'payment-' + reservation.payment.paymentStatus">
-            {{ reservation.payment.paidAmount }} TND ({{ getPaymentStatusLabel(reservation.payment.paymentStatus) }})
+          <span class="label">💳 Statut:</span>
+          <!-- payment.paymentStatus removed — show reservation status instead -->
+          <span [ngClass]="getStatusClass(reservation.status)">
+            {{ getStatusLabel(reservation.status) }}
           </span>
         </div>
       </div>
 
       <div class="card-footer">
-        <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="getPaymentProgress(reservation)"></div>
-        </div>
+        <!-- progress bar removed — no payment data in API response -->
         <div class="actions">
-          <button 
-            *ngIf="reservation.status === 'confirmed' && reservation.payment.paymentStatus !== 'completed'" 
-            class="btn-pay" 
-            [routerLink]="['/payment', reservation.id]">
-            💳 Make Payment
-          </button>
-          <span class="reservation-id">ID: {{ reservation.id }}</span>
+          <span class="reservation-id">ID: {{ reservation.reservationId }}</span>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { TranslatePipe } from '../../core/services/translate.pipe';
 import { TourType } from '../../models/tour.model';
 import { ReservationResponse, BackendReservationStatus } from '../../models/reservation-api.model';
+import { Router } from '@angular/router';
 
 @Component({
     selector: 'app-historique',
@@ -19,6 +20,9 @@ export class HistoriqueComponent implements OnInit {
     filteredReservations: ReservationResponse[] = [];
     paginatedReservations: ReservationResponse[] = [];
     loading = true;
+    cancelLoading = false;
+    cancelError: string | null = null;
+    cancelSuccess = false;
 
     statusFilter: 'all' | BackendReservationStatus = 'all';
     tourTypeFilter = 'all';
@@ -37,7 +41,8 @@ export class HistoriqueComponent implements OnInit {
 
     constructor(
         private reservationService: ReservationService,
-        private authService: AuthService
+        private authService: AuthService,
+        private router: Router
     ) { }
 
     ngOnInit(): void {
@@ -171,6 +176,8 @@ export class HistoriqueComponent implements OnInit {
 
     viewDetails(reservation: ReservationResponse): void {
         this.selectedReservation = reservation;
+        this.cancelError = null;      // ← ADD
+        this.cancelSuccess = false;
     }
 
     closeDetails(): void {
@@ -249,5 +256,57 @@ Créée le: ${new Date(res.createdAt).toLocaleDateString()}
             case 'COMPLETED':  return 'status-completed';
             default: return '';
         }
+    }
+
+    // ── Cancel ────────────────────────────────────────────────────
+
+    isCancellable(res: ReservationResponse): boolean {
+        // Only PENDING or CONFIRMED can be cancelled
+        if (!['PENDING', 'CONFIRMED'].includes(res.status)) return false;
+
+        // Must be more than 48H before checkInDate
+        const checkIn = new Date(res.checkInDate);
+        const now = new Date();
+        const diffHours = (checkIn.getTime() - now.getTime()) / (1000 * 60 * 60);
+        return diffHours > 48;
+    }
+
+    cancelReservation(res: ReservationResponse): void {
+        if (!confirm(`Confirmer l'annulation de la réservation de "${res.groupLeaderName}" ?`)) return;
+
+        this.cancelLoading = true;
+        this.cancelError = null;
+        this.cancelSuccess = false;
+
+        this.reservationService.cancelReservation(res.reservationId).subscribe({
+            next: (updated) => {
+                // Update the reservation in the local list
+                const index = this.reservations.findIndex(r => r.reservationId === updated.reservationId);
+                if (index !== -1) this.reservations[index] = updated;
+
+                // Update the modal too
+                this.selectedReservation = updated;
+
+                this.cancelLoading = false;
+                this.cancelSuccess = true;
+                this.applyFilters();
+            },
+            error: (err) => {
+                this.cancelLoading = false;
+                // Show backend message if available
+                this.cancelError = err?.error?.message || 'Annulation impossible. Veuillez réessayer.';
+            }
+        });
+    }
+
+    editReservation(res: ReservationResponse): void {
+        this.closeDetails();
+        this.router.navigate(['/create-reservation'], {
+            state: { editMode: true, reservation: res }
+        });
+    }
+
+    isEditable(res: ReservationResponse): boolean {
+        return ['PENDING', 'CONFIRMED', 'REJECTED'].includes(res.status);
     }
 }
