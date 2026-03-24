@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { AuthService, NotificationService } from '../../../shared/src/public-api';
 
 @Component({
   selector: 'app-root',

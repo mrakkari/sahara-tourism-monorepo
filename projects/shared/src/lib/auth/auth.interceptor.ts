@@ -7,10 +7,8 @@ import { AuthService } from './auth.service';
  * to every outgoing request (except login/register).
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-    const authService = inject(AuthService);
-    const token = authService.getToken();
+    const token = localStorage.getItem('access_token'); // ← direct, no AuthService
 
-    // Don't add auth header to auth endpoints themselves
     const isAuthEndpoint = req.url.includes('/api/auth/login') ||
         req.url.includes('/api/auth/register');
 

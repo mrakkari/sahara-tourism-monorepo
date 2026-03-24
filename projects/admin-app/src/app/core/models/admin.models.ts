@@ -28,15 +28,7 @@ export interface Reservation {
     totalAmount?: number;
 }
 
-export interface Notification {
-    id: string;
-    type: 'new_reservation' | 'payment_received' | 'info';
-    title: string;
-    message: string;
-    timestamp: Date;
-    read: boolean;
-    icon?: string;
-}
+
 
 export interface ReservationStats {
     totalReservations: number;

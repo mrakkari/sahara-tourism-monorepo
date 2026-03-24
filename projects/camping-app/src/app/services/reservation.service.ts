@@ -79,20 +79,17 @@ interface ReservationResponse {
     providedIn: 'root'
 })
 export class ReservationService {
-    private readonly NOTIFS_KEY = 'sahara-camping-notifications';
+    
     private readonly API_URL = 'http://localhost:8080/api/reservations';
 
     private reservationsSubject = new BehaviorSubject<Reservation[]>([]);
     public reservations$ = this.reservationsSubject.asObservable();
 
-    private notificationsSubject = new BehaviorSubject<Notification[]>([]);
-    public notifications$ = this.notificationsSubject.asObservable();
 
     private loadingSubject = new BehaviorSubject<boolean>(false);
     public loading$ = this.loadingSubject.asObservable();
 
     constructor(private http: HttpClient) {
-        this.loadNotifications();
         this.fetchAllReservations();
     }
     createReservation(payload: Record<string, unknown>): Observable<Reservation> {
@@ -256,55 +253,19 @@ export class ReservationService {
     }
 
     confirmReservation(id: string): Observable<Reservation> {
-        return this.updateStatus(id, 'CONFIRMED').pipe(
-            tap(updated => this.addNotification({
-                partnerId:     updated.partnerId ?? 'unknown',
-                type:          'reservation_status',
-                title:         'Reservation Confirmed',
-                message:       `Reservation #${id.substring(0, 6)} confirmed.`,
-                link:          `/group/${id}`,
-                reservationId: id,
-            }))
-        );
+        return this.updateStatus(id, 'CONFIRMED')
     }
 
     rejectReservation(id: string, reason?: string): Observable<Reservation> {
-        return this.updateStatus(id, 'REJECTED', reason).pipe(
-            tap(updated => this.addNotification({
-                partnerId:     updated.partnerId ?? 'unknown',
-                type:          'reservation_status',
-                title:         'Reservation Rejected',
-                message:       `Reservation #${id.substring(0, 6)} rejected.`,
-                link:          `/group/${id}`,
-                reservationId: id,
-            }))
-        );
+        return this.updateStatus(id, 'REJECTED', reason);
     }
 
     markAsArrived(id: string): Observable<Reservation> {
-        return this.updateStatus(id, 'CHECKED_IN').pipe(
-            tap(updated => this.addNotification({
-                partnerId:     updated.partnerId ?? 'unknown',
-                type:          'reservation_status',
-                title:         'Group Checked In',
-                message:       `Group checked in for reservation #${id.substring(0, 6)}.`,
-                link:          `/group/${id}`,
-                reservationId: id,
-            }))
-        );
+        return this.updateStatus(id, 'CHECKED_IN');
     }
 
     checkOutReservation(id: string): Observable<Reservation> {
-        return this.updateStatus(id, 'COMPLETED').pipe(
-            tap(updated => this.addNotification({
-                partnerId:     updated.partnerId ?? 'unknown',
-                type:          'reservation_status',
-                title:         'Check-out Completed',
-                message:       `Reservation #${id.substring(0, 6)} completed.`,
-                link:          `/group/${id}`,
-                reservationId: id,
-            }))
-        );
+        return this.updateStatus(id, 'COMPLETED');
     }
 
     // ── Queries ───────────────────────────────────────────────
@@ -407,43 +368,7 @@ export class ReservationService {
 
     // ── Notifications ─────────────────────────────────────────
 
-    getNotifications(): Observable<Notification[]> { return this.notifications$; }
 
-    getUnreadCount(partnerId?: string): number {
-        return this.notificationsSubject.value
-            .filter(n => !n.isRead && (!partnerId || n.partnerId === partnerId)).length;
-    }
-
-    markAsRead(id: string): void {
-        this.saveNotifications(
-            this.notificationsSubject.value.map(n => n.id === id ? { ...n, isRead: true } : n)
-        );
-    }
-
-    markAllAsRead(partnerId?: string): void {
-        this.saveNotifications(
-            this.notificationsSubject.value.map(n =>
-                (!partnerId || n.partnerId === partnerId) ? { ...n, isRead: true } : n
-            )
-        );
-    }
-
-    private addNotification(n: Omit<Notification, 'id' | 'timestamp' | 'isRead'>): void {
-        this.saveNotifications([
-            { ...n, id: this.generateId(), timestamp: new Date().toISOString(), isRead: false },
-            ...this.notificationsSubject.value
-        ]);
-    }
-
-    private loadNotifications(): void {
-        const stored = localStorage.getItem(this.NOTIFS_KEY);
-        if (stored) this.notificationsSubject.next(JSON.parse(stored));
-    }
-
-    private saveNotifications(notifications: Notification[]): void {
-        localStorage.setItem(this.NOTIFS_KEY, JSON.stringify(notifications));
-        this.notificationsSubject.next(notifications);
-    }
 
     private generateId(): string {
         return Date.now().toString(36) + Math.random().toString(36).substring(2);

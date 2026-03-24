@@ -11,7 +11,7 @@ import { ReservationService } from '../../services/reservation.service';
 import { Reservation } from '../../models/reservation.model';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
-import { NotificationService } from '../../services/notification.service';
+import { NotificationService, ToastService } from '../../../../../shared/src/public-api';
 
 @Component({
   selector: 'app-arrivals',
@@ -58,7 +58,8 @@ export class ArrivalsComponent implements OnInit {
 
   constructor(
     private reservationService: ReservationService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private toastService: ToastService
   ) { }
 
   ngOnInit(): void {
@@ -67,7 +68,7 @@ export class ArrivalsComponent implements OnInit {
 
   loadData(): void {
     this.reservationService.getAllReservations().subscribe(reservations => {
-      this.allReservations = reservations.filter(r => r.status === 'confirmed' || r.status === 'arrived');
+      this.allReservations = reservations.filter(r => r.status === 'confirmed' || r.status === 'checked_in');
       this.applyFilters();
     });
   }
@@ -85,7 +86,7 @@ export class ArrivalsComponent implements OnInit {
     this.filteredReservations = this.allReservations.filter(r => {
       const statusMatch = this.statusFilter === 'all' ||
         (this.statusFilter === 'pending' && r.status === 'confirmed') ||
-        (this.statusFilter === 'arrived' && r.status === 'arrived');
+        (this.statusFilter === 'arrived' && r.status === 'checked_in');
 
       let dateMatch = true;
       if (this.filterDateString) {
@@ -113,7 +114,7 @@ export class ArrivalsComponent implements OnInit {
   }
 
   getArrivedCount(): number {
-    return this.allReservations.filter(r => r.status === 'arrived').length;
+    return this.allReservations.filter(r => r.status === 'checked_in').length;
   }
 
   getPendingArrivalsTodayCount(): number {
@@ -132,7 +133,7 @@ export class ArrivalsComponent implements OnInit {
   markArrived(id: string): void {
     if (confirm('Marquer ce groupe comme arrivé et installé ?')) {
       this.reservationService.markAsArrived(id);
-      this.notificationService.showSuccess('✅ Groupe Check-In terminé !');
+      this.toastService.showSuccess('✅ Groupe Check-In terminé !');
       this.loadData();
     }
   }

@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ReservationService } from '../../services/reservation.service';
-import { NotificationService } from '../../services/notification.service';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
+import { NotificationService, ToastService } from '../../../../../shared/src/public-api';
 
 @Component({
     selector: 'app-nouveau',
@@ -34,6 +34,7 @@ export class NouveauComponent implements OnInit {
         private fb: FormBuilder,
         private reservationService: ReservationService,
         private notificationService: NotificationService,
+        private toastService: ToastService,
         private router: Router
     ) {
         this.reservationForm = this.fb.group({
@@ -85,7 +86,7 @@ export class NouveauComponent implements OnInit {
 
     onSubmit(): void {
         if (this.reservationForm.invalid) {
-            this.notificationService.showError('Veuillez remplir tous les champs obligatoires');
+            this.toastService.showError('Veuillez remplir tous les champs obligatoires');
             return;
         }
 
@@ -126,15 +127,15 @@ export class NouveauComponent implements OnInit {
         try {
             this.reservationService.createReservation(newReservation).subscribe({
             next: () => {
-                this.notificationService.showSuccess('Réservation créée avec succès!');
+                this.toastService.showSuccess('Réservation créée avec succès!');
                 this.router.navigate(['/']);
             },
             error: (err) => console.error('Erreur création:', err)
         });
-            this.notificationService.showSuccess('✅ Réservation créée avec succès !');
+            this.toastService.showSuccess('✅ Réservation créée avec succès !');
             this.router.navigate(['/']);
         } catch (error) {
-            this.notificationService.showError('Erreur lors de la création');
+            this.toastService.showError('Erreur lors de la création');
         } finally {
             this.isSubmitting = false;
         }

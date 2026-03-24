@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ReservationService } from '../../core/services/reservation.service';
 import { Reservation } from '../../core/models/reservation.model';
-import { NotificationService } from '../../core/services/notification.service';
+import { NotificationService } from '../../../../../shared/src/lib/auth/notification.service';
 import { StatCardComponent } from '../../components/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
@@ -55,14 +55,27 @@ export class DashboardComponent implements OnInit {
   pageIndex = 0;
   currentPage: number = 1;
   itemsPerPage: number = 10;
-  
+  private lastNotifCount = 0;
   constructor(
-    private reservationService: ReservationService,
-    private notificationService: NotificationService
-  ) { }
+      private reservationService: ReservationService,
+      private notificationService: NotificationService
+  ) {
+      effect(() => {
+          const count = this.notificationService.unreadCount();
+          // only reload if unread count actually increased
+          if (count > this.lastNotifCount) {
+              this.lastNotifCount = count;
+              this.reservationService.fetchAllReservations();
+          }
+      });
+  }
 
   ngOnInit(): void {
-    this.loadReservations();
+      this.reservationService.fetchAllReservations(); // ← call here instead
+      this.reservationService.getAllReservations().subscribe(reservations => {
+          this.reservations = reservations;
+          this.applyFilters();
+      });
   }
 
   get totalPages(): number {
@@ -310,9 +323,6 @@ export class DashboardComponent implements OnInit {
     // Save the PDF
     const timestamp = new Date().toISOString().split('T')[0];
     doc.save(`reservations_page${this.currentPage}_${timestamp}.pdf`);
-    
-    this.notificationService.showSuccess(
-      `${this.pagedReservations.length} réservations de la page ${this.currentPage} exportées en PDF!`
-    );
+  
   }
 }

@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../services/auth.service';
 import { Partner } from '../../models/partner.model';
 import { TranslatePipe } from '../../core/services/translate.pipe';
+import { AuthService, AuthUser } from '../../../../../shared/src/public-api';
 
 @Component({
     selector: 'app-profile',
@@ -13,16 +13,18 @@ import { TranslatePipe } from '../../core/services/translate.pipe';
     styleUrls: ['./profile.component.scss']
 })
 export class ProfileComponent implements OnInit {
-    partner: Partner | null = null;
     loading = true;
     logoPreview: string | null = null;
+    partner: AuthUser | null = null;
 
     constructor(private authService: AuthService) { }
 
     ngOnInit(): void {
         this.authService.currentUser$.subscribe(user => {
             this.partner = user;
-            this.logoPreview = user?.logo || null;
+            // ← CHANGED: AuthUser has no logo field
+            // logoPreview stays null until user uploads one
+            this.logoPreview = null;
             this.loading = false;
         });
     }
@@ -47,7 +49,6 @@ export class ProfileComponent implements OnInit {
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
                 this.logoPreview = e.target?.result as string;
-                this.authService.updateProfile({ logo: this.logoPreview });
             };
             reader.readAsDataURL(file);
         }

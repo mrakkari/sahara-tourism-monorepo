@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Invoice, InvoiceStatus, PaymentStatus } from '../../models/invoice.model';
 import { InvoiceService } from '../../services/invoice.service';
-import { AuthService } from '../../services/auth.service';
 import { TranslatePipe } from '../../core/services/translate.pipe';
+import { AuthService } from '../../../../../shared/src/public-api';
 
 @Component({
     selector: 'app-factures',
@@ -43,7 +43,7 @@ export class FacturesComponent implements OnInit {
     ngOnInit(): void {
         this.authService.currentUser$.subscribe(user => {
             if (user) {
-                this.loadInvoices(user.id);
+                this.loadInvoices(user.userId);
             }
         });
     }

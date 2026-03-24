@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { AuthUser, LoginRequest, LoginResponse, RegisterRequest } from './auth.models';
+import { NotificationService } from './notification.service';
 
 const API_BASE = 'http://localhost:8080/api/auth';
 const TOKEN_KEY = 'access_token';
@@ -12,13 +13,34 @@ const USER_KEY = 'auth_user';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-    constructor(private http: HttpClient) { }
+    private currentUserSubject = new BehaviorSubject<AuthUser | null>(this.getUser());
+    public currentUser$ = this.currentUserSubject.asObservable();
+
+    private isLoggedInSubject = new BehaviorSubject<boolean>(this.isLoggedIn());
+    public isLoggedIn$ = this.isLoggedInSubject.asObservable();
+
+    constructor(private http: HttpClient, private notificationService: NotificationService) {
+        // reconnect SSE if user is already logged in (page reload case)
+        if (this.isLoggedIn()) {
+            const token = this.getToken();
+            if (token) {
+                this.notificationService.subscribeToSSE(token);
+                this.notificationService.loadNotifications();
+                this.notificationService.loadUnreadCount();
+            }
+        }
+    }
 
     // ─── API calls ─────────────────────────────────────────────────────────────
 
     login(request: LoginRequest): Observable<LoginResponse> {
         return this.http.post<LoginResponse>(`${API_BASE}/login`, request).pipe(
-            tap(response => this._saveSession(response))
+            tap(response => {
+                this._saveSession(response);
+                this.notificationService.subscribeToSSE(response.accessToken); // ← ADD
+                this.notificationService.loadNotifications();                  // ← ADD
+                this.notificationService.loadUnreadCount();                    // ← ADD
+            })
         );
     }
 
@@ -40,12 +62,20 @@ export class AuthService {
             role
         };
         localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.currentUserSubject.next(user);
+        this.isLoggedInSubject.next(true);
     }
 
     logout(): void {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_KEY);
         localStorage.removeItem(USER_KEY);
+        this.notificationService.disconnect(); 
+        this.currentUserSubject.next(null);
+        this.isLoggedInSubject.next(false);
+    }
+    getCurrentUser(): AuthUser | null {
+        return this.getUser();
     }
 
     getToken(): string | null {

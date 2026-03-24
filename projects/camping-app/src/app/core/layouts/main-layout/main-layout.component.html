@@ -25,20 +25,29 @@
                         <button class="btn-text" (click)="markAllAsRead()">Tout lire</button>
                     </div>
                     <div class="notification-list">
-                        <div class="notif-item" [class.unread]="!n.isRead" *ngFor="let n of notifications">
+                        <div class="notif-item" [class.unread]="!n.isRead" *ngFor="let n of notifications.slice(0, displayCount)"  (click)="markAsRead(n.notificationId, n.reservationId)">
                             <div class="notif-icon">
                                 {{ n.type === 'payment' ? '💰' : (n.type === 'system' ? '🛠️' : '📅') }}
                             </div>
                             <div class="notif-content">
                                 <p class="notif-title">{{ n.title }}</p>
                                 <p class="notif-msg">{{ n.message }}</p>
-                                <span class="notif-time">{{ n.timestamp | date:'short' }}</span>
+                                <span class="notif-time">{{ n.createdAt | date:'short' }}</span>
                             </div>
                             <div class="unread-dot" *ngIf="!n.isRead"></div>
                         </div>
                         <div class="empty-notif" *ngIf="notifications.length === 0">
                             Aucune nouvelle notification
                         </div>
+                        <button class="btn-voir-plus" 
+                                *ngIf="displayCount < notifications.length"
+                                (click)="showMore()">
+                            Voir plus
+                        </button>
+                        <p class="all-loaded"
+                        *ngIf="notifications.length > 0 && displayCount >= notifications.length">
+                            Toutes les notifications sont affichées
+                        </p>
                     </div>
                 </div>
 

@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { AuthService, NotificationService } from '../../../shared/src/public-api';
+
 
 @Component({
   selector: 'app-root',
@@ -11,4 +13,3 @@ import { RouterOutlet } from '@angular/router';
 export class AppComponent {
   title = 'partner-app';
 }
-

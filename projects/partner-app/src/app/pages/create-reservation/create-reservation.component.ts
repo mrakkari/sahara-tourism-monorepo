@@ -4,15 +4,14 @@ import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } fr
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ReservationService } from '../../services/reservation.service';
-import { NotificationService } from '../../services/notification.service';
-import { AuthService } from '../../services/auth.service';
 import { StepperComponent } from '../../shared/components/stepper/stepper.component';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
 import { IMAGES } from '../../core/constants/images';
 import { TourType } from '../../models/tour.model';
 import { ExtraResponse } from '../../models/extra.model';
 import { ReservationRequest, ReservationResponse } from '../../models/reservation-api.model';
-
+import { ToastService } from '../../../../../shared/src/lib/auth/toast.service';
+import { AuthService } from '../../../../../shared/src/public-api';
 @Component({
   selector: 'app-create-reservation',
   standalone: true,
@@ -60,10 +59,10 @@ export class CreateReservationComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private reservationService: ReservationService,
-    private notificationService: NotificationService,
     private authService: AuthService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private toastService: ToastService
   ) {
     this.reservationForm = this.createForm();
   }
@@ -513,7 +512,7 @@ export class CreateReservationComponent implements OnInit {
 
   onSubmit(): void {
       if (this.reservationForm.invalid) {
-          this.notificationService.showError('Veuillez remplir tous les champs requis');
+          this.toastService.showError('Veuillez remplir tous les champs requis');
           return;
       }
 
@@ -557,12 +556,12 @@ export class CreateReservationComponent implements OnInit {
 
           this.reservationService.updateReservation(this.editReservationId, updateRequest).subscribe({
               next: () => {
-                  this.notificationService.showSuccess('✅ Réservation mise à jour avec succès !');
+                  this.toastService.showSuccess('✅ Réservation mise à jour avec succès !');
                   setTimeout(() => this.router.navigate(['/historique']), 1500);
               },
               error: (err) => {
                   const msg = err?.error?.message || 'Erreur lors de la mise à jour';
-                  this.notificationService.showError(msg);
+                  this.toastService.showError(msg);
                   this.isSubmitting = false;
               }
           });
@@ -590,12 +589,12 @@ export class CreateReservationComponent implements OnInit {
 
       this.reservationService.createReservation(request).subscribe({
           next: () => {
-              this.notificationService.showSuccess('✅ Réservation créée avec succès !');
+              this.toastService.showSuccess('✅ Réservation créée avec succès !');
               setTimeout(() => this.router.navigate(['/']), 1500);
           },
           error: (err) => {
               const msg = err?.error?.message || err?.error?.error || 'Erreur lors de la création';
-              this.notificationService.showError(msg);
+              this.toastService.showError(msg);
               this.isSubmitting = false;
           }
       });

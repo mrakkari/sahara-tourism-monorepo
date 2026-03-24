@@ -1,12 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { ReservationService } from '../../services/reservation.service';
 import { Reservation } from '../../models/reservation.model';
-import { NotificationService } from '../../services/notification.service';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
+import { NotificationService, ToastService } from '../../../../../shared/src/public-api';
 
 @Component({
   selector: 'app-groups',
@@ -38,11 +38,22 @@ export class GroupsComponent implements OnInit {
   currentPage = 1;
   itemsPerPage = 15;
   Math = Math;
+  private lastUnreadCount = 0;
 
   constructor(
     private reservationService: ReservationService,
-    private notificationService: NotificationService
-  ) { }
+    private notificationService: NotificationService,
+    private toastService: ToastService
+  ) {
+    // watch unreadCount signal — reload list when new notification arrives
+    effect(() => {
+      const count = this.notificationService.unreadCount();
+      if (count > this.lastUnreadCount) {
+        this.lastUnreadCount = count;
+        this.loadInitialData();
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadInitialData();
@@ -50,14 +61,11 @@ export class GroupsComponent implements OnInit {
 
   loadInitialData(): void {
     this.loading = true;
-    // Fetch CONFIRMED from backend — these are groups awaiting check-in
     this.reservationService.fetchByStatus('CONFIRMED').subscribe({
       next: (confirmed) => {
-        // Also fetch CHECKED_IN groups (currently at camp)
         this.reservationService.fetchByStatus('CHECKED_IN').subscribe({
           next: (checkedIn) => {
             this.allReservations = [...confirmed, ...checkedIn].sort((a, b) => {
-              // confirmed first, then checked_in
               if (a.status === 'confirmed' && b.status !== 'confirmed') return -1;
               if (b.status === 'confirmed' && a.status !== 'confirmed') return 1;
               return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -72,7 +80,6 @@ export class GroupsComponent implements OnInit {
       error: () => this.loading = false
     });
   }
-
   get totalPages(): number {
     return Math.ceil(this.filteredReservations.length / this.itemsPerPage);
   }
@@ -80,11 +87,9 @@ export class GroupsComponent implements OnInit {
   applyFilters(): void {
     this.hasSearched = true;
     let filtered = this.allReservations;
-
     if (this.statusFilter !== 'all') {
       filtered = filtered.filter(r => r.status === this.statusFilter);
     }
-
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(r =>
@@ -94,13 +99,11 @@ export class GroupsComponent implements OnInit {
         r.id.toLowerCase().includes(term)
       );
     }
-
     this.filteredReservations = filtered.sort((a, b) => {
       if (a.status === 'checked_in' && b.status !== 'checked_in') return -1;
       if (b.status === 'checked_in' && a.status !== 'checked_in') return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-
     this.currentPage = 1;
     this.updatePagedData();
   }
@@ -162,8 +165,8 @@ export class GroupsComponent implements OnInit {
   getPaymentStatus(r: Reservation): string {
     const total = r.payment.totalAmount || 0;
     const paid  = r.payment.paidAmount  || 0;
-    if (paid === 0)       return 'Non payé';
-    if (paid >= total)    return 'Payé 100%';
+    if (paid === 0)    return 'Non payé';
+    if (paid >= total) return 'Payé 100%';
     return `Payé ${Math.round((paid / total) * 100)}%`;
   }
 
@@ -187,12 +190,12 @@ export class GroupsComponent implements OnInit {
     if (!confirm('Confirmer l\'arrivée de ce groupe au campement ?')) return;
     this.reservationService.markAsArrived(id).subscribe({
       next: () => {
-        this.notificationService.showSuccess('✅ Groupe enregistré avec succès !');
+        this.toastService.showSuccess('✅ Groupe enregistré avec succès !');
         this.loadInitialData();
       },
       error: (err) => {
         console.error('Check-in failed:', err);
-        this.notificationService.showSuccess('❌ Erreur lors du check-in.');
+        this.toastService.showError('❌ Erreur lors du check-in.');
       }
     });
   }

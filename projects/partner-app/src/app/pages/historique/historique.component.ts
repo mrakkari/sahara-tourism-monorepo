@@ -1,12 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReservationService } from '../../services/reservation.service';
-import { AuthService } from '../../services/auth.service';
 import { TranslatePipe } from '../../core/services/translate.pipe';
 import { TourType } from '../../models/tour.model';
 import { ReservationResponse, BackendReservationStatus } from '../../models/reservation-api.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService, NotificationService } from '../../../../../shared/src/public-api';
 
 @Component({
     selector: 'app-historique',
@@ -38,12 +38,23 @@ export class HistoriqueComponent implements OnInit {
     totalPages = 0;
 
     Math = Math;
-
+    private lastUnreadCount = 0;
+    
     constructor(
         private reservationService: ReservationService,
         private authService: AuthService,
+        private notificationService: NotificationService,
+        private route: ActivatedRoute,
         private router: Router
-    ) { }
+    ) {
+        effect(() => {
+            const count = this.notificationService.unreadCount();
+            if (count > this.lastUnreadCount) {
+                this.lastUnreadCount = count;
+                this.loadReservations(); // reload list when new notif arrives
+            }
+        });
+    }
 
     ngOnInit(): void {
         this.loadTourTypes();
@@ -56,7 +67,6 @@ export class HistoriqueComponent implements OnInit {
             error: (err) => console.error('Failed to load tour types', err)
         });
     }
-
     loadReservations(): void {
         this.loading = true;
         this.reservationService.getMyReservations().subscribe({
@@ -64,11 +74,31 @@ export class HistoriqueComponent implements OnInit {
                 this.reservations = reservations;
                 this.applyFilters();
                 this.loading = false;
+                this.checkQueryParam(); // ← call here
             },
             error: (err) => {
                 console.error('Error loading reservations:', err);
                 this.loading = false;
             }
+        });
+    }
+
+    checkQueryParam(): void {
+        // use queryParams observable instead of snapshot
+        this.route.queryParams.subscribe(params => {
+            const reservationId = params['openReservation'];
+            if (!reservationId) return;
+
+            const found = this.reservations.find(r => r.reservationId === reservationId);
+            if (found) {
+                this.viewDetails(found);
+            }
+
+            // clean URL
+            this.router.navigate([], {
+                queryParams: {},
+                replaceUrl: true
+            });
         });
     }
 
@@ -89,7 +119,7 @@ export class HistoriqueComponent implements OnInit {
 
     // ── Filters ──────────────────────────────────────────────────
 
-    applyFilters(): void {
+applyFilters(): void {
         let result = [...this.reservations];
 
         if (this.statusFilter !== 'all') {
@@ -144,7 +174,6 @@ export class HistoriqueComponent implements OnInit {
     nextPage(): void {
         if (this.currentPage < this.totalPages) { this.currentPage++; this.updatePagination(); }
     }
-
     previousPage(): void {
         if (this.currentPage > 1) { this.currentPage--; this.updatePagination(); }
     }

@@ -5,6 +5,7 @@ import { SidebarComponent, SidebarItem } from '../../../components/sidebar/sideb
 import { ReservationService } from '../../../services/reservation.service';
 import { Reservation } from '../../../models/reservation.model';
 import { AuthService } from '../../../../../../shared/src/lib/auth/auth.service';
+import { NotificationService } from '../../../../../../shared/src/public-api'; // ADD THIS
 
 @Component({
     selector: 'app-main-layout',
@@ -16,9 +17,8 @@ import { AuthService } from '../../../../../../shared/src/lib/auth/auth.service'
 export class MainLayoutComponent implements OnInit {
     pageTitle = 'Groupes Confirmés';
     sidebarCollapsed = false;
-    notificationCount = 0;
     showNotifications = false;
-    notifications: any[] = [];
+    displayCount =5;
 
     sidebarItems: SidebarItem[] = [
         { label: 'Groupes', icon: '👥', route: '/camping-app', badge: 0 },
@@ -26,24 +26,39 @@ export class MainLayoutComponent implements OnInit {
         { label: 'Paiements', icon: '💰', route: '/payment-history' },
     ];
 
+    // READ DIRECTLY FROM SERVICE SIGNALS — no local copies
+    get notifications() {
+        return this.notificationService.notifications();
+    }
+
+    get notificationCount() {
+        return this.notificationService.unreadCount();
+    }
+
     get userName(): string {
         return this.authService.getUser()?.name ?? 'Camp Sahara';
     }
 
     constructor(
         private reservationService: ReservationService,
+        private notificationService: NotificationService, // ADD THIS
         private authService: AuthService,
         private router: Router
     ) { }
 
     ngOnInit(): void {
-        this.loadNotificationCount();
-    }
+        // load real notifications from backend
+        this.notificationService.loadNotifications();
+        this.notificationService.loadUnreadCount();
 
-    loadNotificationCount(): void {
+        // SSE: get token and open real-time connection
+        const token = this.authService.getToken();
+        if (token) {
+            this.notificationService.subscribeToSSE(token);
+        }
+
+        // keep sidebar badge for confirmed groups (this stays as is)
         this.reservationService.getAllReservations().subscribe((reservations: Reservation[]) => {
-            const pendingCount = reservations.filter((r: Reservation) => r.status === 'pending').length;
-            this.notificationCount = pendingCount;
             this.sidebarItems[0].badge = reservations.filter(
                 (r: Reservation) => r.status === 'confirmed' || r.status === 'checked_in'
             ).length;
@@ -52,24 +67,31 @@ export class MainLayoutComponent implements OnInit {
 
     toggleNotifications(): void {
         this.showNotifications = !this.showNotifications;
-        if (this.showNotifications) {
-            this.loadNotifications();
-        }
-    }
-
-    loadNotifications(): void {
-        this.reservationService.getNotifications().subscribe((notifs: any[]) => {
-            this.notifications = notifs;
-        });
     }
 
     markAllAsRead(): void {
-        this.reservationService.markAllAsRead();
-        this.loadNotifications();
+        this.notificationService.markAllAsRead().subscribe(() => {
+            this.notificationService.loadUnreadCount();
+        });
+    }
+    markAsRead(id: string, reservationId?: string): void {
+        this.notificationService.markAsRead(id).subscribe(() => {
+            this.notificationService.loadNotifications();
+            this.notificationService.loadUnreadCount();
+            // navigate to group detail if reservationId exists
+            if (reservationId) {
+                this.showNotifications = false;
+                this.router.navigate(['/group', reservationId]);
+            }
+        });
     }
 
     handleLogout(): void {
+        this.notificationService.disconnect(); // close SSE on logout
         this.authService.logout();
         this.router.navigate(['/login']);
+    }
+    showMore(): void {
+        this.displayCount += 5;
     }
 }

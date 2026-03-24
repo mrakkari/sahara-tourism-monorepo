@@ -96,7 +96,6 @@ export class ReservationService {
 
     constructor(private http: HttpClient) {
         this.loadNotifications();
-        this.fetchAllReservations();
     }
 
     private loadNotifications(): void {

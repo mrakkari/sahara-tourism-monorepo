@@ -5,10 +5,10 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ReservationService } from '../../services/reservation.service';
 import { Reservation, Extra, ExtraCatalog } from '../../models/reservation.model';
-import { NotificationService } from '../../services/notification.service';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
 import { forkJoin } from 'rxjs';
+import { NotificationService, ToastService } from '../../../../../shared/src/public-api';
 @Component({
   selector: 'app-group-detail',
   standalone: true,
@@ -47,6 +47,7 @@ export class GroupDetailComponent implements OnInit {
     private router: Router,
     private reservationService: ReservationService,
     private notificationService: NotificationService,
+    private toastService: ToastService,
     private fb: FormBuilder
   ) {
     this.extraForm = this.fb.group({
@@ -119,7 +120,7 @@ export class GroupDetailComponent implements OnInit {
       ).subscribe({
           next: (updated) => {
               this.reservation = updated;
-              this.notificationService.showSuccess('✅ Extra ajouté au groupe.');
+              this.toastService.showSuccess('✅ Extra ajouté au groupe.');
               this.selectedExtraId = null;
               this.extraForm.reset({ quantity: 1 });
               this.extraTotal = 0;
@@ -127,7 +128,7 @@ export class GroupDetailComponent implements OnInit {
           },
           error: (err) => {
               console.error('Failed to add extra:', err);
-              this.notificationService.showError('❌ Erreur lors de l\'ajout de l\'extra.');
+              this.toastService.showError('❌ Erreur lors de l\'ajout de l\'extra.');
           }
       });
   }
@@ -139,12 +140,12 @@ export class GroupDetailComponent implements OnInit {
 
       this.reservationService.deleteExtra(extraId).subscribe({
           next: () => {
-              this.notificationService.showSuccess('✅ Extra retiré avec succès');
+              this.toastService.showSuccess('✅ Extra retiré avec succès');
               this.loadReservation(this.reservation!.id);
           },
           error: (err: unknown) => {
               console.error('Failed to delete extra:', err);
-              this.notificationService.showSuccess('❌ Erreur lors de la suppression.');
+              this.toastService.showError('❌ Erreur lors de la suppression.');
           }
       });
   }
@@ -161,7 +162,7 @@ export class GroupDetailComponent implements OnInit {
       description: value.description
     });
 
-    this.notificationService.showSuccess(`✅ Paiement enregistré (+${value.amount} TND)`);
+    this.toastService.showSuccess(`✅ Paiement enregistré (+${value.amount} TND)`);
     this.loadReservation(this.reservation.id);
     this.paymentForm.reset({ amount: 0, description: 'Paiement espèces' });
   }
@@ -171,7 +172,7 @@ export class GroupDetailComponent implements OnInit {
       this.reservationService.markAsArrived(this.reservation.id).subscribe({
           next: (updated) => {
               this.reservation = updated;
-              this.notificationService.showSuccess('✅ Arrivée confirmée !');
+              this.toastService.showSuccess('✅ Arrivée confirmée !');
           },
           error: (err) => console.error('Check-in failed:', err)
       });
@@ -181,7 +182,7 @@ export class GroupDetailComponent implements OnInit {
       if (!this.reservation || !confirm('Confirmer le départ du groupe et archiver ?')) return;
       this.reservationService.checkOutReservation(this.reservation.id).subscribe({
           next: () => {
-              this.notificationService.showSuccess('👋 Départ enregistré. Dossier archivé.');
+              this.toastService.showSuccess('👋 Départ enregistré. Dossier archivé.');
               this.router.navigate(['/']);
           },
           error: (err) => console.error('Checkout failed:', err)
@@ -316,19 +317,16 @@ export class GroupDetailComponent implements OnInit {
               const count = this.pendingExtras.length;
               this.pendingExtras = [];
               this.showExtraForm = false;
-              this.notificationService.showSuccess(
+              this.toastService.showSuccess(
                   `✅ ${count} extra(s) ajouté(s) avec succès !`
               );
               this.loadReservation(this.reservation!.id);
           },
           error: (err: unknown) => {
               console.error('Failed to submit extras:', err);
-              this.notificationService.showSuccess('❌ Erreur lors de l\'ajout.');
+              this.toastService.showError('❌ Erreur lors de l\'ajout.');
               this.loadReservation(this.reservation!.id);
           }
       });
-  }
-
-
-  
+  }  
 }

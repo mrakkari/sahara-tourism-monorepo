@@ -11,21 +11,21 @@
                             {{ partner.name.charAt(0) }}
                         </div>
                     </ng-template>
-                    
+
                     <div class="upload-overlay">
                         <i class="fas fa-camera"></i>
                         <span>Change Logo</span>
                     </div>
                 </div>
-                
-                <input 
-                    type="file" 
-                    id="logoUpload" 
-                    accept="image/*" 
+
+                <input
+                    type="file"
+                    id="logoUpload"
+                    accept="image/*"
                     (change)="onLogoUpload($event)"
                     style="display: none;">
             </div>
-            
+
             <div class="profile-info">
                 <h2>{{ partner.name }}</h2>
             </div>
@@ -34,25 +34,32 @@
         <div class="profile-sections">
             <div class="section-card">
                 <h3>Contact Information</h3>
+
+                <!-- ← CHANGED: partner.contactInfo.email → partner.email -->
                 <div class="detail-row">
                     <i class="fas fa-envelope"></i>
-                    <span>{{ partner.contactInfo.email }}</span>
+                    <span>{{ partner.email }}</span>
                 </div>
+
+                <!-- ← REMOVED: phone and address — not in AuthUser yet -->
+                <!-- show placeholder until backend adds these fields -->
                 <div class="detail-row">
                     <i class="fas fa-phone"></i>
-                    <span>{{ partner.contactInfo.phone }}</span>
+                    <span>—</span>
                 </div>
                 <div class="detail-row">
                     <i class="fas fa-map-marker-alt"></i>
-                    <span>{{ partner.address.street }}, {{ partner.address.city }} {{ partner.address.postalCode }}</span>
+                    <span>—</span>
                 </div>
             </div>
 
             <div class="section-card">
                 <h3>Business Information</h3>
+
+                <!-- ← CHANGED: show role instead of commissionRate -->
                 <div class="detail-row">
-                    <strong>Commission Rate:</strong>
-                    <span class="highlight">{{ partner.commissionRate }}%</span>
+                    <strong>Role:</strong>
+                    <span class="highlight">{{ partner.role }}</span>
                 </div>
                 <div class="detail-row">
                     <strong>Contract Status:</strong>

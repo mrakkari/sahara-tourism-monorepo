@@ -57,32 +57,47 @@
             </button>
           </div>
         </div>
-
         <!-- Notifications -->
         <div class="notifications-wrapper">
           <button class="btn-icon notif-btn" (click)="toggleNotifications($event)">
             🔔
-            <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+            <span class="badge" *ngIf="notifService.unreadCount() > 0">
+              {{ notifService.unreadCount() }}
+            </span>
           </button>
 
           <div class="notif-dropdown glass-dropdown" *ngIf="showNotifications" (click)="$event.stopPropagation()">
             <div class="notif-header">
               <h3>{{ 'header.notifications' | translate }}</h3>
-              <button class="mark-read" (click)="markAllRead()">{{ 'header.markAllRead' | translate }}</button>
+              <button class="mark-read" (click)="markAllRead()">
+                {{ 'header.markAllRead' | translate }}
+              </button>
             </div>
             <div class="notif-list">
-              <div *ngFor="let notif of notifications" class="notif-item" [class.unread]="!notif.isRead"
-                (click)="handleNotificationClick(notif)">
+              <div *ngFor="let notif of notifService.notifications().slice(0, displayCount)"
+                  class="notif-item"
+                  [class.unread]="!notif.isRead"
+                  (click)="handleNotificationClick(notif)">
                 <div class="notif-icon">{{ getNotificationIcon(notif.type) }}</div>
                 <div class="notif-content">
                   <div class="notif-title">{{ notif.title }}</div>
                   <div class="notif-message">{{ notif.message }}</div>
-                  <div class="notif-time">{{ formatTime(notif.timestamp) }}</div>
+                  <div class="notif-time">{{ formatTime(notif.createdAt) }}</div>
                 </div>
+                <div class="unread-dot" *ngIf="!notif.isRead"></div>
               </div>
-              <div *ngIf="notifications.length === 0" class="empty-notifs">
+              <div *ngIf="notifService.notifications().length === 0" class="empty-notifs">
                 {{ 'header.noNotifications' | translate }}
               </div>
+              <button class="btn-voir-plus"
+                      *ngIf="displayCount < notifService.notifications().length"
+                      (click)="showMore()">
+                Voir plus
+              </button>
+              <p class="all-loaded"
+                *ngIf="notifService.notifications().length > 0 && displayCount >= notifService.notifications().length">
+                Toutes les notifications sont affichées
+              </p>
             </div>
           </div>
         </div>

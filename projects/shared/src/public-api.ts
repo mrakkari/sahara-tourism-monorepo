@@ -15,3 +15,7 @@ export * from './lib/auth/auth.guard';
 export * from './lib/auth/login/login.component';
 export * from './lib/auth/register/register.component';
 
+export * from './lib/auth/notification.service';
+export * from './lib/auth/toast.service';
+
+
