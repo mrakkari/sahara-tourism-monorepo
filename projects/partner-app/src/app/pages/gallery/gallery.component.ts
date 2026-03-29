@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IMAGES } from '../../core/constants/images';
+import { IMAGES } from '../../../../../shared/src/models/constants/images';
 
 @Component({
   selector: 'app-gallery',

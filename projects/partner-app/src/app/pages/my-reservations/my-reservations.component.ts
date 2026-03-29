@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { ReservationService } from '../../services/reservation.service';
-import { ReservationResponse } from '../../models/reservation-api.model';
+import { ReservationService } from '../../../../../shared/src/services/reservation.service';
+import { ReservationResponse } from '../../../../../shared/src/models/reservation-api.model';
 
 @Component({
     selector: 'app-my-reservations',

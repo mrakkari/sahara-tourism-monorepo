@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { IMAGES } from '../../core/constants/images';
+import { IMAGES } from '../../../../../shared/src/models/constants/images';
 
 interface Tour {
   id: string;

@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
-import { ReservationService } from './reservation.service';
-import { ReservationResponse } from '../models/reservation-api.model';
-import { TourType } from '../models/tour.model';
+import { ReservationService } from '../../../../shared/src/services/reservation.service';
+import { ReservationResponse } from '../../../../shared/src/models/reservation-api.model';
+import { TourType } from '../../../../shared/src/models/tour.model';
 
 export type StatisticsPeriod = 'month' | 'quarter' | 'year' | 'all';
 

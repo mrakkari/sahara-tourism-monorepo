@@ -1,0 +1,129 @@
+<div class="dialog-shell">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <div class="dialog-header">
+    <div class="dialog-header-left">
+      <div class="dialog-icon">👤</div>
+      <div>
+        <h2 class="dialog-title">Nouveau Client</h2>
+        <p class="dialog-subtitle">Le compte sera créé avec un mot de passe provisoire.</p>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="onCancel()">✕</button>
+  </div>
+
+  <!-- ── Role toggle ─────────────────────────────────────────────────────── -->
+  <div class="role-toggle-section">
+    <label class="toggle-label">Type de compte</label>
+    <div class="role-toggle" [formGroup]="form">
+      <button
+        type="button"
+        class="role-btn"
+        [class.active]="form.get('role')?.value === 'CLIENT'"
+        (click)="form.get('role')?.setValue('CLIENT')">
+        <span class="role-icon">🧑</span>
+        <span>Client</span>
+      </button>
+      <button
+        type="button"
+        class="role-btn"
+        [class.active]="form.get('role')?.value === 'PARTENAIRE'"
+        (click)="form.get('role')?.setValue('PARTENAIRE')">
+        <span class="role-icon">🏢</span>
+        <span>Partenaire</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Form ────────────────────────────────────────────────────────────── -->
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="dialog-form">
+
+    <!-- Name -->
+    <div class="field-wrap" [class.has-error]="isInvalid('name')">
+      <label class="field-label">
+        Nom complet <span class="req">*</span>
+      </label>
+      <input
+        type="text"
+        class="field-input"
+        formControlName="name"
+        placeholder="Ex: Ahmed Ben Ali">
+      <span class="field-error" *ngIf="isInvalid('name')">
+        {{ getError('name') }}
+      </span>
+    </div>
+
+    <!-- Email -->
+    <div class="field-wrap" [class.has-error]="isInvalid('email')">
+      <label class="field-label">
+        Adresse e-mail <span class="req">*</span>
+      </label>
+      <input
+        type="email"
+        class="field-input"
+        formControlName="email"
+        placeholder="exemple@email.com">
+      <span class="field-error" *ngIf="isInvalid('email')">
+        {{ getError('email') }}
+      </span>
+    </div>
+
+    <!-- Phone -->
+    <div class="field-wrap" [class.has-error]="isInvalid('phone')">
+      <label class="field-label">
+        Téléphone <span class="req">*</span>
+      </label>
+      <input
+        type="tel"
+        class="field-input"
+        formControlName="phone"
+        placeholder="+216 XX XXX XXX">
+      <span class="field-error" *ngIf="isInvalid('phone')">
+        {{ getError('phone') }}
+      </span>
+    </div>
+
+    <!-- Matricule Fiscale — shown only for PARTENAIRE -->
+    <div class="field-wrap field-animate" *ngIf="isPartenaire">
+      <label class="field-label">
+        Matricule Fiscale
+        <span class="optional-tag">optionnel</span>
+      </label>
+      <input
+        type="text"
+        class="field-input"
+        formControlName="taxId"
+        placeholder="Ex: 1234567A">
+    </div>
+
+    <!-- Password notice -->
+    <div class="password-notice">
+      <span class="notice-icon">🔑</span>
+      <div>
+        <strong>Mot de passe provisoire</strong>
+        <p>Le compte sera créé avec le mot de passe <code>Camping2025!</code>. L'utilisateur devra le changer à sa première connexion.</p>
+      </div>
+    </div>
+
+    <!-- Error message from API -->
+    <div class="api-error" *ngIf="errorMessage">
+      <span>⚠️</span>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Actions -->
+    <div class="dialog-actions">
+      <button type="button" class="btn-cancel" (click)="onCancel()">
+        Annuler
+      </button>
+      <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+        <span *ngIf="!isSubmitting">✅ Créer le compte</span>
+        <span *ngIf="isSubmitting" class="submitting">
+          <span class="mini-spinner"></span>
+          Création en cours...
+        </span>
+      </button>
+    </div>
+
+  </form>
+</div>

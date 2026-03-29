@@ -1,0 +1,347 @@
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+$primary:       #3b82f6;
+$primary-dark:  #2563eb;
+$primary-light: #eff6ff;
+$success:       #10b981;
+$danger:        #ef4444;
+$danger-light:  #fef2f2;
+$text-h:        #0f172a;
+$text-body:     #374151;
+$text-muted:    #6b7280;
+$border:        #e5e7eb;
+$bg-card:       #ffffff;
+$radius:        10px;
+
+// ─── Dialog shell ─────────────────────────────────────────────────────────────
+// Mat Dialog gives us the outer panel — we style everything inside.
+.dialog-shell {
+  width: 520px;
+  max-width: 100%;
+  background: $bg-card;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid $border;
+  gap: 16px;
+}
+
+.dialog-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dialog-icon {
+  font-size: 1.75rem;
+  width: 48px;
+  height: 48px;
+  background: $primary-light;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dialog-title {
+  margin: 0 0 3px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $text-h;
+  letter-spacing: -.02em;
+}
+
+.dialog-subtitle {
+  margin: 0;
+  font-size: .8125rem;
+  color: $text-muted;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid $border;
+  background: transparent;
+  color: $text-muted;
+  font-size: .875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color .15s, background .15s, color .15s;
+
+  &:hover {
+    border-color: $danger;
+    background: $danger-light;
+    color: $danger;
+  }
+}
+
+// ─── Role toggle ──────────────────────────────────────────────────────────────
+.role-toggle-section {
+  padding: 20px 24px 0;
+}
+
+.toggle-label {
+  display: block;
+  font-size: .875rem;
+  font-weight: 500;
+  color: $text-body;
+  margin-bottom: 10px;
+}
+
+.role-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.role-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px solid $border;
+  border-radius: $radius;
+  background: #fafafa;
+  color: $text-muted;
+  font-size: .9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .18s, background .18s, color .18s, box-shadow .18s;
+
+  .role-icon { font-size: 1.1rem; }
+
+  &:hover {
+    border-color: $primary;
+    background: $primary-light;
+    color: $primary;
+  }
+
+  &.active {
+    border-color: $primary;
+    background: $primary-light;
+    color: $primary-dark;
+    font-weight: 600;
+    box-shadow: 0 0 0 3px rgba($primary, .1);
+  }
+}
+
+// ─── Form ─────────────────────────────────────────────────────────────────────
+.dialog-form {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ─── Fields ───────────────────────────────────────────────────────────────────
+.field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  &.has-error .field-input {
+    border-color: $danger;
+    box-shadow: 0 0 0 3px rgba($danger, .08);
+  }
+}
+
+// Slide-in animation for taxId field
+.field-animate {
+  animation: slideDown .22s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.field-label {
+  font-size: .875rem;
+  font-weight: 500;
+  color: $text-body;
+}
+
+.field-input {
+  padding: 11px 14px;
+  font-size: .9375rem;
+  font-family: inherit;
+  border: 1.5px solid $border;
+  border-radius: $radius;
+  background: #fff;
+  color: $text-h;
+  transition: border-color .18s, box-shadow .18s;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba($primary, .1);
+  }
+
+  &::placeholder { color: #9ca3af; }
+}
+
+.field-error {
+  font-size: .78rem;
+  color: $danger;
+  font-weight: 500;
+}
+
+// ─── Password notice ──────────────────────────────────────────────────────────
+.password-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: $radius;
+
+  .notice-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+  strong {
+    display: block;
+    font-size: .875rem;
+    color: #92400e;
+    margin-bottom: 3px;
+  }
+
+  p {
+    margin: 0;
+    font-size: .8rem;
+    color: #78350f;
+    line-height: 1.5;
+  }
+
+  code {
+    background: #fef3c7;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: .8rem;
+    color: #92400e;
+  }
+}
+
+// ─── API error ────────────────────────────────────────────────────────────────
+.api-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: $danger-light;
+  border: 1.5px solid lighten($danger, 25%);
+  border-radius: $radius;
+  font-size: .8375rem;
+  color: darken($danger, 8%);
+  font-weight: 500;
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.btn-cancel {
+  padding: 11px 20px;
+  background: transparent;
+  border: 1.5px solid $border;
+  border-radius: $radius;
+  color: $text-body;
+  font-size: .9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .18s, background .18s;
+
+  &:hover {
+    border-color: $text-body;
+    background: #f1f5f9;
+  }
+}
+
+.btn-submit {
+  padding: 11px 24px;
+  background: linear-gradient(135deg, $success, darken($success, 8%));
+  color: #fff;
+  border: none;
+  border-radius: $radius;
+  font-size: .9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 160px;
+  transition: box-shadow .18s, transform .15s, opacity .18s;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 6px 18px rgba($success, .35);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.submitting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+.mini-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(#fff, .4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+.req {
+  color: $danger;
+  margin-left: 2px;
+}
+
+.optional-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  background: #f1f5f9;
+  color: $text-muted;
+  border-radius: 10px;
+  font-size: .7rem;
+  font-weight: 500;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+// ─── Responsive ───────────────────────────────────────────────────────────────
+@media (max-width: 560px) {
+  .dialog-shell { width: 100%; border-radius: 0; }
+  .dialog-actions { flex-direction: column-reverse; }
+  .btn-cancel, .btn-submit { width: 100%; text-align: center; }
+}

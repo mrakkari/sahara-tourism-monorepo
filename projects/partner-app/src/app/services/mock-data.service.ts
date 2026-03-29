@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Partner } from '../models/partner.model';
 import { Invoice, PaymentStatus as InvoicePaymentStatus, InvoiceStatus } from '../models/invoice.model';
-import { Reservation, ReservationStatus } from '../models/reservation.model';
-import { ReservationService } from './reservation.service';
+import { Reservation, ReservationStatus } from '../../../../shared/src/models/reservation.model';
+import { ReservationService } from '../../../../shared/src/services/reservation.service';
 
 @Injectable({
     providedIn: 'root'

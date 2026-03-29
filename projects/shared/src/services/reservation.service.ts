@@ -5,11 +5,12 @@ import { ExtraResponse } from '../models/extra.model';
 import { isToday, isTomorrow, isInDateRange } from '../utils/date-utils';
 import { HttpClient } from '@angular/common/http';
 import { TourType } from '../models/tour.model';
-import { DEFAULT_TOUR_IMAGE, TOUR_TYPE_IMAGES } from '../core/constants/images';
+import { DEFAULT_TOUR_IMAGE, TOUR_TYPE_IMAGES } from '../models/constants/images';
 import { ReservationRequest, ReservationResponse } from '../models/reservation-api.model';
+import { UserResponse } from '../models/user.model';
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root' 
 })
 export class ReservationService {
     private readonly NOTIFS_KEY = 'sahara-notifications';
@@ -105,8 +106,10 @@ export class ReservationService {
         localStorage.setItem(this.NOTIFS_KEY, JSON.stringify(notifications));
         this.notificationsSubject.next(notifications);
     }
-
     private generateId(): string {
         return Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+    getClientsAndPartenaires(): Observable<UserResponse[]> {
+        return this.http.get<UserResponse[]>(this.apiUrl + '/auth/clients-partenaires');
     }
 }

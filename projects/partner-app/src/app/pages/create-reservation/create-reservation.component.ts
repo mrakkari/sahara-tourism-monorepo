@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
-import { ReservationService } from '../../services/reservation.service';
+import { ReservationService } from '../../../../../shared/src/services/reservation.service';
 import { StepperComponent } from '../../shared/components/stepper/stepper.component';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
-import { IMAGES } from '../../core/constants/images';
-import { TourType } from '../../models/tour.model';
-import { ExtraResponse } from '../../models/extra.model';
-import { ReservationRequest, ReservationResponse } from '../../models/reservation-api.model';
+import { IMAGES } from '../../../../../shared/src/models/constants/images';
+import { TourType } from '../../../../../shared/src/models/tour.model';
+import { ExtraResponse } from '../../../../../shared/src/models/extra.model';
+import { ReservationRequest, ReservationResponse } from '../../../../../shared/src/models/reservation-api.model';
 import { ToastService } from '../../../../../shared/src/lib/auth/toast.service';
 import { AuthService } from '../../../../../shared/src/public-api';
 @Component({

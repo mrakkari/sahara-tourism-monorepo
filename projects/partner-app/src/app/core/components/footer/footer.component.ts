@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { IMAGES } from '../../constants/images';
+import { IMAGES } from '../../../../../../shared/src/models/constants/images';
 
 @Component({
   selector: 'app-footer',

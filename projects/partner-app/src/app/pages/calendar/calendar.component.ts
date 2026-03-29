@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReservationService } from '../../services/reservation.service';
-import { ReservationResponse } from '../../models/reservation-api.model';
-import { isToday } from '../../utils/date-utils';
+import { ReservationService } from '../../../../../shared/src/services/reservation.service';
+import { ReservationResponse } from '../../../../../shared/src/models/reservation-api.model';
+import { isToday } from '../../../../../shared/src/utils/date-utils';
 
 @Component({
     selector: 'app-calendar',

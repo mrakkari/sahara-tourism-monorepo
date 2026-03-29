@@ -1,8 +1,8 @@
 import { Component, OnInit, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { ReservationService } from '../../../services/reservation.service';
-import { IMAGES } from '../../constants/images';
+import { ReservationService } from '../../../../../../shared/src/services/reservation.service';
+import { IMAGES } from '../../../../../../shared/src/models/constants/images';
 import { LanguageService, Language } from '../../services/language.service';
 import { TranslatePipe } from '../../services/translate.pipe';
 import { AuthService } from '../../../../../../shared/src/lib/auth/auth.service';
