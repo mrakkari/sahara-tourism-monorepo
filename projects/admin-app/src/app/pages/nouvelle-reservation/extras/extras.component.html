@@ -1,0 +1,188 @@
+<div class="resa-page" [@fadeSlide]>
+
+  <!-- ── Sticky Header ── -->
+  <div class="resa-header">
+    <a routerLink="/reservations" class="back-link">← Réservations</a>
+    <div class="header-text">
+      <h1>✨ Extras — Services additionnels</h1>
+      <p class="subtitle">Ajoutez des services à la carte, sans séjour ni tour</p>
+    </div>
+  </div>
+
+  <!-- ── Content ── -->
+  <div class="resa-content">
+    <div class="resa-layout" [formGroup]="form">
+
+      <!-- ══ LEFT COLUMN ══════════════════════════════════════════ -->
+      <div class="form-col">
+
+        <!-- Step 1 · Client -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">🤝</span>
+              Client <span class="req">*</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="field" style="margin-bottom:0">
+              <label>Client ou partenaire</label>
+              <select formControlName="userId" class="input">
+                <option value="">— Choisir —</option>
+                <option *ngFor="let u of users" [value]="u.userId">{{ u.name }} ({{ u.role }})</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 · Date & Personnes -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">📅</span>
+              Date &amp; Personnes <span class="req">*</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <label>Date du service</label>
+              <input type="date" class="input" formControlName="serviceDate">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>Nombre de personnes</label>
+              <div style="display:flex; align-items:center; gap:16px; margin-top:6px;">
+                <div class="counter-inline">
+                  <button type="button" (click)="updatePeople(-1)" [disabled]="numberOfPeople <= 1">−</button>
+                  <span>{{ numberOfPeople }}</span>
+                  <button type="button" (click)="updatePeople(1)">+</button>
+                </div>
+                <span style="font-size:0.84rem; color:#64748b; font-weight:500;">
+                  {{ numberOfPeople }} {{ numberOfPeople === 1 ? 'personne' : 'personnes' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 · Extras -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">✨</span>
+              Choisir les extras <span class="req">*</span>
+            </div>
+            <p class="card-desc">Sélectionnez un ou plusieurs services. Les quantités s'ajustent selon le nombre de personnes.</p>
+          </div>
+          <div class="card-body">
+            <div *ngIf="isLoadingExtras" class="loading">Chargement des services…</div>
+
+            <div class="extras-list" *ngIf="!isLoadingExtras">
+              <div *ngFor="let e of extras" class="extra-row" [class.active]="isExtraSelected(e.extraId)">
+                <div class="extra-main" (click)="toggleExtra(e.extraId)">
+                  <div class="extra-check" [class.on]="isExtraSelected(e.extraId)">✓</div>
+                  <div class="extra-info">
+                    <strong>{{ e.name }}</strong>
+                    <small *ngIf="e.description">{{ e.description }}</small>
+                    <small *ngIf="e.duration">⏱ {{ e.duration }}</small>
+                  </div>
+                  <span class="extra-price">{{ e.unitPrice | number:'1.0-0' }} TND</span>
+                </div>
+
+                <!-- 2+ extras: show adjuster -->
+                <div class="extra-qty" *ngIf="showQtyAdjuster(e.extraId)" (click)="$event.stopPropagation()">
+                  <button type="button" (click)="adjustExtra(e.extraId,-1)" [disabled]="extraQty(e.extraId)<=1">−</button>
+                  <span>{{ extraQty(e.extraId) }}</span>
+                  <button type="button" (click)="adjustExtra(e.extraId,1)" [disabled]="extraQty(e.extraId)>=numberOfPeople">+</button>
+                  <span class="extra-sub">{{ extraQty(e.extraId) * e.unitPrice | number:'1.0-0' }} TND</span>
+                </div>
+
+                <!-- 1 extra: auto total -->
+                <div class="extra-qty--auto" *ngIf="isExtraSelected(e.extraId) && !showQtyAdjuster(e.extraId)" (click)="$event.stopPropagation()">
+                  <span class="qty-label">× {{ numberOfPeople }} personne{{ numberOfPeople > 1 ? 's' : '' }}</span>
+                  <span class="extra-sub">{{ numberOfPeople * e.unitPrice | number:'1.0-0' }} TND</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="no-extras-warn" *ngIf="!isLoadingExtras && !hasExtras()">
+              ⚠️ Sélectionnez au moins un extra pour créer la réservation.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 4 · Infos -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">👤</span>
+              Informations <span class="optional">optionnel</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row-2">
+              <div class="field">
+                <label>Nom du responsable</label>
+                <input type="text" class="input" formControlName="groupLeaderName" placeholder="Nom complet">
+              </div>
+              <div class="field">
+                <label>Nom du groupe</label>
+                <input type="text" class="input" formControlName="groupName" placeholder="Ex : Club Aventure">
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>Demandes spéciales</label>
+              <textarea class="input" formControlName="demandeSpecial" rows="3" placeholder="Régime, accessibilité, notes…"></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /form-col -->
+
+      <!-- ══ RIGHT COLUMN — Summary ════════════════════════════════ -->
+      <aside class="summary-col">
+        <div class="summary">
+          <div class="sum-header">
+            <div class="sum-title">Récapitulatif</div>
+          </div>
+
+          <div class="sum-body">
+            <div class="sum-rows">
+              <div class="sum-row" *ngIf="getSelectedUser()">
+                <span>🤝 Client</span><span>{{ getSelectedUser()?.name }}</span>
+              </div>
+              <div class="sum-row" *ngIf="form.get('serviceDate')?.value">
+                <span>📅 Date</span><span>{{ form.get('serviceDate')?.value }}</span>
+              </div>
+              <div class="sum-row">
+                <span>👥 Personnes</span><span>{{ numberOfPeople }}</span>
+              </div>
+            </div>
+
+            <div class="sum-breakdown" *ngIf="extrasTotal() > 0">
+              <div class="breakdown-row" *ngFor="let e of extras">
+                <ng-container *ngIf="isExtraSelected(e.extraId)">
+                  <span>{{ e.name }} × {{ extraQty(e.extraId) }}</span>
+                  <span>{{ extraQty(e.extraId) * e.unitPrice | number:'1.0-0' }} TND</span>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <div class="sum-total" *ngIf="extrasTotal() > 0">
+            <span class="total-label">Total extras</span>
+            <span class="total-amount">{{ extrasTotal() | number:'1.0-0' }} TND</span>
+          </div>
+
+          <div class="sum-footer">
+            <button class="btn-submit" [disabled]="!canSubmit() || isSubmitting" (click)="onSubmit()">
+              <ng-container *ngIf="!isSubmitting">✅ Créer la réservation</ng-container>
+              <ng-container *ngIf="isSubmitting">⏳ Création en cours…</ng-container>
+            </button>
+            <p class="sum-note">🔒 Source : ADMIN-APP</p>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>

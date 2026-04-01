@@ -1,11 +1,25 @@
 // =============================================
-// REQUEST DTOs — match backend ReservationRequest
+// ENUMS
+// =============================================
+
+export type ReservationType = 'HEBERGEMENT' | 'TOURS' | 'EXTRAS';
+export type BackendReservationStatus =
+  | 'PENDING' | 'CONFIRMED' | 'CHECKED_IN'
+  | 'CANCELLED' | 'REJECTED' | 'COMPLETED';
+
+// =============================================
+// REQUEST DTOs
 // =============================================
 
 export interface TourTypeSelectionRequest {
-  tourTypeId: string; // UUID
+  tourTypeId: string;
   numberOfAdults: number;
   numberOfChildren: number;
+}
+
+export interface TourSelectionRequest {
+  tourId: string;
+  //departureDate: string; // 'YYYY-MM-DD'
 }
 
 export interface ParticipantRequest {
@@ -15,15 +29,24 @@ export interface ParticipantRequest {
 }
 
 export interface ReservationExtraRequest {
-  extraId: string; // UUID
+  extraId: string;
   quantity: number;
 }
 
 export interface ReservationRequest {
-  userId?: string;          // UUID — current logged-in user
-  source?: string;          // e.g. 'PARTNER_APP'
-  checkInDate: string;      // LocalDate format: 'YYYY-MM-DD'
-  checkOutDate: string;     // LocalDate format: 'YYYY-MM-DD'
+  userId?: string;
+  source?: string;
+  reservationType: ReservationType;
+
+  // HEBERGEMENT only
+  checkInDate?: string;
+  checkOutDate?: string;
+
+    // TOURS + EXTRAS — shared date field
+  // TOURS:  departure date of the tour
+  // EXTRAS: date the extras service takes place
+  serviceDate?: string;
+
   groupName?: string;
   groupLeaderName?: string;
   demandeSpecial?: string;
@@ -31,16 +54,20 @@ export interface ReservationRequest {
   numberOfChildren: number;
   currency?: string;
   promoCode?: string;
-  tourTypes: TourTypeSelectionRequest[];
+
+  // HEBERGEMENT — min 1 required
+  tourTypes?: TourTypeSelectionRequest[];
+
+  // TOURS — exactly 1
+  tours?: TourSelectionRequest[];
+
   participants?: ParticipantRequest[];
   extras?: ReservationExtraRequest[];
 }
 
 // =============================================
-// RESPONSE DTOs — match backend ReservationResponse
+// RESPONSE DTOs
 // =============================================
-
-export type BackendReservationStatus = 'PENDING' | 'CONFIRMED' | 'CHECKED_IN'|'CANCELLED' | 'REJECTED' | 'COMPLETED';
 
 export interface ReservationTourTypeResponse {
   reservationTourTypeId: string;
@@ -53,6 +80,19 @@ export interface ReservationTourTypeResponse {
   numberOfChildren: number;
   totalPrice: number;
   numberOfNights?: number | null;
+}
+
+export interface ReservationTourResponse {
+  reservationTourId: string;
+  name: string;
+  description: string;
+  duration: string;
+  adultPrice: number;
+  childPrice: number;
+  numberOfAdults: number;
+  numberOfChildren: number;
+  departureDate: string;
+  totalPrice: number;
 }
 
 export interface ParticipantResponse {
@@ -79,21 +119,25 @@ export interface ReservationResponse {
   userId: string;
   userName: string;
   source: string;
-  checkInDate: string;
-  checkOutDate: string;
+  reservationType: ReservationType;
+  checkInDate?: string;
+  checkOutDate?: string;
+  serviceDate?: string;
   groupName: string;
   groupLeaderName: string;
   numberOfAdults: number;
   numberOfChildren: number;
   status: BackendReservationStatus;
-  rejectionReason: string;
-  totalAmount: number;
+  rejectionReason?: string;
+  totalAmount?: number;
   currency: string;
-  promoCode: string;
-  demandeSpecial: string | null;   // ← add this
+  promoCode?: string;
+  demandeSpecial?: string | null;
   createdAt: string;
   tourTypes: ReservationTourTypeResponse[];
+  tours: ReservationTourResponse[];
   participants: ParticipantResponse[];
   extras: ReservationExtraResponse[];
   totalExtrasAmount: number;
+  deletedAt?: string | null;
 }

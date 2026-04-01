@@ -1,115 +1,102 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, map } from 'rxjs';
-import { Notification } from '../models/reservation.model';
-import { ExtraResponse } from '../models/extra.model';
-import { isToday, isTomorrow, isInDateRange } from '../utils/date-utils';
+import { Observable, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { TourType } from '../models/tour.model';
-import { DEFAULT_TOUR_IMAGE, TOUR_TYPE_IMAGES } from '../models/constants/images';
-import { ReservationRequest, ReservationResponse } from '../models/reservation-api.model';
+import { TourType } from '../models/tour-type.model';
+import { Tour } from '../models/tour.model';
+import { ExtraResponse } from '../models/extra.model';
+import { ReservationRequest, ReservationResponse, BackendReservationStatus } from '../models/reservation-api.model';
 import { UserResponse } from '../models/user.model';
+import { DEFAULT_TOUR_IMAGE, TOUR_TYPE_IMAGES } from '../models/constants/images';
 
-@Injectable({
-    providedIn: 'root' 
-})
+@Injectable({ providedIn: 'root' })
 export class ReservationService {
-    private readonly NOTIFS_KEY = 'sahara-notifications';
-    private apiUrl = 'http://localhost:8080/api';
 
-    private notificationsSubject = new BehaviorSubject<Notification[]>([]);
-    public notifications$ = this.notificationsSubject.asObservable();
+  private readonly apiUrl = 'http://localhost:8080/api';
 
-    constructor(private http: HttpClient) {
-        this.loadNotifications();
-    }
+  constructor(private http: HttpClient) {}
 
-    // ─── My Reservations ──────────────────────────────────────────
-    getMyReservations(): Observable<ReservationResponse[]> {
-        return this.http.get<ReservationResponse[]>(this.apiUrl + '/reservations/my-reservations');
-    }
+  // ─── Tour Types (Hébergement catalog) ────────────────────────
+  getAllTourTypes(): Observable<TourType[]> {
+    return this.http.get<TourType[]>(`${this.apiUrl}/tour-types`).pipe(
+      map(list => list.map(tt => ({
+        ...tt,
+        image: TOUR_TYPE_IMAGES[tt.name] ?? DEFAULT_TOUR_IMAGE
+      })))
+    );
+  }
 
-    // ─── Tour Types ───────────────────────────────────────────────
-    getAllTourTypes(): Observable<TourType[]> {
-        return this.http.get<TourType[]>(this.apiUrl + '/tour-types').pipe(
-            map(tourTypes => tourTypes.map(tt => ({
-                ...tt,
-                image: TOUR_TYPE_IMAGES[tt.name] ?? DEFAULT_TOUR_IMAGE
-            })))
-        );
-    }
+  // ─── Tours (packaged trips catalog) ──────────────────────────
+  getAllTours(): Observable<Tour[]> {
+    return this.http.get<Tour[]>(`${this.apiUrl}/tours`);
+  }
 
-    // ─── Extras ───────────────────────────────────────────────────
-    getActiveExtras(): Observable<ExtraResponse[]> {
-        return this.http.get<ExtraResponse[]>(this.apiUrl + '/extras').pipe(
-            map(extras => extras.filter(e => e.isActive))
-        );
-    }
+  getActiveTours(): Observable<Tour[]> {
+    return this.http.get<Tour[]>(`${this.apiUrl}/tours/active`);
+  }
 
-    // ─── Create Reservation ───────────────────────────────────────
-    createReservation(request: ReservationRequest): Observable<ReservationResponse> {
-        return this.http.post<ReservationResponse>(
-            this.apiUrl + '/reservations',
-            request
-        );
-    }
+  // ─── Extras catalog ───────────────────────────────────────────
+  getActiveExtras(): Observable<ExtraResponse[]> {
+    return this.http.get<ExtraResponse[]>(`${this.apiUrl}/extras`).pipe(
+      map(list => list.filter(e => e.isActive))
+    );
+  }
 
-    // ─── Update Reservation (CLIENT / PARTENAIRE) ─────────────────
-    updateReservation(reservationId: string, request: any): Observable<ReservationResponse> {
-        return this.http.put<ReservationResponse>(
-            `${this.apiUrl}/reservations/${reservationId}`,
-            request
-        );
-    }
+  // ─── Users ────────────────────────────────────────────────────
+  getClientsAndPartenaires(): Observable<UserResponse[]> {
+    return this.http.get<UserResponse[]>(`${this.apiUrl}/auth/clients-partenaires`);
+  }
 
-    // ─── Cancel Reservation ───────────────────────────────────────
-    cancelReservation(reservationId: string): Observable<ReservationResponse> {
-        return this.http.patch<ReservationResponse>(
-            `${this.apiUrl}/reservations/${reservationId}/status?status=CANCELLED`,
-            {}
-        );
-    }
+  // ─── Create Reservation ───────────────────────────────────────
+  createReservation(request: ReservationRequest): Observable<ReservationResponse> {
+    return this.http.post<ReservationResponse>(`${this.apiUrl}/reservations`, request);
+  }
 
-    // ─── Notifications (local) ────────────────────────────────────
-    getNotifications(): Observable<Notification[]> {
-        return this.notifications$;
-    }
+  // ─── Get Reservation By Id ────────────────────────────────────
+  getReservationById(reservationId: string): Observable<ReservationResponse> {
+    return this.http.get<ReservationResponse>(`${this.apiUrl}/reservations/${reservationId}`);
+  }
 
-    getUnreadCount(partnerId?: string): number {
-        return this.notificationsSubject.value.filter(
-            n => !n.isRead && (!partnerId || n.partnerId === partnerId)
-        ).length;
-    }
+  // ─── My Reservations (CLIENT / PARTENAIRE) ────────────────────
+  getMyReservations(): Observable<ReservationResponse[]> {
+    return this.http.get<ReservationResponse[]>(`${this.apiUrl}/reservations/my-reservations`);
+  }
 
-    markAsRead(id: string): void {
-        const notifications = this.notificationsSubject.value.map(n =>
-            n.id === id ? { ...n, isRead: true } : n
-        );
-        this.saveNotifications(notifications);
-    }
+  // ─── Update Reservation (CLIENT / PARTENAIRE) ─────────────────
+  updateReservation(reservationId: string, request: any): Observable<ReservationResponse> {
+    return this.http.put<ReservationResponse>(
+      `${this.apiUrl}/reservations/${reservationId}`, request
+    );
+  }
 
-    markAllAsRead(partnerId?: string): void {
-        const notifications = this.notificationsSubject.value.map(n =>
-            (!partnerId || n.partnerId === partnerId) ? { ...n, isRead: true } : n
-        );
-        this.saveNotifications(notifications);
-    }
+  // ─── Cancel Reservation ───────────────────────────────────────
+  cancelReservation(reservationId: string): Observable<ReservationResponse> {
+    return this.http.patch<ReservationResponse>(
+      `${this.apiUrl}/reservations/${reservationId}/status?status=CANCELLED`, {}
+    );
+  }
 
-    // ─── Private helpers ──────────────────────────────────────────
-    private loadNotifications(): void {
-        const stored = localStorage.getItem(this.NOTIFS_KEY);
-        if (stored) {
-            this.notificationsSubject.next(JSON.parse(stored));
-        }
-    }
+  // ─── Status Actions (ADMIN) ───────────────────────────────────
+  confirmReservation(reservationId: string): Observable<ReservationResponse> {
+    return this.updateStatus(reservationId, 'CONFIRMED');
+  }
 
-    private saveNotifications(notifications: Notification[]): void {
-        localStorage.setItem(this.NOTIFS_KEY, JSON.stringify(notifications));
-        this.notificationsSubject.next(notifications);
-    }
-    private generateId(): string {
-        return Date.now().toString(36) + Math.random().toString(36).substring(2);
-    }
-    getClientsAndPartenaires(): Observable<UserResponse[]> {
-        return this.http.get<UserResponse[]>(this.apiUrl + '/auth/clients-partenaires');
-    }
+  rejectReservation(reservationId: string, reason?: string): Observable<ReservationResponse> {
+    let url = `${this.apiUrl}/reservations/${reservationId}/status?status=REJECTED`;
+    if (reason) url += `&rejectionReason=${encodeURIComponent(reason)}`;
+    return this.http.patch<ReservationResponse>(url, {});
+  }
+
+  checkInReservation(reservationId: string): Observable<ReservationResponse> {
+    return this.updateStatus(reservationId, 'CHECKED_IN');
+  }
+
+  completeReservation(reservationId: string): Observable<ReservationResponse> {
+    return this.updateStatus(reservationId, 'COMPLETED');
+  }
+
+  private updateStatus(reservationId: string, status: BackendReservationStatus): Observable<ReservationResponse> {
+    return this.http.patch<ReservationResponse>(
+      `${this.apiUrl}/reservations/${reservationId}/status?status=${status}`, {}
+    );
+  }
 }

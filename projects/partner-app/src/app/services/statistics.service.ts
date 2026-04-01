@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { ReservationService } from '../../../../shared/src/services/reservation.service';
 import { ReservationResponse } from '../../../../shared/src/models/reservation-api.model';
-import { TourType } from '../../../../shared/src/models/tour.model';
+import { TourType } from '../../../../shared/src/models/tour-type.model';
 
 export type StatisticsPeriod = 'month' | 'quarter' | 'year' | 'all';
 

@@ -7,7 +7,7 @@ import { ReservationService } from '../../../../../shared/src/services/reservati
 import { StepperComponent } from '../../shared/components/stepper/stepper.component';
 import { GlassCardComponent } from '../../shared/components/glass-card/glass-card.component';
 import { IMAGES } from '../../../../../shared/src/models/constants/images';
-import { TourType } from '../../../../../shared/src/models/tour.model';
+import { TourType } from '../../../../../shared/src/models/tour-type.model';
 import { ExtraResponse } from '../../../../../shared/src/models/extra.model';
 import { ReservationRequest, ReservationResponse } from '../../../../../shared/src/models/reservation-api.model';
 import { ToastService } from '../../../../../shared/src/lib/auth/toast.service';

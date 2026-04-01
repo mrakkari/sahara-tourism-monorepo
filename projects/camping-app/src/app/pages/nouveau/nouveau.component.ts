@@ -7,7 +7,7 @@ import { map, Observable } from 'rxjs';
 import { ReservationService } from '../../services/reservation.service';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
 import { ToastService } from '../../../../../shared/src/public-api';
-import { TourType } from '../../../../../shared/src/models/tour.model';
+import { TourType } from '../../../../../shared/src/models/tour-type.model';
 import { ExtraResponse } from '../../../../../shared/src/models/extra.model';
 import { UserResponse } from '../../../../../shared/src/models/user.model';
 import { ReservationRequest } from '../../../../../shared/src/models/reservation-api.model';

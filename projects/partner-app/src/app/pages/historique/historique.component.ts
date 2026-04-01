@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReservationService } from '../../../../../shared/src/services/reservation.service';
 import { TranslatePipe } from '../../core/services/translate.pipe';
-import { TourType } from '../../../../../shared/src/models/tour.model';
+import { TourType } from '../../../../../shared/src/models/tour-type.model';
 import { ReservationResponse, BackendReservationStatus } from '../../../../../shared/src/models/reservation-api.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService, NotificationService } from '../../../../../shared/src/public-api';

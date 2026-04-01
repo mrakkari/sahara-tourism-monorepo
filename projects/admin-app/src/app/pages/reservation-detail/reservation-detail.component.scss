@@ -528,4 +528,434 @@ h1 {
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
+}@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+$amber:   #f59e0b;
+$dark:    #1e293b;
+$gray:    #64748b;
+$border:  #e2e8f0;
+$bg:      #f8fafc;
+$green:   #16a34a;
+$red:     #ef4444;
+$blue:    #3b82f6;
+
+* { box-sizing: border-box; }
+
+.detail-page {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+}
+
+// ── Loading / Error ────────────────────────────────────────────
+
+.detail-loading {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 80px; color: $gray;
+}
+
+.spinner-large {
+  width: 48px; height: 48px;
+  border: 4px solid $border;
+  border-top-color: $amber;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.detail-error {
+  padding: 40px; text-align: center; color: $red;
+}
+
+// ── Header ─────────────────────────────────────────────────────
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.btn-back {
+  color: $gray; text-decoration: none; font-size: 0.9rem;
+  white-space: nowrap; margin-top: 4px;
+  &:hover { color: $dark; }
+}
+
+.title-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
+  h1 { margin: 0; font-size: 1.5rem; font-weight: 800; color: $dark; }
+}
+
+.res-id { color: $amber; }
+
+.header-meta { margin: 0; font-size: 0.82rem; color: $gray; }
+
+.header-actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+
+// ── Type badge ─────────────────────────────────────────────────
+
+.type-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 12px; border-radius: 99px;
+  font-size: 0.78rem; font-weight: 700;
+
+  &.type-hebergement { background: #dbeafe; color: #1d4ed8; }
+  &.type-tours       { background: #d1fae5; color: #065f46; }
+  &.type-extras      { background: #fef3c7; color: #92400e; }
+}
+
+// ── Status badge ───────────────────────────────────────────────
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px; border-radius: 99px;
+  font-size: 0.78rem; font-weight: 700;
+
+  &.pending    { background: #fef3c7; color: #92400e; }
+  &.confirmed  { background: #d1fae5; color: #065f46; }
+  &.checked_in { background: #dbeafe; color: #1d4ed8; }
+  &.cancelled  { background: #f1f5f9; color: $gray; }
+  &.rejected   { background: #fee2e2; color: #991b1b; }
+  &.completed  { background: #f0fdf4; color: #166534; }
+}
+
+.terminal-label {
+  font-size: 0.85rem; color: $gray; font-style: italic;
+}
+
+// ── Layout ─────────────────────────────────────────────────────
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+// ── Cards ──────────────────────────────────────────────────────
+
+.card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $dark;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $border;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-badge {
+    font-size: 0.78rem; font-weight: 700;
+    background: #fef3c7; color: #92400e;
+    padding: 2px 10px; border-radius: 99px;
+  }
+}
+
+// ── Info Grid ──────────────────────────────────────────────────
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.info-label {
+  font-size: 0.75rem; font-weight: 600;
+  color: $gray; text-transform: uppercase; letter-spacing: 0.4px;
+}
+
+.info-value {
+  font-size: 0.95rem; font-weight: 500; color: $dark;
+}
+
+.highlight-date {
+  color: $amber; font-weight: 700;
+}
+
+.total-highlight {
+  color: $green; font-weight: 700;
+}
+
+.promo-code {
+  font-family: monospace;
+  background: #f1f5f9; padding: 2px 8px; border-radius: 6px;
+}
+
+// ── Special Requests ───────────────────────────────────────────
+
+.special-req {
+  margin-top: 16px; padding: 12px 16px;
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+}
+
+.req-label { font-size: 0.82rem; font-weight: 700; color: #92400e; display: block; margin-bottom: 4px; }
+.req-text  { margin: 0; font-size: 0.88rem; color: $dark; }
+
+// ── Tour Types (HEBERGEMENT) ───────────────────────────────────
+
+.tour-type-list { display: flex; flex-direction: column; gap: 12px; }
+
+.tour-type-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 14px; background: $bg; border-radius: 10px; border: 1px solid $border;
+}
+
+.tt-left { flex: 1; }
+.tt-name { font-size: 0.95rem; color: $dark; display: block; margin-bottom: 4px; }
+.tt-duration { font-size: 0.78rem; color: $amber; font-weight: 600; }
+.tt-desc  { font-size: 0.8rem; color: $gray; margin: 4px 0 0; }
+
+.tt-right {
+  text-align: right;
+  .tt-people { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; color: $gray; }
+  .tt-total  { font-size: 1rem; font-weight: 700; color: $dark; margin-top: 4px; display: block; }
+}
+
+// ── Tour snapshot (TOURS) ──────────────────────────────────────
+
+.tour-snapshot {
+  padding: 16px; background: $bg; border-radius: 12px; border: 1px solid $border;
+}
+
+.ts-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.ts-name   { font-size: 1.05rem; color: $dark; }
+.ts-duration { font-size: 0.82rem; color: $amber; font-weight: 600; background: #fffbeb; padding: 3px 10px; border-radius: 99px; }
+.ts-desc   { font-size: 0.85rem; color: $gray; margin: 0 0 8px; }
+
+// ── Participants ───────────────────────────────────────────────
+
+.participants-list { display: flex; flex-direction: column; gap: 8px; }
+
+.participant-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; background: $bg; border-radius: 10px;
+}
+
+.p-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: $amber; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+}
+
+.p-info {
+  flex: 1;
+  strong { display: block; font-size: 0.9rem; color: $dark; }
+  span   { font-size: 0.78rem; color: $gray; }
+}
+
+.p-badge {
+  font-size: 0.7rem; font-weight: 700;
+  background: #dbeafe; color: #1d4ed8;
+  padding: 2px 8px; border-radius: 99px;
+}
+
+// ── Extras ─────────────────────────────────────────────────────
+
+.extras-list { display: flex; flex-direction: column; gap: 8px; }
+
+.extra-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: $bg; border-radius: 8px;
+}
+
+.extra-left { flex: 1; }
+.extra-name { font-size: 0.88rem; font-weight: 600; color: $dark; display: block; }
+.extra-meta { font-size: 0.78rem; color: $gray; }
+.extra-price { font-size: 0.95rem; font-weight: 700; color: $dark; white-space: nowrap; }
+
+.extras-total-row {
+  display: flex; justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid $border;
+  font-weight: 700; font-size: 0.9rem; color: $dark;
+}
+
+// ── Financial card ─────────────────────────────────────────────
+
+.card-financial { border: 1.5px solid #fde68a; }
+
+.payment-status-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+
+.pay-status {
+  font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+
+  &.unpaid { background: #fee2e2; color: #991b1b; }
+  &.partially_paid { background: #fef3c7; color: #92400e; }
+  &.paid   { background: #d1fae5; color: #065f46; }
+}
+
+.pay-note { font-size: 0.78rem; color: $gray; }
+
+.price-rows { display: flex; flex-direction: column; gap: 0; }
+
+.price-row {
+  display: flex; justify-content: space-between;
+  padding: 8px 0; font-size: 0.88rem; color: $dark;
+  border-bottom: 1px solid $border;
+
+  span:first-child { color: $gray; }
+
+  &.price-total {
+    font-weight: 700; font-size: 0.95rem; border-bottom: 2px solid $border;
+  }
+  &.price-paid     span:last-child { color: $green; font-weight: 600; }
+  &.price-remaining span:last-child { color: $red; font-weight: 600; }
+}
+
+.progress-wrap {
+  margin: 16px 0 12px;
+}
+
+.progress-track {
+  height: 8px; background: $border; border-radius: 99px; overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%; background: $green; border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.progress-label {
+  font-size: 0.78rem; color: $gray; margin-top: 4px; display: block; text-align: right;
+}
+
+.btn-pay {
+  width: 100%; padding: 12px; margin-top: 4px;
+  border: 1.5px dashed $border; border-radius: 10px;
+  background: $bg; color: $gray;
+  font-size: 0.88rem; cursor: not-allowed;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+
+  .coming-soon { font-size: 0.72rem; color: #94a3b8; }
+}
+
+// ── Rejection card ─────────────────────────────────────────────
+
+.card-rejected { border: 1.5px solid #fca5a5; }
+.rejection-text { margin: 0; font-size: 0.9rem; color: #991b1b; line-height: 1.6; }
+
+// ── Meta card ──────────────────────────────────────────────────
+
+.meta-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.meta-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.85rem; padding: 6px 0; border-bottom: 1px solid $border;
+  span:first-child { color: $gray; }
+  span:last-child  { color: $dark; font-weight: 500; }
+  &:last-child { border-bottom: none; }
+}
+
+.mono { font-family: monospace; font-size: 0.82rem; }
+
+// ── Buttons ────────────────────────────────────────────────────
+
+.btn-primary, .btn-danger, .btn-secondary {
+  padding: 10px 20px; border-radius: 10px;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  border: none; transition: all 0.2s;
+}
+
+.btn-primary  {
+  background: $dark; color: #fff;
+  &:hover { background: #334155; }
+}
+
+.btn-danger   {
+  background: $red; color: #fff;
+  &:hover { background: #dc2626; }
+}
+
+.btn-secondary {
+  background: #fff; color: $dark; border: 1.5px solid $border;
+  &:hover { background: $bg; }
+}
+
+// ── Rejection Modal ────────────────────────────────────────────
+
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 2000;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+
+.modal-box {
+  background: #fff; border-radius: 16px;
+  width: 100%; max-width: 480px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 24px; border-bottom: 1px solid $border;
+
+  h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: $dark; }
+}
+
+.modal-close {
+  background: transparent; border: none; font-size: 1.1rem;
+  color: $gray; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  &:hover { background: $bg; color: $dark; }
+}
+
+.modal-body {
+  padding: 24px;
+
+  label { display: block; font-size: 0.82rem; font-weight: 600; color: $gray; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .optional { text-transform: none; font-weight: 400; }
+}
+
+.modal-textarea {
+  width: 100%; padding: 12px; border: 1.5px solid $border; border-radius: 10px;
+  font-size: 0.95rem; resize: vertical; min-height: 100px; color: $dark;
+  &:focus { outline: none; border-color: $red; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
+}
+
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid $border;
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+// ── Responsive ─────────────────────────────────────────────────
+
+@media (max-width: 900px) {
+  .detail-layout { grid-template-columns: 1fr; }
+  .detail-page   { padding: 16px; }
+  .detail-header { flex-direction: column; }
+  .info-grid     { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .info-grid     { grid-template-columns: 1fr; }
+  .title-row     { flex-direction: column; align-items: flex-start; }
 }

@@ -1,0 +1,741 @@
+// ═══════════════════════════════════════════════════════════════════
+//  RESERVATION FORMS — Complete Self-Contained Styles
+//  Paste this entire file into:
+//    • hebergement.component.scss
+//    • tours.component.scss
+//    • extras.component.scss
+//  No imports needed. Fully standalone.
+//
+//  Add this once to your global styles.scss or angular.json styles[]:
+//  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Tokens ──────────────────────────────────────────────────────
+$font:         'Plus Jakarta Sans', system-ui, sans-serif;
+$amber:        #f59e0b;
+$amber-lt:     #fffbeb;
+$amber-bd:     #fde68a;
+$amber-dk:     #d97706;
+$navy:         #0f172a;
+$dark:         #1e293b;
+$mid:          #334155;
+$muted:        #64748b;
+$soft:         #94a3b8;
+$border:       #e2e8f0;
+$border-hv:    #cbd5e1;
+$bg:           #f8fafc;
+$white:        #ffffff;
+$success:      #10b981;
+$success-bg:   #ecfdf5;
+$danger:       #ef4444;
+$danger-bg:    #fef2f2;
+$ease:         0.16s ease;
+
+// ── Page ────────────────────────────────────────────────────────
+:host { display: block; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+.resa-page {
+  min-height: 100vh;
+  background: #eef2f7;
+  font-family: $font;
+  color: $dark;
+}
+
+// ── Sticky Header ────────────────────────────────────────────────
+.resa-header {
+  background: $white;
+  border-bottom: 1px solid $border;
+  padding: 16px 36px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $muted;
+    text-decoration: none;
+    padding: 8px 14px;
+    border: 1.5px solid $border;
+    border-radius: 10px;
+    background: $bg;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all $ease;
+
+    &:hover { border-color: $amber; color: $amber-dk; background: $amber-lt; }
+  }
+
+  .header-text { flex: 1; min-width: 0; }
+
+  h1 {
+    margin: 0 0 1px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $navy;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .subtitle { margin: 0; font-size: 0.8rem; color: $muted; }
+}
+
+// ── Content wrapper ──────────────────────────────────────────────
+.resa-content {
+  padding: 28px 36px 64px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+// ── Grid layout ──────────────────────────────────────────────────
+.resa-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+.form-col    { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.summary-col { position: sticky; top: 80px; }
+
+// ── Cards ─────────────────────────────────────────────────────────
+.card {
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.03);
+}
+
+.card-header {
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid $border;
+}
+
+.card-body { padding: 20px 22px; }
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: $navy;
+  letter-spacing: -0.1px;
+
+  .title-icon {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: $amber-lt;
+    border: 1px solid $amber-bd;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+}
+
+.card-desc {
+  font-size: 0.8rem;
+  color: $muted;
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.req      { color: $danger; font-weight: 700; margin-left: 2px; }
+.optional {
+  font-size: 0.67rem; font-weight: 600; color: $soft;
+  background: $bg; padding: 2px 8px; border-radius: 99px;
+  border: 1px solid $border; margin-left: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+}
+
+// ── Fields ────────────────────────────────────────────────────────
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+  &:last-child { margin-bottom: 0; }
+
+  label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: $muted;
+    letter-spacing: 0.1px;
+  }
+}
+
+.input {
+  width: 100%;
+  padding: 10px 13px;
+  font-size: 0.88rem;
+  font-family: $font;
+  color: $navy;
+  background: $bg;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color $ease, box-shadow $ease, background $ease;
+  -webkit-appearance: none;
+  appearance: none;
+
+  &:focus {
+    border-color: $amber;
+    background: $white;
+    box-shadow: 0 0 0 3px rgba(245,158,11,.11);
+  }
+
+  &::placeholder { color: $soft; }
+  &[type="date"] { cursor: pointer; }
+}
+
+select.input {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath fill='none' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  padding-right: 36px;
+}
+
+textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.field-hint {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: $success;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+
+  &::before { content: ''; width: 5px; height: 5px; background: $success; border-radius: 50%; flex-shrink: 0; }
+}
+
+// ── Spinner / Loading ─────────────────────────────────────────────
+.loading {
+  padding: 28px;
+  text-align: center;
+  color: $soft;
+  font-size: 0.82rem;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+
+  &::before {
+    content: '';
+    width: 16px; height: 16px;
+    border: 2px solid $border;
+    border-top-color: $amber;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Nights chip ───────────────────────────────────────────────────
+.nights-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 16px;
+  padding: 5px 14px;
+  background: $navy;
+  color: #cbd5e1;
+  border-radius: 99px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+// ── Counters ──────────────────────────────────────────────────────
+.counters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+.counter-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $bg;
+  border: 1.5px solid $border;
+  border-radius: 12px;
+  padding: 13px 15px;
+  transition: border-color $ease;
+
+  &:hover { border-color: $border-hv; }
+}
+
+.counter-left {
+  display: flex; align-items: center; gap: 11px;
+
+  .cl-icon {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: $white;
+    border: 1px solid $border;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+
+  strong { font-size: 0.84rem; font-weight: 600; color: $dark; display: block; margin-bottom: 1px; }
+  small  { font-size: 0.7rem; color: $soft; }
+}
+
+.counter-ctrl {
+  display: flex; align-items: center; gap: 8px;
+
+  button {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    border: 1.5px solid $border;
+    background: $white;
+    font-size: 1.05rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: $dark;
+    transition: all $ease;
+    line-height: 1;
+
+    &:hover:not(:disabled) { border-color: $amber; background: $amber-lt; color: $amber-dk; }
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+  }
+
+  > span {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $navy;
+    min-width: 28px;
+    text-align: center;
+  }
+}
+
+// ── Inline counter (Extras page) ──────────────────────────────────
+.counter-inline {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  overflow: hidden;
+  background: $white;
+
+  button {
+    width: 42px; height: 42px;
+    border: none;
+    background: $bg;
+    font-size: 1.25rem;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: $muted;
+    transition: all $ease;
+
+    &:hover:not(:disabled) { background: $amber-lt; color: $amber-dk; }
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+    &:first-child { border-right: 1.5px solid $border; }
+    &:last-child  { border-left:  1.5px solid $border; }
+  }
+
+  > span {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $navy;
+    min-width: 52px;
+    text-align: center;
+  }
+}
+
+// ── Tour cards — checkbox style (Hébergement) ─────────────────────
+.tour-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.tour-card {
+  position: relative;
+  border: 2px solid $border;
+  border-radius: 14px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all $ease;
+  background: $white;
+
+  .tour-check {
+    position: absolute; top: 11px; right: 11px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid $border;
+    background: $white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; color: transparent; font-weight: 700;
+    transition: all $ease;
+  }
+
+  > strong {
+    font-size: 0.86rem; font-weight: 700; color: $navy;
+    display: block; margin-bottom: 5px; padding-right: 28px; line-height: 1.3;
+  }
+
+  &:hover { border-color: $border-hv; background: $bg; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+
+  &.selected {
+    border-color: $amber;
+    background: $amber-lt;
+    box-shadow: 0 0 0 3px rgba(245,158,11,.1);
+
+    .tour-check { background: $amber; border-color: $amber; color: $white; }
+  }
+}
+
+// ── Tour cards — radio style (Tours page) ─────────────────────────
+.tour-list { display: flex; flex-direction: column; gap: 10px; }
+
+.tour-card:has(.tour-radio) {
+  display: flex; align-items: flex-start; gap: 13px;
+  .tour-check { display: none; }
+  > strong { padding-right: 0; }
+}
+
+.tour-radio {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid $border;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+  background: $white;
+  transition: border-color $ease;
+}
+
+.radio-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  transform: scale(0);
+  transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
+}
+
+.tour-card.selected .tour-radio { border-color: $amber; }
+.tour-card.selected .radio-dot  { background: $amber; transform: scale(1); }
+
+.tour-info { flex: 1; min-width: 0; }
+
+.tour-duration {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.73rem; font-weight: 600; color: $amber-dk;
+  background: $amber-lt; border: 1px solid $amber-bd;
+  padding: 2px 9px; border-radius: 99px; margin: 4px 0 8px;
+}
+
+.tour-desc { font-size: 0.77rem; color: $muted; margin: 0 0 9px; line-height: 1.5; }
+
+.tour-prices {
+  display: flex; flex-wrap: wrap; gap: 5px;
+
+  span {
+    font-size: 0.71rem; font-weight: 600; color: $dark;
+    background: rgba(0,0,0,.04); padding: 3px 9px;
+    border-radius: 99px; border: 1px solid $border;
+  }
+}
+
+// ── Allocation ─────────────────────────────────────────────────────
+.tour-alloc {
+  margin-top: 13px; padding-top: 13px;
+  border-top: 1.5px dashed $amber-bd;
+  display: flex; flex-direction: column; gap: 9px;
+}
+
+.alloc-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.79rem; color: $muted; font-weight: 500;
+}
+
+.mini-ctrl {
+  display: flex; align-items: center; gap: 6px;
+
+  button {
+    width: 24px; height: 24px;
+    border-radius: 6px; border: 1px solid $border;
+    background: $white; cursor: pointer;
+    font-size: 0.88rem; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    color: $dark; transition: all $ease;
+    &:hover { border-color: $amber; background: $amber-lt; color: $amber-dk; }
+  }
+
+  > span { font-size: 0.88rem; font-weight: 700; min-width: 20px; text-align: center; color: $navy; }
+}
+
+.alloc-warn {
+  margin-top: 10px; padding: 10px 14px;
+  background: #fef3c7; border: 1px solid $amber-bd;
+  border-radius: 8px; font-size: 0.79rem; color: #92400e;
+  font-weight: 500; display: flex; align-items: center; gap: 6px;
+}
+
+// ── Extras list ────────────────────────────────────────────────────
+.extras-list { display: flex; flex-direction: column; gap: 8px; }
+
+.extra-row {
+  border: 1.5px solid $border;
+  border-radius: 12px; overflow: hidden; background: $white;
+  transition: border-color $ease, box-shadow $ease;
+
+  &:hover:not(.active) { border-color: $border-hv; }
+
+  &.active {
+    border-color: $amber;
+    box-shadow: 0 0 0 3px rgba(245,158,11,.09);
+  }
+}
+
+.extra-main {
+  display: flex; align-items: center; gap: 13px;
+  padding: 13px 15px; cursor: pointer;
+  transition: background $ease;
+  &:hover { background: $bg; }
+}
+
+.extra-check {
+  width: 20px; height: 20px;
+  border-radius: 5px; border: 2px solid $border;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; color: transparent;
+  flex-shrink: 0; font-weight: 700; transition: all $ease;
+
+  &.on { background: $amber; border-color: $amber; color: $white; }
+}
+
+.extra-info {
+  flex: 1; min-width: 0;
+
+  strong {
+    display: block; font-size: 0.86rem; font-weight: 600;
+    color: $navy; margin-bottom: 2px;
+  }
+
+  small {
+    font-size: 0.73rem; color: $muted; display: block; line-height: 1.4;
+  }
+}
+
+.extra-price {
+  font-size: 0.84rem; font-weight: 700; color: $dark;
+  white-space: nowrap; padding: 4px 10px;
+  background: $bg; border: 1px solid $border; border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.extra-qty {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 15px;
+  background: $amber-lt; border-top: 1.5px solid $amber-bd;
+
+  button {
+    width: 28px; height: 28px;
+    border-radius: 7px; border: 1.5px solid $amber-bd;
+    background: $white; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: $dark; transition: all $ease;
+
+    &:hover:not(:disabled) { background: $amber; border-color: $amber; color: $white; }
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+  }
+
+  > span {
+    font-size: 0.9rem; font-weight: 700; color: $navy;
+    min-width: 20px; text-align: center;
+  }
+}
+
+.extra-sub {
+  margin-left: auto;
+  font-size: 0.82rem; font-weight: 700; color: $amber-dk;
+  background: rgba(245,158,11,.14);
+  padding: 3px 9px; border-radius: 6px; white-space: nowrap;
+}
+
+.extra-qty--auto {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 15px;
+  background: $amber-lt; border-top: 1.5px solid $amber-bd;
+}
+
+.qty-label {
+  font-size: 0.79rem; font-weight: 500; color: #92400e;
+}
+
+.no-extras-warn {
+  margin-top: 12px; padding: 11px 15px;
+  background: #fef3c7; border: 1px solid $amber-bd;
+  border-radius: 10px; font-size: 0.8rem; color: #92400e;
+  line-height: 1.5; display: flex; align-items: center; gap: 7px;
+}
+
+// ── Promo ──────────────────────────────────────────────────────────
+.promo-row {
+  display: flex; gap: 10px; margin-top: 12px;
+  .input { flex: 1; }
+}
+
+.btn-promo {
+  padding: 10px 18px;
+  background: $navy; color: $white;
+  border: none; border-radius: 10px;
+  font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap; font-family: $font;
+  transition: background $ease;
+  &:hover { background: $mid; }
+}
+
+.promo-msg {
+  font-size: 0.79rem; font-weight: 500; margin-top: 7px;
+  padding: 8px 12px; border-radius: 7px;
+  &.ok  { background: $success-bg; color: #065f46; }
+  &.err { background: $danger-bg;  color: #991b1b; }
+}
+
+// ── Summary sidebar ────────────────────────────────────────────────
+.summary {
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,.07);
+}
+
+.sum-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid $border;
+  background: $bg;
+}
+
+.sum-title {
+  font-size: 0.69rem; font-weight: 700; color: $soft;
+  text-transform: uppercase; letter-spacing: 0.9px;
+}
+
+.sum-body { padding: 0 20px; }
+
+.sum-rows { padding: 10px 0 4px; }
+
+.sum-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 7px 0; border-bottom: 1px solid $border;
+  font-size: 0.81rem; gap: 12px;
+
+  &:last-child { border-bottom: none; }
+
+  > span:first-child {
+    color: $muted; font-weight: 500;
+    display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+  }
+
+  > span:last-child { color: $navy; font-weight: 600; text-align: right; word-break: break-word; }
+
+  &.discount {
+    > span:first-child { color: $success; }
+    > span:last-child  { color: $success; font-weight: 700; }
+  }
+}
+
+.sum-breakdown {
+  background: $bg; border-radius: 10px; border: 1px solid $border;
+  margin: 10px 0 14px; overflow: hidden;
+}
+
+.breakdown-row {
+  display: flex; justify-content: space-between;
+  padding: 8px 13px; font-size: 0.8rem;
+  border-bottom: 1px solid $border; gap: 10px;
+
+  &:last-child { border-bottom: none; }
+
+  > span:first-child { color: $muted; flex: 1; }
+  > span:last-child  { color: $navy; font-weight: 600; white-space: nowrap; }
+
+  &.discount {
+    > span:first-child { color: $success; }
+    > span:last-child  { color: $success; font-weight: 700; }
+  }
+}
+
+// ── Total bar ──────────────────────────────────────────────────────
+.sum-total {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  background: $navy;
+
+  .total-label {
+    font-size: 0.78rem; color: rgba(255,255,255,.5); font-weight: 500;
+  }
+
+  .total-amount {
+    font-size: 1.55rem; font-weight: 700; color: $amber; letter-spacing: -0.5px;
+  }
+}
+
+// ── Footer / Submit ────────────────────────────────────────────────
+.sum-footer { padding: 15px 20px 18px; }
+
+.btn-submit {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, $amber 0%, $amber-dk 100%);
+  color: $white; border: none; border-radius: 12px;
+  font-size: 0.9rem; font-weight: 700; font-family: $font;
+  cursor: pointer; transition: all $ease;
+  box-shadow: 0 4px 14px rgba(245,158,11,.3);
+  letter-spacing: 0.1px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(245,158,11,.42);
+  }
+
+  &:active:not(:disabled) { transform: translateY(0); }
+
+  &:disabled {
+    opacity: 0.45; cursor: not-allowed;
+    box-shadow: none; transform: none; background: $muted;
+  }
+}
+
+.sum-note {
+  margin-top: 9px; font-size: 0.71rem; color: $soft;
+  text-align: center; letter-spacing: 0.2px;
+}
+
+// ── Responsive ─────────────────────────────────────────────────────
+@media (max-width: 1024px) {
+  .resa-layout { grid-template-columns: 1fr; }
+  .summary-col { position: static; }
+}
+
+@media (max-width: 768px) {
+  .resa-header  { padding: 12px 18px; }
+  .resa-content { padding: 16px 14px 48px; }
+  .resa-header h1 { font-size: 1.05rem; }
+  .counters, .row-2 { grid-template-columns: 1fr; }
+}
