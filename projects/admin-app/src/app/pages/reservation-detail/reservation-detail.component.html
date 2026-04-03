@@ -30,11 +30,6 @@
           </span>
           <span class="status-badge" [ngClass]="statusClass">{{ statusLabel }}</span>
         </div>
-        <p class="header-meta" *ngIf="reservation.source">{{ reservation.source }}</p>
-        <p class="header-meta">
-          Créée le {{ formatDateTime(reservation.createdAt) }}
-          <ng-container *ngIf="reservation.source"> · {{ reservation.source }}</ng-container>
-        </p>
       </div>
     </div>
 
