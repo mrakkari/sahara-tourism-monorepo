@@ -231,7 +231,9 @@ export class MainLayoutComponent {
     { label: 'Factures',      icon: '📄', route: '/factures' },
     { label: 'Proformas',     icon: '📋', route: '/proformas' },
     { label: 'Clients',       icon: '👥', route: '/clients' },
-    { label: 'Produits',      icon: '📦', route: '/produits' },
+    { label: 'Hébergements',      icon: '📦', route: '/produits' },
+    { label: 'Tours', icon: '🗺️', route: '/tours' },
+    { label: 'Extras', icon: '✨', route: '/extras' },
     { label: 'Statistiques',  icon: '📊', route: '/statistiques' },
   ];
 

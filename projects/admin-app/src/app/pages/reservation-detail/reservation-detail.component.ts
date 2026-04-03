@@ -185,9 +185,24 @@ export class ReservationDetailComponent implements OnInit {
 
   complete(): void {
     if (!this.reservation) return;
+    console.log('Completing reservation:', this.reservation.reservationId);
     this.reservationService.completeReservation(this.reservation.reservationId).subscribe({
+      next: res => {
+        console.log('Completed successfully:', res);
+        this.reservation = res;
+      },
+      error: err => {
+        console.error('Erreur completion:', err);
+        console.error('Status:', err.status);
+        console.error('Message:', err.error);
+      }
+    });
+  }
+  cancel(): void {
+    if (!this.reservation) return;
+    this.reservationService.cancelReservation(this.reservation.reservationId).subscribe({
       next: res => this.reservation = res,
-      error: err => console.error('Erreur completion:', err)
+      error: err => console.error('Erreur annulation:', err)
     });
   }
 }

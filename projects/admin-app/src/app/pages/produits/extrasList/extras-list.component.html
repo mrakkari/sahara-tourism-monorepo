@@ -1,0 +1,144 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">✨ Liste des Extras</h1>
+      <button class="btn-add" (click)="openAddModal()">➕ Ajouter</button>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Rechercher par nom..."
+        [(ngModel)]="searchTerm"
+        (input)="filterItems()"
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="error-banner">⚠️ {{ errorMessage }}</div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">⏳ Chargement...</div>
+
+  <!-- Table -->
+  <div class="content-card" *ngIf="!loading">
+    <table class="extras-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Description</th>
+          <th>Durée</th>
+          <th>Prix Unitaire</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of paginatedItems">
+          <td><strong>{{ item.name }}</strong></td>
+          <td class="desc-cell">{{ item.description || '—' }}</td>
+          <td>{{ item.duration || '—' }}</td>
+          <td class="price-cell">{{ formatPrice(item.unitPrice) }}</td>
+          <td>
+            <div class="status-pill-wrapper">
+              <button
+                class="status-pill"
+                [class.pill-active]="item.isActive"
+                [class.pill-inactive]="!item.isActive"
+                (click)="toggleActive(item)"
+                [title]="item.isActive ? 'Cliquer pour désactiver' : 'Cliquer pour activer'">
+                <span class="pill-dot"></span>
+                {{ item.isActive ? 'Actif' : 'Inactif' }}
+              </button>
+            </div>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-action btn-edit" (click)="openEditModal(item)" title="Modifier">✏️</button>
+              <button class="btn-action btn-delete" (click)="deleteItem(item.extraId)" title="Supprimer">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="filteredItems.length === 0 && !loading" class="no-results">
+      <div class="no-results-icon">✨</div>
+      <p>Aucun extra trouvé</p>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="filteredItems.length > 0" class="pagination">
+      <button class="pagination-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+        ← Précédent
+      </button>
+      <div class="pagination-info">
+        <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+        <span class="separator">|</span>
+        <span>{{ filteredItems.length }} extras</span>
+      </div>
+      <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ editingId ? '✏️ Modifier Extra' : '➕ Nouvel Extra' }}</h2>
+        <button class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+
+      <form class="extra-form" (ngSubmit)="saveItem()">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nom *</label>
+            <input type="text" [(ngModel)]="form.name" name="name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label>Durée</label>
+            <input type="text" [(ngModel)]="form.duration" name="duration" class="form-control" placeholder="ex: 1h30" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea [(ngModel)]="form.description" name="description" class="form-control" rows="2"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prix Unitaire (TND) *</label>
+            <input type="number" [(ngModel)]="form.unitPrice" name="unitPrice" class="form-control" step="0.01" min="0" required />
+          </div>
+
+          <!-- Active toggle -->
+          <div class="form-group toggle-form-group">
+            <label>Statut</label>
+            <div class="inline-toggle" (click)="form.isActive = !form.isActive" [class.is-on]="form.isActive">
+              <div class="inline-knob"></div>
+              <span class="inline-label">{{ form.isActive ? 'Actif' : 'Inactif' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="formError" class="form-error">⚠️ {{ formError }}</div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn-submit" [disabled]="saving">
+            {{ saving ? '⏳...' : (editingId ? '💾 Enregistrer' : '✅ Ajouter') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

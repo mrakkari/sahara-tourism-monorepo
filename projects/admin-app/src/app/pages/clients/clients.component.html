@@ -1,0 +1,234 @@
+<div class="page-container">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">👥 Clients &amp; Partenaires</h1>
+      <span class="total-chip">{{ filteredUsers.length }} résultats</span>
+    </div>
+    <button class="btn-add" (click)="openAddModal()">
+      ➕ Ajouter
+    </button>
+  </div>
+
+  <!-- ── Filters ─────────────────────────────────────────────────────────── -->
+  <div class="filters-row">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Rechercher par nom, email, téléphone..."
+        [(ngModel)]="searchTerm"
+        (input)="applyFilters()"
+        class="search-input">
+    </div>
+
+    <div class="type-tabs">
+      <button class="tab-btn" [class.active]="typeFilter === 'all'"        (click)="setTypeFilter('all')">Tous</button>
+      <button class="tab-btn" [class.active]="typeFilter === 'CLIENT'"     (click)="setTypeFilter('CLIENT')">Passagers</button>
+      <button class="tab-btn" [class.active]="typeFilter === 'PARTENAIRE'" (click)="setTypeFilter('PARTENAIRE')">Partenaires</button>
+    </div>
+  </div>
+
+  <!-- ── Loading ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des clients…</p>
+  </div>
+
+  <!-- ── Table ───────────────────────────────────────────────────────────── -->
+  <div class="content-card" *ngIf="!isLoading">
+    <div class="table-wrapper">
+      <table class="clients-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Téléphone</th>
+            <th>Matricule Fiscal</th>
+            <th>Adresse</th>
+            <th>Type</th>
+            <th class="th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of pagedUsers" class="table-row">
+
+            <!-- Nom -->
+            <td>
+              <div class="user-info">
+                <div class="user-avatar" [class.avatar-partner]="user.role === 'PARTENAIRE'">
+                  {{ user.name.charAt(0).toUpperCase() }}
+                </div>
+                <div class="user-name-block">
+                  <span class="user-name">{{ user.name }}</span>
+                  <span class="loyalty-tag" *ngIf="user.role === 'CLIENT' && user.loyaltyTier">
+                    {{ user.loyaltyTier }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Email -->
+            <td>
+              <span class="cell-email">{{ user.email }}</span>
+            </td>
+
+            <!-- Téléphone -->
+            <td>
+              <span *ngIf="user.phone"  class="cell-phone">{{ user.phone }}</span>
+              <span *ngIf="!user.phone" class="cell-empty">—</span>
+            </td>
+
+            <!-- Matricule fiscal -->
+            <td>
+              <span *ngIf="user.matriculeFiscal"  class="cell-mf">{{ user.matriculeFiscal }}</span>
+              <span *ngIf="!user.matriculeFiscal" class="cell-empty">—</span>
+            </td>
+
+            <!-- Adresse -->
+            <td>
+              <span *ngIf="user.agencyAddress"  class="cell-addr">{{ user.agencyAddress }}</span>
+              <span *ngIf="!user.agencyAddress" class="cell-empty">—</span>
+            </td>
+
+            <!-- Type -->
+            <td>
+              <span class="type-badge"
+                [class.badge-partner]="user.role === 'PARTENAIRE'"
+                [class.badge-client]="user.role === 'CLIENT'">
+                {{ getRoleLabel(user.role) }}
+              </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="td-actions">
+              <div class="action-buttons">
+                <button class="btn-action btn-edit"   (click)="openEditModal(user)" title="Modifier">✏️</button>
+                <button class="btn-action btn-delete" (click)="deleteUser(user)"    title="Supprimer">🗑️</button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="filteredUsers.length === 0" class="empty-state">
+      <div class="empty-icon">👤</div>
+      <p>Aucun client trouvé</p>
+      <button class="btn-add" (click)="openAddModal()">➕ Ajouter le premier</button>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="filteredUsers.length > itemsPerPage" class="pagination">
+      <button class="pagination-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+        ← Précédent
+      </button>
+      <div class="pagination-info">
+        <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+        <span class="sep">|</span>
+        <span>{{ filteredUsers.length }} résultats</span>
+      </div>
+      <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MODAL — Add / Edit
+       ═══════════════════════════════════════════════════════════ -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-icon">{{ isEditMode ? '✏️' : '👤' }}</div>
+          <div>
+            <h2 class="modal-title">{{ isEditMode ? 'Modifier le compte' : 'Nouveau compte' }}</h2>
+            <p class="modal-subtitle" *ngIf="!isEditMode">
+              Un mot de passe sera généré automatiquement et envoyé par email.
+            </p>
+          </div>
+        </div>
+        <button type="button" class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+
+      <!-- Role toggle (create only) -->
+      <div class="role-section" *ngIf="!isEditMode" [formGroup]="form">
+        <label class="section-label">Type de compte</label>
+        <div class="role-toggle">
+          <button type="button" class="role-btn"
+            [class.active]="form.get('role')?.value === 'CLIENT'"
+            (click)="form.get('role')?.setValue('CLIENT')">
+            <span>🧑</span> Passager (CLIENT)
+          </button>
+          <button type="button" class="role-btn"
+            [class.active]="form.get('role')?.value === 'PARTENAIRE'"
+            (click)="form.get('role')?.setValue('PARTENAIRE')">
+            <span>🏢</span> Partenaire (Agence)
+          </button>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-form">
+
+        <div class="form-row">
+          <div class="field-wrap" [class.has-error]="isInvalid('name')">
+            <label class="field-label">Nom complet <span class="req">*</span></label>
+            <input type="text" class="field-input" formControlName="name" placeholder="Ex: Ahmed Ben Ali">
+            <span class="field-error" *ngIf="isInvalid('name')">{{ getError('name') }}</span>
+          </div>
+          <div class="field-wrap" [class.has-error]="isInvalid('phone')">
+            <label class="field-label">Téléphone <span class="req">*</span></label>
+            <input type="tel" class="field-input" formControlName="phone" placeholder="+216 XX XXX XXX">
+            <span class="field-error" *ngIf="isInvalid('phone')">{{ getError('phone') }}</span>
+          </div>
+        </div>
+
+        <div class="field-wrap" [class.has-error]="isInvalid('email')">
+          <label class="field-label">Adresse e-mail <span class="req">*</span></label>
+          <input type="email" class="field-input" formControlName="email" placeholder="exemple@email.com">
+          <span class="field-error" *ngIf="isInvalid('email')">{{ getError('email') }}</span>
+        </div>
+
+        <ng-container *ngIf="isPartenaire">
+          <div class="form-row">
+            <div class="field-wrap">
+              <label class="field-label">Matricule Fiscale <span class="optional">optionnel</span></label>
+              <input type="text" class="field-input" formControlName="matriculeFiscal" placeholder="Ex: 1234567A">
+            </div>
+            <div class="field-wrap">
+              <label class="field-label">Adresse agence <span class="optional">optionnel</span></label>
+              <input type="text" class="field-input" formControlName="agencyAddress" placeholder="Ex: 15 Av. Bourguiba, Tunis">
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="password-notice" *ngIf="!isEditMode">
+          <span>🔑</span>
+          <div>
+            <strong>Mot de passe auto-généré</strong>
+            <p>Un mot de passe sécurisé sera généré et envoyé à l'adresse email renseignée.</p>
+          </div>
+        </div>
+
+        <div class="api-error" *ngIf="errorMessage">
+          <span>⚠️</span><span>{{ errorMessage }}</span>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn-submit" [disabled]="isSubmitting">
+            <ng-container *ngIf="!isSubmitting">{{ isEditMode ? '💾 Enregistrer' : '✅ Créer le compte' }}</ng-container>
+            <ng-container *ngIf="isSubmitting"><span class="mini-spinner"></span> En cours…</ng-container>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>

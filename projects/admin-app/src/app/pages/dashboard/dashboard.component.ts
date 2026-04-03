@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit, effect } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -39,6 +39,13 @@ export class DashboardComponent implements OnInit {
   filteredReservations: Reservation[] = [];
   pagedReservations: Reservation[] = [];
 
+
+  showDatePicker = false;
+  selectedDate: Date | null = null;
+
+  calendarDate = new Date(); // month being viewed
+  calendarDays: { date: Date; isCurrentMonth: boolean; isSelected: boolean; isToday: boolean }[] = [];
+
   // Filters
   statusFilter = 'all';
   tourTypeFilter = 'all';
@@ -77,6 +84,14 @@ export class DashboardComponent implements OnInit {
           this.applyFilters();
       });
   }
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.date-picker-wrapper')) {
+      this.showDatePicker = false;
+    }
+  }
+ 
 
   get totalPages(): number {
     return Math.ceil(this.filteredReservations.length / this.itemsPerPage);
@@ -105,10 +120,16 @@ export class DashboardComponent implements OnInit {
 
       let dateMatch = true;
       if (this.startDate) {
-        const d = new Date(r.checkInDate);
+        // Use the correct date field per reservation type
+        const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
+          ? (r.serviceDate ?? r.checkInDate)
+          : r.checkInDate;
+
+        const d = new Date(rawDate);
         const start = new Date(this.startDate);
         start.setHours(0, 0, 0, 0);
         d.setHours(0, 0, 0, 0);
+
         if (this.endDate) {
           const end = new Date(this.endDate);
           end.setHours(23, 59, 59, 999);
@@ -121,21 +142,12 @@ export class DashboardComponent implements OnInit {
       return statusMatch && tourTypeMatch && searchMatch && dateMatch;
     });
 
-    // Sorting by status
     this.filteredReservations.sort((a, b) => {
       const statusOrder: Record<string, number> = {
-          'pending':    1,
-          'confirmed':  2,
-          'checked_in': 3,  // ← replaces 'arrived'
-          'completed':  4,
-          'cancelled':  5,
-          'rejected':   6,
+        'pending': 1, 'confirmed': 2, 'checked_in': 3,
+        'completed': 4, 'cancelled': 5, 'rejected': 6,
       };
-
-      const orderA = statusOrder[a.status] || 99;
-      const orderB = statusOrder[b.status] || 99;
-
-      return orderA - orderB;
+      return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
     });
 
     this.currentPage = 1;
@@ -324,5 +336,237 @@ export class DashboardComponent implements OnInit {
     const timestamp = new Date().toISOString().split('T')[0];
     doc.save(`reservations_page${this.currentPage}_${timestamp}.pdf`);
   
+  }
+  getDisplayNames(r: Reservation): { label: string; badge: 'hebergement' | 'tour' | 'extra' }[] {
+    switch (r.reservationType) {
+      case 'HEBERGEMENT':
+        return (r.tourTypes ?? []).map(t => ({ label: t.name, badge: 'hebergement' as const }));
+  
+      case 'TOURS':
+        return (r.tours ?? []).map(t => ({ label: t.name, badge: 'tour' as const }));
+  
+      case 'EXTRAS':
+        // Show only active extras (already filtered in mapToReservation, but guard anyway)
+        return (r.extras ?? []).filter(e => e.isActive).map(e => ({ label: e.name, badge: 'extra' as const }));
+  
+      default:
+        // Fallback for old data that may not have reservationType yet
+        if (r.tourTypes?.length) {
+          return r.tourTypes.map(t => ({ label: t.name, badge: 'hebergement' as const }));
+        }
+        return [{ label: 'N/A', badge: 'hebergement' as const }];
+    }
+  }
+  getDisplayDate(r: Reservation): string {
+    const raw = r.reservationType === 'HEBERGEMENT'
+      ? r.checkInDate
+      : (r.serviceDate ?? r.checkInDate); // graceful fallback for missing serviceDate
+  
+    return raw ? this.formatDate(raw) : '—';
+  }
+  getTypeLabel(r: Reservation): string {
+    const map: Record<string, string> = {
+      HEBERGEMENT: '🏕️ Séjour',
+      TOURS:       '🗺️ Tour',
+      EXTRAS:      '✨ Extras',
+    };
+    return r.reservationType ? (map[r.reservationType] ?? r.reservationType) : '—';
+  }
+
+  get upcomingDayBlocks(): { date: Date; label: string; dateStr: string; reservations: Reservation[] }[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const blocks: { date: Date; label: string; dateStr: string; reservations: Reservation[] }[] = [];
+    let dayOffset = 0;
+
+    while (blocks.length < 3 && dayOffset < 365) {
+      const day = new Date(today);
+      day.setDate(today.getDate() + dayOffset);
+      day.setHours(0, 0, 0, 0);
+
+      const dayReservations = this.reservations.filter(r => {
+        // Use serviceDate for TOURS and EXTRAS, checkInDate for HEBERGEMENT
+        const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
+          ? (r.serviceDate ?? r.checkInDate)
+          : r.checkInDate;
+
+        const resDate = new Date(rawDate);
+        resDate.setHours(0, 0, 0, 0);
+        return resDate.getTime() === day.getTime();
+      });
+
+      if (dayReservations.length > 0) {
+        const diff = dayOffset;
+        const label = diff === 0
+          ? "Aujourd'hui"
+          : diff === 1
+            ? 'Demain'
+            : day.toLocaleDateString('fr-FR', { weekday: 'long' });
+
+        const dateStr = day.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric'
+        });
+
+        blocks.push({ date: day, label, dateStr, reservations: dayReservations });
+      }
+
+      dayOffset++;
+    }
+
+    return blocks;
+  }
+  get otherReservations(): Reservation[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Collect all dates already shown in the 3 blocks
+    const blockDates = new Set(
+      this.upcomingDayBlocks.map(b => b.date.getTime())
+    );
+
+    return this.filteredReservations.filter(r => {
+      const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
+        ? (r.serviceDate ?? r.checkInDate)
+        : r.checkInDate;
+
+      const resDate = new Date(rawDate);
+      resDate.setHours(0, 0, 0, 0);
+
+      // Exclude reservations already shown in the 3-day blocks
+      return !blockDates.has(resDate.getTime());
+    });
+  }
+  formatFullDate(date: Date): string {
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  // Add date picker filter
+  filterByDate(date: Date | null): void {
+    this.selectedDate = date;
+    this.showDatePicker = false;
+    if (!date) {
+      this.startDate = null;
+      this.endDate = null;
+    } else {
+      this.startDate = date;
+      this.endDate = date;
+    }
+    this.applyFilters();
+  }
+
+  toggleDatePicker(): void {
+    // stopPropagation so the HostListener doesn't immediately close it
+    this.showDatePicker = !this.showDatePicker;
+    if (this.showDatePicker) {
+      this.calendarDate = this.selectedDate ? new Date(this.selectedDate) : new Date();
+      this.buildCalendar();
+    }
+  }
+  buildCalendar(): void {
+    const year = this.calendarDate.getFullYear();
+    const month = this.calendarDate.getMonth();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    let startDay = firstDay.getDay();
+    startDay = startDay === 0 ? 6 : startDay - 1;
+
+    const days: { date: Date; isCurrentMonth: boolean; isSelected: boolean; isToday: boolean }[] = [];
+
+    // Previous month padding days
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = new Date(year, month, 0 - i);
+      days.push({ date: d, isCurrentMonth: false, isSelected: false, isToday: false });
+    }
+
+    // Current month days — isCurrentMonth is always TRUE here
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      const d = new Date(year, month, i);
+      d.setHours(0, 0, 0, 0);
+      const isSelected = this.selectedDate
+        ? d.getTime() === new Date(this.selectedDate).setHours(0, 0, 0, 0)
+        : false;
+      days.push({
+        date: d,
+        isCurrentMonth: true,   // ← always true for current month loop
+        isSelected,
+        isToday: d.getTime() === today.getTime()
+      });
+    }
+
+    // Next month padding days
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(year, month + 1, i);
+      days.push({ date: d, isCurrentMonth: false, isSelected: false, isToday: false });
+    }
+
+    this.calendarDays = days;
+  }
+  prevMonth(): void {
+      this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
+      this.buildCalendar();
+    }
+    selectCalendarDate(day: { date: Date; isCurrentMonth: boolean }): void {
+    if (!day.isCurrentMonth) return;
+    this.selectedDate = day.date;
+    this.startDate = day.date;
+    this.endDate = day.date;
+    this.showDatePicker = false;
+    this.applyFilters();
+  }
+
+  clearCalendarDate(): void {
+    this.selectedDate = null;
+    this.startDate = null;
+    this.endDate = null;
+    this.showDatePicker = false;
+    this.applyFilters();
+  }
+
+  nextMonth(): void {
+    this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 1);
+    this.buildCalendar();
+  }
+  get calendarMonthLabel(): string {
+    return this.calendarDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  }
+  get reservationsWithDayHeaders(): ({ type: 'header'; label: string; dateStr: string } | { type: 'row'; reservation: Reservation })[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result: ({ type: 'header'; label: string; dateStr: string } | { type: 'row'; reservation: Reservation })[] = [];
+    const addedHeaders = new Set<string>();
+
+    for (const r of this.pagedReservations) {
+      const checkIn = new Date(r.checkInDate);
+      checkIn.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.round((checkIn.getTime() - today.getTime()) / (1000 * 3600 * 24));
+      const key = checkIn.toDateString();
+
+      // Only add header for today, tomorrow, day after tomorrow
+      if (diffDays >= 0 && diffDays < 3 && !addedHeaders.has(key)) {
+        addedHeaders.add(key);
+        const label = diffDays === 0 ? "Aujourd'hui" : diffDays === 1 ? 'Demain' : 'Après-demain';
+        const dateStr = checkIn.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+        result.push({ type: 'header', label, dateStr });
+      }
+
+      result.push({ type: 'row', reservation: r });
+    }
+
+    return result;
   }
 }

@@ -51,12 +51,15 @@ h1 { margin: 0; font-size: 2rem; }
 
 /* Filters Bar */
 .filters-bar {
-  display: flex;
+  display: flex;                    // ← was removed, add it back
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
+  position: relative;
+  z-index: 100;
+  overflow: visible;
 }
 
 .search-wrapper {
@@ -90,10 +93,14 @@ h1 { margin: 0; font-size: 2rem; }
   }
 }
 
+
 .filter-group {
-  display: flex;
+  display: flex;                    // ← was removed, add it back
   gap: 1rem;
   align-items: center;
+  position: relative;
+  z-index: 100;
+  overflow: visible;
 }
 
 .glass-select {
@@ -434,4 +441,461 @@ h1 { margin: 0; font-size: 2rem; }
   max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+// Add these styles to dashboard.component.scss
+// They extend the existing .tour-type-badge and .tour-types-cell
+
+// ── Reservation type chip ─────────────────────────────────────────
+.res-type-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+
+  &.res-type-hebergement {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+
+  &.res-type-tours {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+
+  &.res-type-extras {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+  }
+}
+
+// ── Name badges per type ──────────────────────────────────────────
+.tour-type-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin: 2px 2px 0 0;
+  white-space: nowrap;
+
+  // Default (hebergement — already existed)
+  background: #f1f5f9;
+  color: #334155;
+
+  &.badge-hebergement {
+    background: #e0f2fe;
+    color: #0c4a6e;
+  }
+
+  &.badge-tour {
+    background: #fef9c3;
+    color: #713f12;
+  }
+
+  &.badge-extra {
+    background: #fae8ff;
+    color: #701a75;
+  }
+}
+
+// ── Cell layout ───────────────────────────────────────────────────
+.tour-types-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+// ── Date Picker Button ────────────────────────────────────────────
+.date-picker-wrapper {
+  position: relative;
+  z-index: 200;
+}
+
+.btn-icon-calendar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &.active {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .date-indicator {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #0369a1;
+  }
+}
+
+.date-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  z-index: 100;
+  min-width: 240px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.clear-date {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover { text-decoration: underline; }
+}
+
+.date-native-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #334155;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #7dd3fc;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+  }
+}
+
+// ── Day Blocks ────────────────────────────────────────────────────
+.day-blocks-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.day-block {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.day-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.day-block-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.day-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.day-date {
+  font-size: 0.78rem;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.day-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 3px 12px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 700;
+
+  &.empty {
+    background: #f1f5f9;
+    color: #94a3b8;
+  }
+}
+
+.day-empty {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+// ── Other Section Header ──────────────────────────────────────────
+.other-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  margin-top: 0.5rem;
+
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: #334155;
+  }
+}
+
+.other-section {
+  margin-top: 0.5rem;
+}
+.day-header-row td {
+  padding: 6px 12px;
+  background: transparent;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.day-header-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px 4px;
+  border-bottom: 2px solid rgba(14, 165, 233, 0.2);
+  margin-bottom: 4px;
+}
+
+.day-header-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #0ea5e9;
+  text-transform: capitalize;
+}
+
+.day-header-date {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-transform: capitalize;
+}
+
+.date-picker-wrapper {
+  position: relative;
+}
+
+.btn-icon-calendar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &.active {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .date-indicator {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #0369a1;
+  }
+}
+
+// ── Calendar Dropdown ─────────────────────────────────────────────
+.calendar-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  padding: 20px;
+  z-index: 9999;   // ← was 999, boost it above everything
+  width: 300px;
+  border: 1px solid #e2e8f0;
+  animation: calFadeIn 0.15s ease;
+  overflow: visible;
+}
+
+@keyframes calFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.cal-month-label {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+  text-transform: capitalize;
+  letter-spacing: 0.2px;
+}
+
+.cal-nav {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 1.1rem;
+  color: #64748b;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+
+  &:hover {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+    color: white;
+  }
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 8px;
+
+  span {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    padding: 2px 0;
+    text-transform: uppercase;
+  }
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(.other-month) {
+    background: #e0f2fe;
+    color: #0369a1;
+    font-weight: 600;
+  }
+
+  &.today {
+    background: #f0f9ff;
+    color: #0ea5e9;
+    font-weight: 700;
+    border: 1px solid #bae6fd;
+  }
+
+  &.selected {
+    background: #0ea5e9 !important;
+    color: white !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+  }
+
+  &.other-month {
+    color: #e2e8f0;
+    cursor: default;
+    pointer-events: none;
+  }
+}
+
+.calendar-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: center;
+}
+
+.cal-clear {
+  background: none;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 10px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #fef2f2;
+  }
+}
+// Force the table card not to clip the calendar
+:host ::ng-deep lib-glass-card {
+  overflow: visible !important;
+}
+
+:host ::ng-deep lib-glass-card > * {
+  overflow: visible !important;
 }

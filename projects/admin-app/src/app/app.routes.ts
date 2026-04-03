@@ -10,11 +10,13 @@ import { InvoicesListComponent } from './pages/invoice/invoices-list.component';
 import { ReportsComponent } from './pages/reports/reports.component';
 import { ProformasComponent } from './pages/proformas/proformas.component';
 import { ClientsComponent } from './pages/clients/clients.component';
-import { ProduitsComponent } from './pages/produits/produits.component';
 import { StatistiquesComponent } from './pages/statistiques/statistiques.component';
 import { HebergementComponent } from './pages/nouvelle-reservation/hebergement/hebergement.component';
 import { ToursComponent } from './pages/nouvelle-reservation/tours/tours.component';
 import { ExtrasComponent } from './pages/nouvelle-reservation/extras/extras.component';
+import { HebergementListComponent } from './pages/produits/hebergementList/hebergement-list.component';
+import { ToursListComponent } from './pages/produits/toursList/tours-list.component';
+import { ExtrasListComponent } from './pages/produits/extrasList/extras-list.component';
 
 
 export const routes: Routes = [
@@ -33,9 +35,12 @@ export const routes: Routes = [
       { path: 'invoice/:id',               component: InvoiceComponent },
       { path: 'proformas',                 component: ProformasComponent },
       { path: 'clients',                   component: ClientsComponent },
-      { path: 'produits',                  component: ProduitsComponent },
+      { path: 'produits',                  component: HebergementListComponent },
+      { path: 'tours',                     component: ToursListComponent },
       { path: 'statistiques',              component: StatistiquesComponent },
       { path: 'reports',                   component: ReportsComponent },
+      { path: 'extras',                    component: ExtrasListComponent },
+
 
       // ── Nouvelle Réservation — 3 routed forms ──────────────────
       { path: 'nouvelle-reservation/hebergement', component: HebergementComponent },

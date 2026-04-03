@@ -19,9 +19,7 @@
       <a routerLink="/reservations" class="btn-back">← Réservations</a>
       <div class="title-group">
         <div class="title-row">
-          <h1>Réservation <span class="res-id">#{{ getShortId() }}</span></h1>
-
-          <!-- Reservation type badge -->
+          <h1>Réservation</h1>
           <span class="type-badge"
             [class.type-hebergement]="isHebergement()"
             [class.type-tours]="isTours()"
@@ -30,10 +28,9 @@
             <ng-container *ngIf="isTours()">🗺️ Tours</ng-container>
             <ng-container *ngIf="isExtras()">✨ Extras</ng-container>
           </span>
-
-          <!-- Status badge -->
           <span class="status-badge" [ngClass]="statusClass">{{ statusLabel }}</span>
         </div>
+        <p class="header-meta" *ngIf="reservation.source">{{ reservation.source }}</p>
         <p class="header-meta">
           Créée le {{ formatDateTime(reservation.createdAt) }}
           <ng-container *ngIf="reservation.source"> · {{ reservation.source }}</ng-container>
@@ -49,9 +46,9 @@
         <button class="btn-primary" (click)="confirm()">✅ Confirmer</button>
       </ng-container>
 
-      <!-- CONFIRMED → check in or reject -->
+      <!-- CONFIRMED → cancel or check in -->
       <ng-container *ngIf="isConfirmed()">
-        <button class="btn-danger" (click)="openRejectModal()">❌ Rejeter</button>
+        <button class="btn-danger" (click)="cancel()">❌ Annuler</button>
         <button class="btn-primary" (click)="checkIn()">🏕️ Check In</button>
       </ng-container>
 
@@ -60,7 +57,7 @@
         <button class="btn-primary" (click)="complete()">✓ Terminer</button>
       </ng-container>
 
-      <!-- Terminal states — read only -->
+      <!-- Terminal states -->
       <ng-container *ngIf="isCancelled() || isRejected() || isCompleted()">
         <span class="terminal-label">Réservation {{ statusLabel | lowercase }}</span>
       </ng-container>
