@@ -94,6 +94,13 @@ interface ReservationResponse {
   totalExtrasAmount: number;
   createdAt: string;
   deletedAt?: string;
+
+  paymentSummary?: {
+    originalTotalAmount: number;
+    totalPaid: number;
+    remainingTotal: number;
+    paymentStatus: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -143,11 +150,14 @@ export class ReservationService {
       isAdult: p.isAdult,
     }));
 
-    const grandTotal    = (dto.totalAmount ?? 0) + (dto.totalExtrasAmount ?? 0);
-    const paidAmount    = 0;
+    const grandTotal = dto.paymentSummary?.originalTotalAmount
+      ?? (dto.totalAmount ?? 0) + (dto.totalExtrasAmount ?? 0);
+
+    const paidAmount = dto.paymentSummary?.totalPaid ?? 0;
+
     const paymentStatus: 'pending' | 'partial' | 'completed' =
-      paidAmount <= 0         ? 'pending' :
-      paidAmount < grandTotal ? 'partial' : 'completed';
+      dto.paymentSummary?.paymentStatus === 'PAID'         ? 'completed' :
+      dto.paymentSummary?.paymentStatus === 'PARTIALLY_PAID' ? 'partial'  : 'pending';
 
     const tourTypes: TourTypeSnapshot[] = (dto.tourTypes ?? []).map(t => ({
       reservationTourTypeId: t.reservationTourTypeId,
@@ -264,8 +274,14 @@ export class ReservationService {
     return this.reservationsSubject.value.find(r => r.id === id);
   }
 
-  getReservationsByStatus(status: Reservation['status']): Reservation[] {
-    return this.reservationsSubject.value.filter(r => r.status === status);
+  // ✅ NEW — calls the backend API
+  getReservationsByStatus(status: FrontendStatus): Observable<Reservation[]> {
+    const backendStatus = status.toUpperCase() as BackendStatus;
+    return this.http.get<ReservationResponse[]>(
+      `${this.API_URL}/status/${backendStatus}`
+    ).pipe(
+      map(dtos => dtos.map(dto => this.mapToReservation(dto)))
+    );
   }
 
   getReservationsForToday(): Reservation[] {
@@ -414,5 +430,13 @@ export class ReservationService {
 
   private generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
+  }
+
+  searchReservationsByName(name: string): Observable<Reservation[]> {
+    return this.http.get<ReservationResponse[]>(
+      `${this.API_URL}/search?name=${encodeURIComponent(name)}`
+    ).pipe(
+      map(dtos => dtos.map(dto => this.mapToReservation(dto)))
+    );
   }
 }

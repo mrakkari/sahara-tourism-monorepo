@@ -7,11 +7,12 @@ import { ReservationService } from '../../../../../../shared/src/services/reserv
 import { ExtraResponse } from '../../../../../../shared/src/models/extra.model';
 import { UserResponse } from '../../../../../../shared/src/models/user.model';
 import { ReservationRequest } from '../../../../../../shared/src/models/reservation-api.model';
-
+import { PaymentModalComponent } from '../../../../../../shared/src/lib/components/payment-modal/payment-modal.component';
+import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
 @Component({
   selector: 'app-extras',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule,PaymentModalComponent],
   templateUrl: './extras.component.html',
   styleUrls: ['./extras.component.scss'],
   animations: [
@@ -37,6 +38,9 @@ export class ExtrasComponent implements OnInit {
   isLoadingExtras = false;
 
   selectedExtras: Record<string, number> = {};
+
+  showPaymentModal  = false;
+  initialPayment: PaymentRequest | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -93,7 +97,15 @@ export class ExtrasComponent implements OnInit {
   get numberOfPeople(): number { return +(this.form.get('numberOfPeople')?.value) || 0; }
 
   updatePeople(delta: number): void {
-    this.form.get('numberOfPeople')?.setValue(Math.max(1, this.numberOfPeople + delta));
+    const newValue = Math.max(1, this.numberOfPeople + delta);
+    this.form.get('numberOfPeople')?.setValue(newValue);
+    
+    // Sync all currently selected extras to the new count
+    Object.keys(this.selectedExtras).forEach(id => {
+      if (this.selectedExtras[id] > 0) {
+        this.selectedExtras[id] = newValue;
+      }
+    });
   }
 
   // ─── Extras ────────────────────────────────────────────────────
@@ -166,11 +178,33 @@ export class ExtrasComponent implements OnInit {
       demandeSpecial:   fv.demandeSpecial  || undefined,
       currency:         fv.currency        || 'TND',
       extras:           extrasPayload,
+      initialPayment:   this.initialPayment ?? undefined,
     };
 
     this.reservationService.createReservation(request).subscribe({
       next: () => { this.isSubmitting = false; this.router.navigate(['/reservations']); },
       error: err => { console.error(err); this.isSubmitting = false; }
     });
+  }
+
+  openPaymentModal(): void  { this.showPaymentModal = true; }
+  closePaymentModal(): void { this.showPaymentModal = false; }
+
+  onPaymentConfirmed(payment: PaymentRequest): void {
+    this.initialPayment = payment;
+    this.showPaymentModal = false;
+  }
+
+  removeInitialPayment(): void {
+    this.initialPayment = null;
+  }
+
+  paymentMethodLabel(method: string): string {
+    const labels: Record<string, string> = {
+      CASH: 'Espèces', CREDIT_CARD: 'Carte de crédit',
+      DEBIT_CARD: 'Carte de débit', BANK_TRANSFER: 'Virement bancaire',
+      ONLINE: 'En ligne', CHEQUE: 'Chèque',
+    };
+    return labels[method] ?? method;
   }
 }

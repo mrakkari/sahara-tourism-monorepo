@@ -110,10 +110,17 @@ $ease:         0.16s ease;
   grid-template-columns: 1fr 360px;
   gap: 20px;
   align-items: start;
+  align-content: start;  // ← add this
 }
 
 .form-col    { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.summary-col { position: sticky; top: 80px; }
+.summary-col {
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  overflow: visible;
+  height: fit-content;  // ← add this
+}
 
 // ── Cards ─────────────────────────────────────────────────────────
 .card {
@@ -504,16 +511,11 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 .extras-list { display: flex; flex-direction: column; gap: 8px; }
 
 .extra-row {
-  border: 1.5px solid $border;
-  border-radius: 12px; overflow: hidden; background: $white;
-  transition: border-color $ease, box-shadow $ease;
-
-  &:hover:not(.active) { border-color: $border-hv; }
-
-  &.active {
-    border-color: $amber;
-    box-shadow: 0 0 0 3px rgba(245,158,11,.09);
-  }
+  // override any inherited scrollbar or selection artifact
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  
+  &:focus, &:focus-within { outline: none; }
 }
 
 .extra-main {
@@ -629,6 +631,9 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,.07);
+  width: 100%;
+  align-self: start;
+  height: fit-content;  // ← add this
 }
 
 .sum-header {
@@ -689,16 +694,18 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 // ── Total bar ──────────────────────────────────────────────────────
 .sum-total {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px;
-  background: $navy;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0 0;
+  padding: 0 20px 16px;
+  font-size: 0.9rem;
+  color: $muted;
 
-  .total-label {
-    font-size: 0.78rem; color: rgba(255,255,255,.5); font-weight: 500;
-  }
+  .total-label { font-size: 0.9rem; color: $muted; }
 
   .total-amount {
-    font-size: 1.55rem; font-weight: 700; color: $amber; letter-spacing: -0.5px;
+    font-size: 1.4rem; font-weight: 800; color: $dark; letter-spacing: -0.5px;
   }
 }
 
@@ -763,3 +770,32 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   color: #92400e;
   font-style: italic;
 }
+
+.pay-hint {
+  font-size: 0.875rem; color: #64748b; margin: 0 0 12px;
+}
+ 
+.btn-add-payment {
+  padding: 10px 20px;
+  background: #eff6ff; color: #3b82f6;
+  border: 1px dashed #93c5fd;
+  border-radius: 8px; font-size: 0.9rem; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; width: 100%;
+}
+.btn-add-payment:hover { background: #dbeafe; }
+ 
+.payment-preview {
+  background: #f0fdf4; border: 1px solid #86efac;
+  border-radius: 8px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pay-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.9rem; color: #374151;
+}
+.btn-remove-payment {
+  align-self: flex-start; margin-top: 4px;
+  background: none; border: none; color: #ef4444;
+  font-size: 0.85rem; cursor: pointer; padding: 0;
+}
+.btn-remove-payment:hover { text-decoration: underline; }

@@ -135,6 +135,52 @@
             </div>
           </div>
         </div>
+                <!-- Optional Initial Payment -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">💳</span>
+              Paiement initial <span class="optional">optionnel</span>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <ng-container *ngIf="!initialPayment">
+              <p class="pay-hint">
+                Le client souhaite payer maintenant ? Enregistrez un montant initial.
+              </p>
+              <button type="button" class="btn-add-payment" (click)="openPaymentModal()">
+                + Ajouter un paiement
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="initialPayment">
+              <div class="payment-preview">
+                <div class="pay-row">
+                  <span>Montant</span>
+                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+                </div>
+                <div class="pay-row">
+                  <span>Méthode</span>
+                  <strong>{{ paymentMethodLabel(initialPayment.paymentMethod) }}</strong>
+                </div>
+                <button type="button" class="btn-remove-payment" (click)="removeInitialPayment()">
+                  ✕ Supprimer
+                </button>
+              </div>
+            </ng-container>
+
+          </div>
+        </div>
+
+        <!-- Payment Modal -->
+        <app-payment-modal
+          *ngIf="showPaymentModal"
+          [inlineMode]="true"
+          [currency]="form.get('currency')?.value || 'TND'"
+          (closed)="closePaymentModal()"
+          (paymentConfirmed)="onPaymentConfirmed($event)"
+        />
 
       </div><!-- /form-col -->
 
@@ -159,18 +205,18 @@
             </div>
 
             <div class="sum-breakdown" *ngIf="extrasTotal() > 0">
-              <div class="breakdown-row" *ngFor="let e of extras">
-                <ng-container *ngIf="isExtraSelected(e.extraId)">
+              <ng-container *ngFor="let e of extras">
+                <div class="breakdown-row" *ngIf="isExtraSelected(e.extraId)">
                   <span>{{ e.name }} × {{ extraQty(e.extraId) }}</span>
                   <span>{{ extraQty(e.extraId) * e.unitPrice | number:'1.0-0' }} TND</span>
-                </ng-container>
-              </div>
+                </div>
+              </ng-container>
             </div>
           </div>
 
           <div class="sum-total" *ngIf="extrasTotal() > 0">
             <span class="total-label">Total extras</span>
-            <span class="total-amount">{{ extrasTotal() | number:'1.0-0' }} TND</span>
+            <strong>{{ extrasTotal() | number:'1.0-0' }} TND</strong>
           </div>
 
           <div class="sum-footer">

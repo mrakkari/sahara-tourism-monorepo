@@ -15,6 +15,8 @@ import { GlassCardComponent } from '../../components/glass-card/glass-card.compo
 import { TOUR_TYPES, RESERVATION_SOURCES } from '../../core/constants/business-data.constants';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -63,6 +65,11 @@ export class DashboardComponent implements OnInit {
   currentPage: number = 1;
   itemsPerPage: number = 10;
   private lastNotifCount = 0;
+
+  private currentStatusLoaded = 'all';
+  private searchSubject = new Subject<string>();
+
+
   constructor(
       private reservationService: ReservationService,
       private notificationService: NotificationService
@@ -78,11 +85,30 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-      this.reservationService.fetchAllReservations(); // ← call here instead
-      this.reservationService.getAllReservations().subscribe(reservations => {
-          this.reservations = reservations;
-          this.applyFilters();
-      });
+    this.reservationService.fetchAllReservations();
+    this.reservationService.getAllReservations().subscribe(reservations => {
+      this.reservations = reservations;
+      this.applyFilters();
+    });
+
+    this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+      switchMap((term: string) => {  // ← add `: string` here
+        if (!term.trim()) {
+          if (this.statusFilter === 'all') {
+            this.reservationService.fetchAllReservations();
+            return this.reservationService.getAllReservations();
+          } else {
+            return this.reservationService.getReservationsByStatus(this.statusFilter as any);
+          }
+        }
+        return this.reservationService.searchReservationsByName(term);
+      })
+    ).subscribe((reservations: Reservation[]) => {  // ← add `: Reservation[]` here
+      this.reservations = reservations;
+      this.applyFilters();
+    });
   }
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -91,7 +117,46 @@ export class DashboardComponent implements OnInit {
       this.showDatePicker = false;
     }
   }
- 
+  onSearchChange(): void {
+    this.searchSubject.next(this.searchTerm);
+  }
+  onStatusChange(): void {
+    this.currentStatusLoaded = this.statusFilter;
+
+    if (this.statusFilter === 'all') {
+      if (this.searchTerm.trim()) {
+        // Search is active — re-run search, applyFilters handles the rest
+        this.reservationService.searchReservationsByName(this.searchTerm)
+          .subscribe(reservations => {
+            this.reservations = reservations;
+            this.applyFilters();
+          });
+      } else {
+        // No search — reload all
+        this.reservationService.fetchAllReservations();
+        // the existing getAllReservations() subscription in ngOnInit picks it up
+      }
+      return;
+    }
+
+    // Status selected
+    if (this.searchTerm.trim()) {
+      // Search + status both active — search by name, applyFilters handles status locally
+      // This works because status filter was already applied on the subset
+      this.reservationService.searchReservationsByName(this.searchTerm)
+        .subscribe(reservations => {
+          this.reservations = reservations;
+          this.applyFilters();
+        });
+    } else {
+      // Only status filter active
+      this.reservationService.getReservationsByStatus(this.statusFilter as any)
+        .subscribe(reservations => {
+          this.reservations = reservations;
+          this.applyFilters();
+        });
+    }
+  }
 
   get totalPages(): number {
     return Math.ceil(this.filteredReservations.length / this.itemsPerPage);
@@ -112,15 +177,12 @@ export class DashboardComponent implements OnInit {
 
   applyFilters(): void {
     this.filteredReservations = this.reservations.filter(r => {
-      const statusMatch = this.statusFilter === 'all' || r.status === this.statusFilter;
-      const tourTypeMatch = this.tourTypeFilter === 'all' || r.tourTypes?.some(t => t.name === this.tourTypeFilter);
-      const searchMatch = this.searchTerm === '' ||
-        r.partnerName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        r.id.toLowerCase().includes(this.searchTerm.toLowerCase());
+      // searchMatch removed — handled by API
+      const tourTypeMatch = this.tourTypeFilter === 'all' || 
+        r.tourTypes?.some(t => t.name === this.tourTypeFilter);
 
       let dateMatch = true;
       if (this.startDate) {
-        // Use the correct date field per reservation type
         const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
           ? (r.serviceDate ?? r.checkInDate)
           : r.checkInDate;
@@ -139,7 +201,7 @@ export class DashboardComponent implements OnInit {
         }
       }
 
-      return statusMatch && tourTypeMatch && searchMatch && dateMatch;
+      return tourTypeMatch && dateMatch;
     });
 
     this.filteredReservations.sort((a, b) => {
@@ -568,5 +630,17 @@ export class DashboardComponent implements OnInit {
     }
 
     return result;
+  }
+  onSearchSubmit(): void {
+    if (!this.searchTerm.trim()) {
+      // Empty → reload all
+      this.reservationService.fetchAllReservations();
+      return;
+    }
+    this.reservationService.searchReservationsByName(this.searchTerm.trim())
+      .subscribe(reservations => {
+        this.reservations = reservations;
+        this.applyFilters();
+      });
   }
 }

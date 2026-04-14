@@ -169,6 +169,52 @@
             </div>
           </div>
         </div>
+                <!-- Optional Initial Payment -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">💳</span>
+              Paiement initial <span class="optional">optionnel</span>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <ng-container *ngIf="!initialPayment">
+              <p class="pay-hint">
+                Le client souhaite payer maintenant ? Enregistrez un montant initial.
+              </p>
+              <button type="button" class="btn-add-payment" (click)="openPaymentModal()">
+                + Ajouter un paiement
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="initialPayment">
+              <div class="payment-preview">
+                <div class="pay-row">
+                  <span>Montant</span>
+                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+                </div>
+                <div class="pay-row">
+                  <span>Méthode</span>
+                  <strong>{{ paymentMethodLabel(initialPayment.paymentMethod) }}</strong>
+                </div>
+                <button type="button" class="btn-remove-payment" (click)="removeInitialPayment()">
+                  ✕ Supprimer
+                </button>
+              </div>
+            </ng-container>
+
+          </div>
+        </div>
+
+        <!-- Payment Modal -->
+        <app-payment-modal
+          *ngIf="showPaymentModal"
+          [inlineMode]="true"
+          [currency]="form.get('currency')?.value || 'TND'"
+          (closed)="closePaymentModal()"
+          (paymentConfirmed)="onPaymentConfirmed($event)"
+        />
 
       </div><!-- /form-col -->
 

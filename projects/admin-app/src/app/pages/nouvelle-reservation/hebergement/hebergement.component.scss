@@ -426,3 +426,32 @@ select.input   { cursor: pointer; }
   .resa-page   { padding: 16px; }
   .counters, .row-2 { grid-template-columns: 1fr; }
 }
+
+.pay-hint {
+  font-size: 0.875rem; color: #64748b; margin: 0 0 12px;
+}
+ 
+.btn-add-payment {
+  padding: 10px 20px;
+  background: #eff6ff; color: #3b82f6;
+  border: 1px dashed #93c5fd;
+  border-radius: 8px; font-size: 0.9rem; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; width: 100%;
+}
+.btn-add-payment:hover { background: #dbeafe; }
+ 
+.payment-preview {
+  background: #f0fdf4; border: 1px solid #86efac;
+  border-radius: 8px; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pay-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.9rem; color: #374151;
+}
+.btn-remove-payment {
+  align-self: flex-start; margin-top: 4px;
+  background: none; border: none; color: #ef4444;
+  font-size: 0.85rem; cursor: pointer; padding: 0;
+}
+.btn-remove-payment:hover { text-decoration: underline; }

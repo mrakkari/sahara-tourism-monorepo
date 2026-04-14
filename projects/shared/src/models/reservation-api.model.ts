@@ -1,3 +1,7 @@
+// shared/src/models/reservation-api.model.ts
+
+import { PaymentRequest, PaymentSummary, TransactionResponse } from './transaction.model';
+
 // =============================================
 // ENUMS
 // =============================================
@@ -19,7 +23,6 @@ export interface TourTypeSelectionRequest {
 
 export interface TourSelectionRequest {
   tourId: string;
-  //departureDate: string; // 'YYYY-MM-DD'
 }
 
 export interface ParticipantRequest {
@@ -42,9 +45,7 @@ export interface ReservationRequest {
   checkInDate?: string;
   checkOutDate?: string;
 
-    // TOURS + EXTRAS — shared date field
-  // TOURS:  departure date of the tour
-  // EXTRAS: date the extras service takes place
+  // TOURS + EXTRAS — shared date field
   serviceDate?: string;
 
   groupName?: string;
@@ -63,6 +64,11 @@ export interface ReservationRequest {
 
   participants?: ParticipantRequest[];
   extras?: ReservationExtraRequest[];
+
+  // ── NEW — Optional initial payment at creation time ──────────
+  // If provided → a Transaction is created immediately after save
+  // If null/undefined → reservation created with UNPAID status
+  initialPayment?: PaymentRequest;
 }
 
 // =============================================
@@ -140,4 +146,8 @@ export interface ReservationResponse {
   extras: ReservationExtraResponse[];
   totalExtrasAmount: number;
   deletedAt?: string | null;
+
+  // ── NEW — Payment fields (computed from transactions in backend) ──
+  paymentSummary?: PaymentSummary;
+  transactions?: TransactionResponse[];
 }

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { RouterOutlet, RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { SidebarComponent, SidebarItem } from '../../../components/sidebar/sidebar.component';
-import { ReservationService } from '../../../services/reservation.service';
+import { ResCampingService } from '../../../services/res-camping.service';
 import { Reservation } from '../../../models/reservation.model';
 import { AuthService } from '../../../../../../shared/src/lib/auth/auth.service';
 import { NotificationService } from '../../../../../../shared/src/public-api'; // ADD THIS
@@ -40,7 +40,7 @@ export class MainLayoutComponent implements OnInit {
     }
 
     constructor(
-        private reservationService: ReservationService,
+        private resCampingService: ResCampingService,
         private notificationService: NotificationService, // ADD THIS
         private authService: AuthService,
         private router: Router
@@ -58,7 +58,7 @@ export class MainLayoutComponent implements OnInit {
         }
 
         // keep sidebar badge for confirmed groups (this stays as is)
-        this.reservationService.getAllReservations().subscribe((reservations: Reservation[]) => {
+        this.resCampingService.getAllReservations().subscribe((reservations: Reservation[]) => {
             this.sidebarItems[0].badge = reservations.filter(
                 (r: Reservation) => r.status === 'confirmed' || r.status === 'checked_in'
             ).length;

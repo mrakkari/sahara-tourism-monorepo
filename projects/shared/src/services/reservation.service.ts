@@ -1,3 +1,5 @@
+// shared/src/services/reservation.service.ts
+
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -7,6 +9,8 @@ import { ExtraResponse } from '../models/extra.model';
 import { ReservationRequest, ReservationResponse, BackendReservationStatus } from '../models/reservation-api.model';
 import { UserResponse } from '../models/user.model';
 import { DEFAULT_TOUR_IMAGE, TOUR_TYPE_IMAGES } from '../models/constants/images';
+import { PaymentRequest, PaymentResponse } from '../models/transaction.model';
+import { ProformaResponse } from '../models/proforma.model';
 
 @Injectable({ providedIn: 'root' })
 export class ReservationService {
@@ -15,7 +19,7 @@ export class ReservationService {
 
   constructor(private http: HttpClient) {}
 
-  // ─── Tour Types (Hébergement catalog) ────────────────────────
+  // ─── Tour Types ───────────────────────────────────────────────
   getAllTourTypes(): Observable<TourType[]> {
     return this.http.get<TourType[]>(`${this.apiUrl}/tour-types`).pipe(
       map(list => list.map(tt => ({
@@ -25,7 +29,7 @@ export class ReservationService {
     );
   }
 
-  // ─── Tours (packaged trips catalog) ──────────────────────────
+  // ─── Tours ────────────────────────────────────────────────────
   getAllTours(): Observable<Tour[]> {
     return this.http.get<Tour[]>(`${this.apiUrl}/tours`);
   }
@@ -34,7 +38,7 @@ export class ReservationService {
     return this.http.get<Tour[]>(`${this.apiUrl}/tours/active`);
   }
 
-  // ─── Extras catalog ───────────────────────────────────────────
+  // ─── Extras ───────────────────────────────────────────────────
   getActiveExtras(): Observable<ExtraResponse[]> {
     return this.http.get<ExtraResponse[]>(`${this.apiUrl}/extras`).pipe(
       map(list => list.filter(e => e.isActive))
@@ -46,36 +50,32 @@ export class ReservationService {
     return this.http.get<UserResponse[]>(`${this.apiUrl}/auth/clients-partenaires`);
   }
 
-  // ─── Create Reservation ───────────────────────────────────────
+  // ─── Reservations ─────────────────────────────────────────────
   createReservation(request: ReservationRequest): Observable<ReservationResponse> {
     return this.http.post<ReservationResponse>(`${this.apiUrl}/reservations`, request);
   }
 
-  // ─── Get Reservation By Id ────────────────────────────────────
   getReservationById(reservationId: string): Observable<ReservationResponse> {
     return this.http.get<ReservationResponse>(`${this.apiUrl}/reservations/${reservationId}`);
   }
 
-  // ─── My Reservations (CLIENT / PARTENAIRE) ────────────────────
   getMyReservations(): Observable<ReservationResponse[]> {
     return this.http.get<ReservationResponse[]>(`${this.apiUrl}/reservations/my-reservations`);
   }
 
-  // ─── Update Reservation (CLIENT / PARTENAIRE) ─────────────────
   updateReservation(reservationId: string, request: any): Observable<ReservationResponse> {
     return this.http.put<ReservationResponse>(
       `${this.apiUrl}/reservations/${reservationId}`, request
     );
   }
 
-  // ─── Cancel Reservation ───────────────────────────────────────
   cancelReservation(reservationId: string): Observable<ReservationResponse> {
     return this.http.patch<ReservationResponse>(
       `${this.apiUrl}/reservations/${reservationId}/status?status=CANCELLED`, {}
     );
   }
 
-  // ─── Status Actions (ADMIN) ───────────────────────────────────
+  // ─── Status actions ───────────────────────────────────────────
   confirmReservation(reservationId: string): Observable<ReservationResponse> {
     return this.updateStatus(reservationId, 'CONFIRMED');
   }
@@ -97,6 +97,35 @@ export class ReservationService {
   private updateStatus(reservationId: string, status: BackendReservationStatus): Observable<ReservationResponse> {
     return this.http.patch<ReservationResponse>(
       `${this.apiUrl}/reservations/${reservationId}/status?status=${status}`, {}
+    );
+  }
+
+  // ─── NEW — Payments ───────────────────────────────────────────
+  // POST /api/reservations/{id}/payments
+  recordPayment(reservationId: string, request: PaymentRequest): Observable<PaymentResponse> {
+    return this.http.post<PaymentResponse>(
+      `${this.apiUrl}/reservations/${reservationId}/payments`, request
+    );
+  }
+
+  // ─── NEW — Proformas ──────────────────────────────────────────
+  // GET /api/invoices — all invoices (admin filters by type on frontend)
+  getAllProformas(): Observable<ProformaResponse[]> {
+    return this.http.get<ProformaResponse[]>(`${this.apiUrl}/invoices`).pipe(
+      map(list => list.filter(i => i.invoiceType === 'PROFORMA'))
+    );
+  }
+
+  getProformasByReservation(reservationId: string): Observable<ProformaResponse[]> {
+    return this.http.get<ProformaResponse[]>(
+      `${this.apiUrl}/invoices/reservation/${reservationId}`
+    ).pipe(
+      map(list => list.filter(i => i.invoiceType === 'PROFORMA'))
+    );
+  }
+  getReservationsByStatus(status: BackendReservationStatus): Observable<ReservationResponse[]> {
+    return this.http.get<ReservationResponse[]>(
+      `${this.apiUrl}/reservations/status/${status}`
     );
   }
 }

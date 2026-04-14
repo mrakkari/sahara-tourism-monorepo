@@ -959,3 +959,45 @@ $blue:    #3b82f6;
   .info-grid     { grid-template-columns: 1fr; }
   .title-row     { flex-direction: column; align-items: flex-start; }
 }
+
+.tx-list { display: flex; flex-direction: column; gap: 0; }
+.tx-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+}
+.tx-row:last-child { border-bottom: none; }
+.tx-left { display: flex; align-items: center; gap: 12px; }
+.tx-icon { font-size: 1.5rem; }
+.tx-info { display: flex; flex-direction: column; gap: 2px; }
+.tx-number { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+.tx-method { font-size: 0.8rem; color: #64748b; }
+.tx-date { font-size: 0.75rem; color: #94a3b8; }
+.tx-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.tx-amount { font-size: 0.95rem; font-weight: 600; color: #10b981; }
+.tx-status { font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; }
+.tx-status.completed { background: #dcfce7; color: #16a34a; }
+.tx-status.pending   { background: #fef9c3; color: #ca8a04; }
+.tx-status.failed    { background: #fee2e2; color: #dc2626; }
+.tx-empty { text-align: center; color: #94a3b8; padding: 24px; font-size: 0.9rem; }
+ 
+.pay-status { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+.pay-status.unpaid          { background: #fee2e2; color: #dc2626; }
+.pay-status.partially_paid  { background: #fef9c3; color: #ca8a04; }
+.pay-status.paid            { background: #dcfce7; color: #16a34a; }
+ 
+.progress-fill.full { background: #10b981; }
+ 
+.btn-pay {
+  width: 100%; padding: 12px; margin-top: 16px;
+  background: #3b82f6; color: white; border: none;
+  border-radius: 8px; font-size: 0.95rem; font-weight: 500;
+  cursor: pointer; transition: background 0.2s;
+}
+.btn-pay:hover:not(:disabled) { background: #2563eb; }
+.btn-pay:disabled { background: #10b981; cursor: default; }
+ 
+.pay-error {
+  background: #fef2f2; border: 1px solid #fecaca;
+  border-radius: 8px; padding: 10px 12px;
+  font-size: 0.85rem; color: #dc2626; margin-top: 12px;
+}

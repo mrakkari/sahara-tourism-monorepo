@@ -18,15 +18,16 @@
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
       <input type="text"
-             [(ngModel)]="searchTerm"
-             (input)="applyFilters()"
-             placeholder="Rechercher une réservation..."
-             class="glass-input">
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange()"
+            placeholder="Rechercher par nom du client ou partenaire..."
+            class="glass-input">
+      <button class="btn-search" (click)="onSearchSubmit()">Rechercher</button>
     </div>
 
     <div class="filter-group">
       <div class="select-wrapper">
-        <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="glass-select">
+        <select [(ngModel)]="statusFilter" (change)="onStatusChange()" class="glass-select">
           <option value="all">Tous Status</option>
           <option value="pending">En attente</option>
           <option value="confirmed">Confirmé</option>

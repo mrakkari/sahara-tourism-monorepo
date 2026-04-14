@@ -8,11 +8,13 @@ import { Tour } from '../../../../../../shared/src/models/tour.model';
 import { ExtraResponse } from '../../../../../../shared/src/models/extra.model';
 import { UserResponse } from '../../../../../../shared/src/models/user.model';
 import { ReservationRequest } from '../../../../../../shared/src/models/reservation-api.model';
+import { PaymentModalComponent } from '../../../../../../shared/src/lib/components/payment-modal/payment-modal.component';
+import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
 
 @Component({
   selector: 'app-tours',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule,PaymentModalComponent],
   templateUrl: './tours.component.html',
   styleUrls: ['./tours.component.scss'],
   animations: [
@@ -40,6 +42,8 @@ export class ToursComponent implements OnInit {
   isLoadingExtras = false;
 
   selectedExtras: Record<string, number> = {};
+  showPaymentModal  = false;
+  initialPayment: PaymentRequest | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -158,7 +162,7 @@ export class ToursComponent implements OnInit {
 
   // ─── Submit ────────────────────────────────────────────────────
 
-    onSubmit(): void {
+  onSubmit(): void {
     if (!this.canSubmit()) return;
     this.isSubmitting = true;
     const fv = this.form.value;
@@ -180,8 +184,10 @@ export class ToursComponent implements OnInit {
         currency:         fv.currency                || 'TND',
         tours: [{
         tourId: fv.selectedTourId as string,
+        
         }],
         extras: extrasPayload.length > 0 ? extrasPayload : undefined,
+        initialPayment: this.initialPayment ?? undefined,
     };
 
     this.reservationService.createReservation(request).subscribe({
@@ -194,5 +200,25 @@ export class ToursComponent implements OnInit {
         this.isSubmitting = false;
         }
     });
-    }
+  }
+  openPaymentModal(): void  { this.showPaymentModal = true; }
+  closePaymentModal(): void { this.showPaymentModal = false; }
+
+  onPaymentConfirmed(payment: PaymentRequest): void {
+    this.initialPayment = payment;
+    this.showPaymentModal = false;
+  }
+
+  removeInitialPayment(): void {
+    this.initialPayment = null;
+  }
+
+  paymentMethodLabel(method: string): string {
+    const labels: Record<string, string> = {
+      CASH: 'Espèces', CREDIT_CARD: 'Carte de crédit',
+      DEBIT_CARD: 'Carte de débit', BANK_TRANSFER: 'Virement bancaire',
+      ONLINE: 'En ligne', CHEQUE: 'Chèque',
+    };
+    return labels[method] ?? method;
+  }
 }

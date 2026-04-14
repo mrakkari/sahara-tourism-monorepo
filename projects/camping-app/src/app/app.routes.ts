@@ -5,8 +5,8 @@ import { RegisterComponent } from '../../../shared/src/lib/auth/register/registe
 import { MainLayoutComponent } from './core/layouts/main-layout/main-layout.component';
 import { GroupsComponent } from './pages/groups/groups.component';
 import { GroupDetailComponent } from './pages/group-detail/group-detail.component';
-import { NouveauComponent } from './pages/nouveau/nouveau.component';
-import { PaymentHistoryComponent } from './pages/payment-history/payment-history.component';
+//import { NouveauComponent } from './pages/nouveau/nouveau.component';
+//import { PaymentHistoryComponent } from './pages/payment-history/payment-history.component';
 
 export const routes: Routes = [
     // ── Public routes (no layout chrome) ───────────────────────────────────────
@@ -21,8 +21,8 @@ export const routes: Routes = [
         children: [
             { path: 'camping-app', component: GroupsComponent, data: { roles: ['CAMPING'] } },
             { path: 'group/:id', component: GroupDetailComponent },
-            { path: 'nouveau', component: NouveauComponent },
-            { path: 'payment-history', component: PaymentHistoryComponent },
+          //  { path: 'nouveau', component: NouveauComponent },
+           // { path: 'payment-history', component: PaymentHistoryComponent },
             { path: 'groups', redirectTo: 'camping-app', pathMatch: 'full' },
             { path: '', redirectTo: 'camping-app', pathMatch: 'full' }
         ]
