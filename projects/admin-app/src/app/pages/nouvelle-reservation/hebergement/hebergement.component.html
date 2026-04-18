@@ -90,61 +90,70 @@
           </div>
         </div>
 
-        <!-- Tour Types -->
+        <!-- Tour Types — dropdown, multi-select -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">
               <span class="title-icon">🗺️</span>
               Types d'activités <span class="req">*</span>
             </div>
-            <p class="card-desc">Sélectionnez une ou plusieurs activités. En cas de sélection multiple, répartissez les participants entre elles.</p>
           </div>
           <div class="card-body">
             <div *ngIf="isLoadingTourTypes" class="loading">Chargement des activités…</div>
-            <div class="tour-grid" *ngIf="!isLoadingTourTypes">
-              <div *ngFor="let tt of tourTypes"
-                class="tour-card"
-                [class.selected]="isTourSelected(tt.tourTypeId)"
-                (click)="toggleTourType(tt)">
-                <div class="tour-check">✓</div>
-                <strong>{{ tt.name }}</strong>
-                <p class="tour-desc" *ngIf="tt.description">{{ tt.description }}</p>
-                <div class="tour-prices">
-                  <span>{{ adultPrice(tt) | number:'1.0-0' }} TND/ad</span>
-                  <span>{{ childPrice(tt) | number:'1.0-0' }} TND/enf</span>
+            <div *ngIf="!isLoadingTourTypes">
+
+              <!-- Dropdown -->
+              <div class="field">
+                <label>Ajouter une activité</label>
+                <select class="input"
+                        (change)="onAddTourType($any($event.target).value); $any($event.target).value = ''">
+                  <option value="">— Choisir une activité —</option>
+                  <option *ngFor="let tt of tourTypes"
+                          [value]="tt.tourTypeId"
+                          [disabled]="isTourSelected(tt.tourTypeId)">
+                    {{ tt.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Selected tour types list -->
+              <div class="selected-extras" *ngIf="tourTypesArray.length > 0">
+                <div class="selected-extra-row"
+                     *ngFor="let ctrl of tourTypesArray.controls">
+                  <span class="sel-extra-name">
+                    {{ getTourByTypeId(ctrl.get('tourTypeId')?.value)?.name }}
+                  </span>
+
+                  <!-- Per-tour allocation (only when multi) -->
+                  <div class="sel-extra-ctrl" *ngIf="isMulti" [formGroup]="$any(ctrl)">
+                    <span style="font-size:0.75rem;color:#64748b">Ad.</span>
+                    <button type="button"
+                            (click)="ctrl.get('numberOfAdults')?.setValue(max(0,(ctrl.get('numberOfAdults')?.value||0)-1))">−</button>
+                    <span>{{ ctrl.get('numberOfAdults')?.value || 0 }}</span>
+                    <button type="button"
+                            (click)="ctrl.get('numberOfAdults')?.setValue((ctrl.get('numberOfAdults')?.value||0)+1)">+</button>
+                    <span style="font-size:0.75rem;color:#64748b;margin-left:8px">Enf.</span>
+                    <button type="button"
+                            (click)="ctrl.get('numberOfChildren')?.setValue(max(0,(ctrl.get('numberOfChildren')?.value||0)-1))">−</button>
+                    <span>{{ ctrl.get('numberOfChildren')?.value || 0 }}</span>
+                    <button type="button"
+                            (click)="ctrl.get('numberOfChildren')?.setValue((ctrl.get('numberOfChildren')?.value||0)+1)">+</button>
+                  </div>
+
+                  <button type="button" class="sel-extra-remove"
+                          (click)="onRemoveTourType(ctrl.get('tourTypeId')?.value)">✕</button>
                 </div>
 
-                <!-- Per-tour allocation (multi only) -->
-                <div class="tour-alloc"
-                  *ngIf="isTourSelected(tt.tourTypeId) && isMulti"
-                  (click)="$event.stopPropagation()"
-                  [formGroup]="getTourFG(tt.tourTypeId)!">
-                  <div class="alloc-row">
-                    <span>Adultes</span>
-                    <div class="mini-ctrl">
-                      <button type="button" (click)="getTourFG(tt.tourTypeId)?.get('numberOfAdults')?.setValue(max(0,(getTourFG(tt.tourTypeId)?.get('numberOfAdults')?.value||0)-1))">−</button>
-                      <span>{{ getTourFG(tt.tourTypeId)?.get('numberOfAdults')?.value || 0 }}</span>
-                      <button type="button" (click)="getTourFG(tt.tourTypeId)?.get('numberOfAdults')?.setValue((getTourFG(tt.tourTypeId)?.get('numberOfAdults')?.value||0)+1)">+</button>
-                    </div>
-                  </div>
-                  <div class="alloc-row">
-                    <span>Enfants</span>
-                    <div class="mini-ctrl">
-                      <button type="button" (click)="getTourFG(tt.tourTypeId)?.get('numberOfChildren')?.setValue(max(0,(getTourFG(tt.tourTypeId)?.get('numberOfChildren')?.value||0)-1))">−</button>
-                      <span>{{ getTourFG(tt.tourTypeId)?.get('numberOfChildren')?.value || 0 }}</span>
-                      <button type="button" (click)="getTourFG(tt.tourTypeId)?.get('numberOfChildren')?.setValue((getTourFG(tt.tourTypeId)?.get('numberOfChildren')?.value||0)+1)">+</button>
-                    </div>
-                  </div>
+                <div class="alloc-warn" *ngIf="isMulti && allocationMessage()">
+                  ⚠️ {{ allocationMessage() }}
                 </div>
               </div>
-            </div>
-            <div class="alloc-warn" *ngIf="isMulti && allocationMessage()">
-              ⚠️ {{ allocationMessage() }}
+
             </div>
           </div>
         </div>
 
-        <!-- Extras -->
+        <!-- Extras — dropdown multi-select -->
         <div class="card" *ngIf="extras.length > 0">
           <div class="card-header">
             <div class="card-title">
@@ -153,22 +162,27 @@
             </div>
           </div>
           <div class="card-body">
-            <div class="extras-list">
-              <div *ngFor="let e of extras" class="extra-row" [class.active]="isExtraSelected(e.extraId)">
-                <div class="extra-main" (click)="toggleExtra(e.extraId)">
-                  <div class="extra-check" [class.on]="isExtraSelected(e.extraId)">✓</div>
-                  <div class="extra-info">
-                    <strong>{{ e.name }}</strong>
-                    <small *ngIf="e.description">{{ e.description }}</small>
-                  </div>
-                  <span class="extra-price">{{ e.unitPrice | number:'1.0-0' }} TND</span>
-                </div>
-                <div class="extra-qty" *ngIf="isExtraSelected(e.extraId)" (click)="$event.stopPropagation()">
+            <div class="field">
+              <label>Ajouter un extra</label>
+              <select class="input"
+                      (change)="onAddExtra($any($event.target).value); $any($event.target).value = ''">
+                <option value="">— Choisir un extra —</option>
+                <option *ngFor="let e of extras"
+                        [value]="e.extraId"
+                        [disabled]="isExtraSelected(e.extraId)">
+                  {{ e.name }}
+                </option>
+              </select>
+            </div>
+            <div class="selected-extras" *ngIf="getSelectedExtras().length > 0">
+              <div class="selected-extra-row" *ngFor="let e of getSelectedExtras()">
+                <span class="sel-extra-name">{{ e.name }}</span>
+                <div class="sel-extra-ctrl">
                   <button type="button" (click)="adjustExtra(e.extraId,-1)" [disabled]="extraQty(e.extraId)<=1">−</button>
                   <span>{{ extraQty(e.extraId) }}</span>
                   <button type="button" (click)="adjustExtra(e.extraId,1)" [disabled]="extraQty(e.extraId)>=adults+children">+</button>
-                  <span class="extra-sub">{{ extraQty(e.extraId)*e.unitPrice | number:'1.0-0' }} TND</span>
                 </div>
+                <button type="button" class="sel-extra-remove" (click)="onRemoveExtra(e.extraId)">✕</button>
               </div>
             </div>
           </div>
@@ -206,46 +220,81 @@
             </p>
           </div>
         </div>
-                <!-- Optional Initial Payment -->
+        <!-- Participants -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">
-              <span class="title-icon">💳</span>
-              Paiement initial <span class="optional">optionnel</span>
+              <span class="title-icon">👥</span>
+              Liste des participants <span class="optional">optionnel</span>
             </div>
           </div>
           <div class="card-body">
-      
-            <!-- No payment recorded yet -->
-            <ng-container *ngIf="!initialPayment">
-              <p class="pay-hint">
-                Le client souhaite payer maintenant ? Enregistrez un montant initial.
-              </p>
-              <button type="button" class="btn-add-payment" (click)="openPaymentModal()">
-                + Ajouter un paiement
+
+            <div *ngIf="participants.length === 0" class="participants-empty">
+              <p class="pay-hint">Renseignez les noms et âges de chaque participant.</p>
+              <button type="button" class="btn-add-payment" (click)="initParticipants()">
+                + Ajouter les participants
               </button>
-            </ng-container>
-      
-            <!-- Payment recorded -->
-            <ng-container *ngIf="initialPayment">
-              <div class="payment-preview">
-                <div class="pay-row">
-                  <span>Montant</span>
-                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+            </div>
+
+            <div *ngIf="participants.length > 0">
+
+              <!-- Adults -->
+              <p class="participants-group-label">Adultes ({{ adults }})</p>
+              <div class="participant-row"
+                  *ngFor="let p of participants.slice(0, adults); let i = index">
+                <div class="participant-index">{{ i + 1 }}</div>
+                <div class="field participant-name">
+                  <input type="text"
+                        class="input"
+                        placeholder="Nom complet"
+                        [value]="p.fullName"
+                        (input)="updateParticipantName(i, $any($event.target).value)">
                 </div>
-                <div class="pay-row">
-                  <span>Méthode</span>
-                  <strong>{{ paymentMethodLabel(initialPayment.paymentMethod) }}</strong>
+                <div class="field participant-age">
+                  <input type="number"
+                        class="input"
+                        placeholder="Âge"
+                        min="12" max="120"
+                        [value]="p.age"
+                        (input)="updateParticipantAge(i, +$any($event.target).value)">
                 </div>
-                <button type="button" class="btn-remove-payment" (click)="removeInitialPayment()">
-                  ✕ Supprimer
-                </button>
+                <span class="participant-badge adult">Adulte</span>
               </div>
-            </ng-container>
-      
+
+              <!-- Children -->
+              <p class="participants-group-label" *ngIf="children > 0">Enfants ({{ children }})</p>
+              <div class="participant-row"
+                  *ngFor="let p of participants.slice(adults, adults + children); let i = index">
+                <div class="participant-index">{{ adults + i + 1 }}</div>
+                <div class="field participant-name">
+                  <input type="text"
+                        class="input"
+                        placeholder="Nom complet"
+                        [value]="p.fullName"
+                        (input)="updateParticipantName(adults + i, $any($event.target).value)">
+                </div>
+                <div class="field participant-age">
+                  <input type="number"
+                        class="input"
+                        placeholder="Âge"
+                        min="0" max="11"
+                        [value]="p.age"
+                        (input)="updateParticipantAge(adults + i, +$any($event.target).value)">
+                </div>
+                <span class="participant-badge child">Enfant</span>
+              </div>
+
+              <button type="button" class="btn-remove-payment"
+                      style="margin-top:8px"
+                      (click)="participants = []">
+                ✕ Effacer la liste
+              </button>
+
+            </div>
           </div>
         </div>
-      
+
         <!-- Payment Modal -->
         <app-payment-modal
           *ngIf="showPaymentModal"
@@ -254,7 +303,6 @@
           (closed)="closePaymentModal()"
           (paymentConfirmed)="onPaymentConfirmed($event)"
         />
-      
 
       </div><!-- /form-col -->
 
@@ -309,6 +357,36 @@
             </button>
             <p class="sum-note">🔒 Source : ADMIN-APP</p>
           </div>
+
+          <!-- Payment — under recap -->
+          <div class="sum-payment">
+            <div class="sum-payment-title">
+              <span>💳</span> Paiement initial
+              <span class="optional">optionnel</span>
+            </div>
+            <ng-container *ngIf="!initialPayment">
+              <p class="pay-hint">Le client souhaite payer maintenant ? Enregistrez un montant initial.</p>
+              <button type="button" class="btn-add-payment" (click)="openPaymentModal()">
+                + Ajouter un paiement
+              </button>
+            </ng-container>
+            <ng-container *ngIf="initialPayment">
+              <div class="payment-preview">
+                <div class="pay-row">
+                  <span>Montant</span>
+                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+                </div>
+                <div class="pay-row">
+                  <span>Méthode</span>
+                  <strong>{{ paymentMethodLabel(initialPayment.paymentMethod) }}</strong>
+                </div>
+                <button type="button" class="btn-remove-payment" (click)="removeInitialPayment()">
+                  ✕ Supprimer
+                </button>
+              </div>
+            </ng-container>
+          </div>
+
         </div>
       </aside>
 

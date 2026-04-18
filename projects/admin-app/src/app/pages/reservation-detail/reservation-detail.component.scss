@@ -753,8 +753,13 @@ $blue:    #3b82f6;
 .participants-list { display: flex; flex-direction: column; gap: 8px; }
 
 .participant-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px; background: $bg; border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: $bg;
+  border-radius: 10px;
 }
 
 .p-avatar {
@@ -1000,4 +1005,26 @@ $blue:    #3b82f6;
   background: #fef2f2; border: 1px solid #fecaca;
   border-radius: 8px; padding: 10px 12px;
   font-size: 0.85rem; color: #dc2626; margin-top: 12px;
+}
+.p-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.p-age {
+  font-size: 0.85rem;
+  color: $gray;
+  font-weight: 500;
+}
+
+.p-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 50px;
+
+  &.adult { background: #e1f5ee; color: #085041; }
+  &.child { background: #e6f1fb; color: #0c447c; }
 }

@@ -3,16 +3,16 @@
   <div class="spinner-large"></div>
   <p>Chargement de la réservation...</p>
 </div>
- 
+
 <!-- Error -->
 <div class="detail-error" *ngIf="error && !isLoading">
   <p>{{ error }}</p>
   <button routerLink="/reservations" class="btn-back">← Retour</button>
 </div>
- 
+
 <!-- Main content -->
 <div class="detail-page" *ngIf="reservation && !isLoading">
- 
+
   <!-- ── Header ─────────────────────────────────────────────────── -->
   <header class="detail-header">
     <div class="header-left">
@@ -32,7 +32,7 @@
         </div>
       </div>
     </div>
- 
+
     <div class="header-actions">
       <ng-container *ngIf="isPending()">
         <button class="btn-danger" (click)="openRejectModal()">❌ Rejeter</button>
@@ -50,13 +50,13 @@
       </ng-container>
     </div>
   </header>
- 
+
   <!-- ── Layout ─────────────────────────────────────────────────── -->
   <div class="detail-layout">
- 
+
     <!-- ══ LEFT COLUMN ══════════════════════════════════════════ -->
     <div class="detail-main">
- 
+
       <!-- CLIENT INFO -->
       <div class="card">
         <div class="card-title">🤝 Client</div>
@@ -96,7 +96,7 @@
           <p class="req-text">{{ reservation.demandeSpecial }}</p>
         </div>
       </div>
- 
+
       <!-- HEBERGEMENT -->
       <ng-container *ngIf="isHebergement()">
         <div class="card">
@@ -116,7 +116,7 @@
             </div>
           </div>
         </div>
- 
+
         <div class="card" *ngIf="tourTypes.length > 0">
           <div class="card-title">🗺️ Types d'activités</div>
           <div class="tour-type-list">
@@ -137,22 +137,8 @@
             </div>
           </div>
         </div>
- 
-        <div class="card" *ngIf="participants.length > 0">
-          <div class="card-title">👥 Participants ({{ participants.length }})</div>
-          <div class="participants-list">
-            <div *ngFor="let p of participants; let i = index" class="participant-row">
-              <div class="p-avatar">{{ p.fullName.charAt(0) }}</div>
-              <div class="p-info">
-                <strong>{{ p.fullName }}</strong>
-                <span>{{ p.age }} ans · {{ p.isAdult ? 'Adulte' : 'Enfant' }}</span>
-              </div>
-              <span class="p-badge" *ngIf="i === 0">Principal</span>
-            </div>
-          </div>
-        </div>
       </ng-container>
- 
+
       <!-- TOURS -->
       <ng-container *ngIf="isTours()">
         <div class="card" *ngIf="tours.length > 0">
@@ -184,7 +170,7 @@
           </div>
         </div>
       </ng-container>
- 
+
       <!-- EXTRAS type — service date -->
       <div class="card" *ngIf="isExtras()">
         <div class="card-title">📅 Date du service</div>
@@ -199,7 +185,6 @@
           </div>
         </div>
       </div>
- 
       <!-- Extras list (all types) -->
       <div class="card" *ngIf="extras.length > 0">
         <div class="card-title">
@@ -223,54 +208,40 @@
           </div>
         </div>
       </div>
- 
-      <!-- ── TRANSACTION HISTORY ─────────────────────────────── -->
-      <div class="card" *ngIf="transactions.length > 0">
-        <div class="card-title">
-          📋 Historique des paiements
-          <span class="card-badge">{{ transactions.length }} transaction(s)</span>
-        </div>
-        <div class="tx-list">
-          <div *ngFor="let tx of transactions" class="tx-row">
-            <div class="tx-left">
-              <div class="tx-icon">💳</div>
-              <div class="tx-info">
-                <strong class="tx-number">{{ tx.transactionNumber }}</strong>
-                <span class="tx-method">{{ formatTransactionMethod(tx.paymentMethod) }}</span>
-                <span class="tx-date">{{ formatDateTime(tx.transactionDate) }}</span>
-              </div>
+            <!-- Participants — all types -->
+      <!-- Participants — all types -->
+      <div class="card" *ngIf="participants.length > 0">
+        <div class="card-title">👥 Participants ({{ participants.length }})</div>
+        <div class="participants-list">
+          <div *ngFor="let p of participants" class="participant-row">
+            <div class="p-info">
+              <strong>{{ p.fullName }}</strong>
             </div>
-            <div class="tx-right">
-              <span class="tx-amount">+{{ tx.amount | number:'1.2-2' }} {{ tx.currency }}</span>
-              <span class="tx-status" [ngClass]="tx.status.toLowerCase()">
-                {{ tx.status }}
+            <div class="p-right">
+              <span class="p-age">{{ p.age }} ans</span>
+              <span class="p-badge" [class.adult]="p.isAdult" [class.child]="!p.isAdult">
+                {{ p.isAdult ? 'Adulte' : 'Enfant' }}
               </span>
             </div>
           </div>
         </div>
       </div>
- 
-      <div class="card tx-empty" *ngIf="transactions.length === 0">
-        <p>💰 Aucun paiement enregistré pour cette réservation.</p>
-      </div>
- 
+
     </div><!-- /detail-main -->
- 
+
     <!-- ══ RIGHT COLUMN ══════════════════════════════════════════ -->
     <aside class="detail-sidebar">
- 
+
       <!-- ── Payment Summary ───────────────────────────────────── -->
       <div class="card card-financial">
         <div class="card-title">💰 Paiement</div>
- 
-        <!-- Payment status badge -->
+
         <div class="payment-status-row">
           <span class="pay-status" [ngClass]="paymentStatusClass">
             {{ paymentStatusLabel }}
           </span>
         </div>
- 
-        <!-- Price breakdown -->
+
         <div class="price-rows">
           <div class="price-row" *ngIf="isHebergement() && totalAmount > 0">
             <span>Hébergement</span>
@@ -297,8 +268,7 @@
             <span>{{ remaining | number:'1.2-2' }} TND</span>
           </div>
         </div>
- 
-        <!-- Progress bar -->
+
         <div class="progress-wrap">
           <div class="progress-track">
             <div class="progress-fill"
@@ -308,13 +278,11 @@
           </div>
           <span class="progress-label">{{ paymentProgress | number:'1.0-0' }}% payé</span>
         </div>
- 
-        <!-- Server error -->
+
         <div class="pay-error" *ngIf="paymentError">
           ⚠️ {{ paymentError }}
         </div>
- 
-        <!-- Pay button — disabled when fully paid -->
+
         <button
           class="btn-pay"
           [disabled]="isFullyPaid"
@@ -323,15 +291,44 @@
           <ng-container *ngIf="!isFullyPaid">💳 Enregistrer un paiement</ng-container>
           <ng-container *ngIf="isFullyPaid">✅ Paiement complet</ng-container>
         </button>
- 
       </div>
- 
+
+      <!-- ── Transaction History — moved to sidebar ────────────── -->
+      <div class="card" *ngIf="transactions.length > 0">
+        <div class="card-title">
+          📋 Historique des paiements
+          <span class="card-badge">{{ transactions.length }} transaction(s)</span>
+        </div>
+        <div class="tx-list">
+          <div *ngFor="let tx of transactions" class="tx-row">
+            <div class="tx-left">
+              <div class="tx-icon">💳</div>
+              <div class="tx-info">
+                <strong class="tx-number">{{ tx.transactionNumber }}</strong>
+                <span class="tx-method">{{ formatTransactionMethod(tx.paymentMethod) }}</span>
+                <span class="tx-date">{{ formatDateTime(tx.transactionDate) }}</span>
+              </div>
+            </div>
+            <div class="tx-right">
+              <span class="tx-amount">+{{ tx.amount | number:'1.2-2' }} {{ tx.currency }}</span>
+              <span class="tx-status" [ngClass]="tx.status.toLowerCase()">
+                {{ tx.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card tx-empty" *ngIf="transactions.length === 0">
+        <p>💰 Aucun paiement enregistré pour cette réservation.</p>
+      </div>
+
       <!-- ── Rejection reason ──────────────────────────────────── -->
       <div class="card card-rejected" *ngIf="isRejected() && reservation.rejectionReason">
         <div class="card-title">❌ Motif de rejet</div>
         <p class="rejection-text">{{ reservation.rejectionReason }}</p>
       </div>
- 
+
       <!-- ── Meta ─────────────────────────────────────────────── -->
       <div class="card card-meta">
         <div class="card-title">ℹ️ Informations</div>
@@ -354,13 +351,13 @@
           </div>
         </div>
       </div>
- 
+
     </aside>
- 
+
   </div><!-- /detail-layout -->
- 
+
 </div><!-- /detail-page -->
- 
+
 <!-- ── Rejection Modal ─────────────────────────────────────────── -->
 <div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
   <div class="modal-box" (click)="$event.stopPropagation()">
@@ -380,7 +377,7 @@
     </div>
   </div>
 </div>
- 
+
 <!-- ── Payment Modal ───────────────────────────────────────────── -->
 <app-payment-modal
   *ngIf="showPaymentModal"

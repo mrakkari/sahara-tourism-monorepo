@@ -34,11 +34,10 @@
           <th>Nom</th>
           <th>Description</th>
           <th>Durée</th>
-          <th>Prix Adulte (Passager)</th>
-          <th>Prix Enfant (Passager)</th>
-          <th>Prix Adulte (Partenaire)</th>
-          <th>Prix Enfant (Partenaire)</th>
-          <th>Statut</th>
+          <th>Adulte (Passager)</th>
+          <th>Enfant (Passager)</th>
+          <th>Adulte (Partenaire)</th>
+          <th>Enfant (Partenaire)</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -51,16 +50,6 @@
           <td>{{ formatPrice(item.passengerChildPrice) }}</td>
           <td>{{ formatPrice(item.partnerAdultPrice) }}</td>
           <td>{{ formatPrice(item.partnerChildPrice) }}</td>
-          <td>
-            <button
-              class="status-toggle"
-              [class.active]="item.isActive"
-              [class.inactive]="!item.isActive"
-              (click)="toggleActive(item)"
-              [title]="item.isActive ? 'Désactiver' : 'Activer'">
-              {{ item.isActive ? '✅ Actif' : '⏸️ Inactif' }}
-            </button>
-          </td>
           <td>
             <div class="action-buttons">
               <button class="btn-edit" (click)="openEditModal(item)" title="Modifier">✏️</button>
@@ -140,19 +129,6 @@
               <input type="number" [(ngModel)]="form.partnerChildPrice" name="partnerChildPrice" class="form-control" step="0.01" min="0" required />
             </div>
           </div>
-        </div>
-
-        <!-- Active toggle -->
-        <div class="form-group active-toggle-group">
-          <label class="toggle-label">
-            <span>Statut du tour</span>
-            <div class="toggle-switch" (click)="form.isActive = !form.isActive" [class.on]="form.isActive">
-              <div class="toggle-knob"></div>
-            </div>
-            <span class="toggle-text" [class.active-text]="form.isActive">
-              {{ form.isActive ? 'Actif' : 'Inactif' }}
-            </span>
-          </label>
         </div>
 
         <div *ngIf="formError" class="form-error">⚠️ {{ formError }}</div>

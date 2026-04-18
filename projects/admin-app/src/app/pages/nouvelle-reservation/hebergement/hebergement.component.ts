@@ -7,7 +7,7 @@ import { ReservationService } from '../../../../../../shared/src/services/reserv
 import { TourType } from '../../../../../../shared/src/models/tour-type.model';
 import { ExtraResponse } from '../../../../../../shared/src/models/extra.model';
 import { UserResponse } from '../../../../../../shared/src/models/user.model';
-import { ReservationRequest } from '../../../../../../shared/src/models/reservation-api.model';
+import { ParticipantRequest, ReservationRequest } from '../../../../../../shared/src/models/reservation-api.model';
 import { PaymentModalComponent } from '../../../../../../shared/src/lib/components/payment-modal/payment-modal.component';
 import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
 
@@ -36,6 +36,7 @@ export class HebergementComponent implements OnInit {
   users: UserResponse[]    = [];
   tourTypes: TourType[]    = [];
   extras: ExtraResponse[]  = [];
+  participants: ParticipantRequest[] = [];
 
   isLoadingUsers     = false;
   isLoadingTourTypes = false;
@@ -202,7 +203,10 @@ export class HebergementComponent implements OnInit {
 
   updateCount(field: 'numberOfAdults' | 'numberOfChildren', delta: number): void {
     const min = field === 'numberOfAdults' ? 1 : 0;
-    this.form.get(field)?.setValue(Math.max(min, (+(this.form.get(field)?.value)||0) + delta));
+    this.form.get(field)?.setValue(Math.max(min, (+(this.form.get(field)?.value) || 0) + delta));
+    if (this.participants.length > 0) {
+      this.initParticipants();
+    }
   }
 
   // ─── Extras ────────────────────────────────────────────────────
@@ -272,41 +276,40 @@ export class HebergementComponent implements OnInit {
 
     const tourTypesPayload = this.tourTypesArray.controls.map(c => ({
       tourTypeId:       c.get('tourTypeId')?.value as string,
-      numberOfAdults:   this.isMulti ? (+(c.get('numberOfAdults')?.value)||0)   : this.adults,
-      numberOfChildren: this.isMulti ? (+(c.get('numberOfChildren')?.value)||0) : this.children,
+      numberOfAdults:   this.isMulti ? (+(c.get('numberOfAdults')?.value) || 0) : this.adults,
+      numberOfChildren: this.isMulti ? (+(c.get('numberOfChildren')?.value) || 0) : this.children,
     }));
 
     const extrasPayload = this.extras
-      .filter(e => (this.selectedExtras[e.extraId]||0) > 0)
+      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
       .map(e => ({ extraId: e.extraId, quantity: this.selectedExtras[e.extraId] }));
 
+    const participantsPayload: ParticipantRequest[] = this.hasParticipants()
+      ? this.participants.filter(p => p.fullName.trim() !== '')
+      : [];
+
     const request: ReservationRequest = {
-      userId:          fv.userId,
-      source:          this.SOURCE,
-      reservationType: 'HEBERGEMENT',
-      checkInDate:     fv.checkInDate,
-      checkOutDate:    fv.checkOutDate,
-      numberOfAdults:  this.adults,
-      numberOfChildren:this.children,
-      groupLeaderName: fv.groupLeaderName || undefined,
-      groupName:       fv.groupName       || undefined,
-      demandeSpecial:  fv.demandeSpecial  || undefined,
-      promoCode:       this.appliedPromo  || undefined,
-      currency:        fv.currency        || 'TND',
-      tourTypes:       tourTypesPayload,
-      extras:          extrasPayload.length > 0 ? extrasPayload : undefined,
-      initialPayment: this.initialPayment ?? undefined,
+      userId:           fv.userId,
+      source:           this.SOURCE,
+      reservationType:  'HEBERGEMENT',
+      checkInDate:      fv.checkInDate,
+      checkOutDate:     fv.checkOutDate,
+      numberOfAdults:   this.adults,
+      numberOfChildren: this.children,
+      groupLeaderName:  fv.groupLeaderName || undefined,
+      groupName:        fv.groupName       || undefined,
+      demandeSpecial:   fv.demandeSpecial  || undefined,
+      promoCode:        this.appliedPromo  || undefined,
+      currency:         fv.currency        || 'TND',
+      tourTypes:        tourTypesPayload,
+      extras:           extrasPayload.length > 0 ? extrasPayload : undefined,
+      participants:     participantsPayload.length > 0 ? participantsPayload : undefined,
+      initialPayment:   this.initialPayment ?? undefined,
     };
 
     this.reservationService.createReservation(request).subscribe({
-      next: () => {
-        this.isSubmitting = false;
-        this.router.navigate(['/reservations']);
-      },
-      error: err => {
-        console.error(err);
-        this.isSubmitting = false;
-      }
+      next: () => { this.isSubmitting = false; this.router.navigate(['/reservations']); },
+      error: err => { console.error(err); this.isSubmitting = false; }
     });
   }
 
@@ -329,5 +332,54 @@ export class HebergementComponent implements OnInit {
        ONLINE: 'En ligne', CHEQUE: 'Chèque',
      };
      return labels[method] ?? method;
+  }
+  onAddTourType(id: string): void {
+    if (!id) return;
+    const tt = this.tourTypes.find(t => t.tourTypeId === id);
+    if (!tt || this.isTourSelected(id)) return;
+    this.tourTypesArray.push(this.fb.group({
+      tourTypeId:       [tt.tourTypeId],
+      name:             [tt.name],
+      numberOfAdults:   [this.form.get('numberOfAdults')?.value ?? 2],
+      numberOfChildren: [this.form.get('numberOfChildren')?.value ?? 0],
+    }));
+  }
+
+  onRemoveTourType(id: string): void {
+    const idx = this.tourTypesArray.controls.findIndex(c => c.get('tourTypeId')?.value === id);
+    if (idx >= 0) this.tourTypesArray.removeAt(idx);
+  }
+
+  onAddExtra(id: string): void {
+    if (!id) return;
+    this.selectedExtras[id] = 1;
+  }
+
+  onRemoveExtra(id: string): void {
+    this.selectedExtras[id] = 0;
+  }
+
+  getSelectedExtras(): ExtraResponse[] {
+    return this.extras.filter(e => (this.selectedExtras[e.extraId] || 0) > 0);
+  }
+  initParticipants(): void {
+    this.participants = [
+      ...Array(this.adults).fill(null).map(() => ({ fullName: '', age: 18, isAdult: true })),
+      ...Array(this.children).fill(null).map(() => ({ fullName: '', age: 8, isAdult: false }))
+    ];
+  }
+
+  updateParticipantAge(index: number, age: number): void {
+    const p = this.participants[index];
+    p.age = age;
+    p.isAdult = age >= 12;
+  }
+
+  updateParticipantName(index: number, name: string): void {
+    this.participants[index].fullName = name;
+  }
+
+  hasParticipants(): boolean {
+    return this.participants.some(p => p.fullName.trim() !== '');
   }
 }

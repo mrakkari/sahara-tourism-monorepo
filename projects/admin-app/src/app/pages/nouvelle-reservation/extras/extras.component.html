@@ -65,48 +65,51 @@
         </div>
 
         <!-- Step 3 · Extras -->
+        <!-- Step 3 · Extras -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">
               <span class="title-icon">✨</span>
               Choisir les extras <span class="req">*</span>
             </div>
-            <p class="card-desc">Sélectionnez un ou plusieurs services. Les quantités s'ajustent selon le nombre de personnes.</p>
           </div>
           <div class="card-body">
             <div *ngIf="isLoadingExtras" class="loading">Chargement des services…</div>
 
-            <div class="extras-list" *ngIf="!isLoadingExtras">
-              <div *ngFor="let e of extras" class="extra-row" [class.active]="isExtraSelected(e.extraId)">
-                <div class="extra-main" (click)="toggleExtra(e.extraId)">
-                  <div class="extra-check" [class.on]="isExtraSelected(e.extraId)">✓</div>
-                  <div class="extra-info">
-                    <strong>{{ e.name }}</strong>
-                    <small *ngIf="e.description">{{ e.description }}</small>
-                    <small *ngIf="e.duration">⏱ {{ e.duration }}</small>
+            <div *ngIf="!isLoadingExtras">
+
+              <!-- Dropdown -->
+              <div class="field">
+                <label>Ajouter un extra</label>
+                <select class="input"
+                        (change)="onAddExtra($any($event.target).value); $any($event.target).value = ''">
+                  <option value="">— Choisir un extra —</option>
+                  <option *ngFor="let e of extras"
+                          [value]="e.extraId"
+                          [disabled]="isExtraSelected(e.extraId)">
+                    {{ e.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Selected extras list -->
+              <div class="selected-extras" *ngIf="getSelectedExtras().length > 0">
+                <div class="selected-extra-row" *ngFor="let e of getSelectedExtras()">
+                  <span class="sel-extra-name">{{ e.name }}</span>
+                  <div class="sel-extra-ctrl">
+                    <button type="button" (click)="adjustExtra(e.extraId,-1)" [disabled]="extraQty(e.extraId)<=1">−</button>
+                    <span>{{ extraQty(e.extraId) }}</span>
+                    <button type="button" (click)="adjustExtra(e.extraId,1)" [disabled]="extraQty(e.extraId)>=numberOfPeople">+</button>
                   </div>
-                  <span class="extra-price">{{ e.unitPrice | number:'1.0-0' }} TND</span>
-                </div>
-
-                <!-- 2+ extras: show adjuster -->
-                <div class="extra-qty" *ngIf="showQtyAdjuster(e.extraId)" (click)="$event.stopPropagation()">
-                  <button type="button" (click)="adjustExtra(e.extraId,-1)" [disabled]="extraQty(e.extraId)<=1">−</button>
-                  <span>{{ extraQty(e.extraId) }}</span>
-                  <button type="button" (click)="adjustExtra(e.extraId,1)" [disabled]="extraQty(e.extraId)>=numberOfPeople">+</button>
-                  <span class="extra-sub">{{ extraQty(e.extraId) * e.unitPrice | number:'1.0-0' }} TND</span>
-                </div>
-
-                <!-- 1 extra: auto total -->
-                <div class="extra-qty--auto" *ngIf="isExtraSelected(e.extraId) && !showQtyAdjuster(e.extraId)" (click)="$event.stopPropagation()">
-                  <span class="qty-label">× {{ numberOfPeople }} personne{{ numberOfPeople > 1 ? 's' : '' }}</span>
-                  <span class="extra-sub">{{ numberOfPeople * e.unitPrice | number:'1.0-0' }} TND</span>
+                  <button type="button" class="sel-extra-remove" (click)="onRemoveExtra(e.extraId)">✕</button>
                 </div>
               </div>
-            </div>
 
-            <p class="no-extras-warn" *ngIf="!isLoadingExtras && !hasExtras()">
-              ⚠️ Sélectionnez au moins un extra pour créer la réservation.
-            </p>
+              <p class="no-extras-warn" *ngIf="getSelectedExtras().length === 0">
+                ⚠️ Sélectionnez au moins un extra pour créer la réservation.
+              </p>
+
+            </div>
           </div>
         </div>
 
@@ -135,44 +138,6 @@
             </div>
           </div>
         </div>
-                <!-- Optional Initial Payment -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">
-              <span class="title-icon">💳</span>
-              Paiement initial <span class="optional">optionnel</span>
-            </div>
-          </div>
-          <div class="card-body">
-
-            <ng-container *ngIf="!initialPayment">
-              <p class="pay-hint">
-                Le client souhaite payer maintenant ? Enregistrez un montant initial.
-              </p>
-              <button type="button" class="btn-add-payment" (click)="openPaymentModal()">
-                + Ajouter un paiement
-              </button>
-            </ng-container>
-
-            <ng-container *ngIf="initialPayment">
-              <div class="payment-preview">
-                <div class="pay-row">
-                  <span>Montant</span>
-                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
-                </div>
-                <div class="pay-row">
-                  <span>Méthode</span>
-                  <strong>{{ paymentMethodLabel(initialPayment.paymentMethod) }}</strong>
-                </div>
-                <button type="button" class="btn-remove-payment" (click)="removeInitialPayment()">
-                  ✕ Supprimer
-                </button>
-              </div>
-            </ng-container>
-
-          </div>
-        </div>
-
         <!-- Payment Modal -->
         <app-payment-modal
           *ngIf="showPaymentModal"
@@ -226,7 +191,37 @@
             </button>
             <p class="sum-note">🔒 Source : ADMIN-APP</p>
           </div>
-        </div>
+          <!-- Payment — under recap -->
+          <div class="sum-payment">
+            <div class="sum-payment-title">
+              <span>💳</span> Paiement initial
+              <span class="optional">optionnel</span>
+            </div>
+
+            <ng-container *ngIf="!initialPayment">
+              <p class="pay-hint">Le client souhaite payer maintenant ? Enregistrez un montant initial.</p>
+              <button type="button" class="btn-add-payment" (click)="openPaymentModal()">
+                 Ajouter un paiement
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="initialPayment">
+              <div class="payment-preview">
+                <div class="pay-row">
+                  <span>Montant</span>
+                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+                </div>
+                <div class="pay-row">
+                  <span>Méthode</span>
+                  <strong>{{ paymentMethodLabel(initialPayment.paymentMethod) }}</strong>
+                </div>
+                <button type="button" class="btn-remove-payment" (click)="removeInitialPayment()">
+                  ✕ Supprimer
+                </button>
+              </div>
+            </ng-container>
+          </div>
+                  </div>
       </aside>
 
     </div>

@@ -207,4 +207,16 @@ export class ExtrasComponent implements OnInit {
     };
     return labels[method] ?? method;
   }
+  onAddExtra(id: string): void {
+    if (!id) return;
+    this.selectedExtras[id] = this.numberOfPeople;
+  }
+
+  onRemoveExtra(id: string): void {
+    this.selectedExtras[id] = 0;
+  }
+
+  getSelectedExtras(): ExtraResponse[] {
+    return this.extras.filter(e => (this.selectedExtras[e.extraId] || 0) > 0);
+  }
 }

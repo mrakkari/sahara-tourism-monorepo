@@ -713,26 +713,19 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
 .sum-footer { padding: 15px 20px 18px; }
 
 .btn-submit {
-  width: 100%; padding: 13px;
-  background: linear-gradient(135deg, $amber 0%, $amber-dk 100%);
-  color: $white; border: none; border-radius: 12px;
-  font-size: 0.9rem; font-weight: 700; font-family: $font;
-  cursor: pointer; transition: all $ease;
-  box-shadow: 0 4px 14px rgba(245,158,11,.3);
-  letter-spacing: 0.1px;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  padding: 14px;
+  background: $dark;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
 
-  &:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(245,158,11,.42);
-  }
-
-  &:active:not(:disabled) { transform: translateY(0); }
-
-  &:disabled {
-    opacity: 0.45; cursor: not-allowed;
-    box-shadow: none; transform: none; background: $muted;
-  }
+  &:hover:not(:disabled) { background: #334155; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 
 .sum-note {
@@ -799,3 +792,80 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   font-size: 0.85rem; cursor: pointer; padding: 0;
 }
 .btn-remove-payment:hover { text-decoration: underline; }
+.selected-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  border-top: 0.5px solid $border;
+  padding-top: 12px;
+}
+
+.selected-extra-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: $bg;
+  border: 1px solid $border;
+  border-radius: 10px;
+}
+
+.sel-extra-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: $dark;
+}
+
+.sel-extra-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  button {
+    width: 28px; height: 28px;
+    border: 1px solid $border;
+    border-radius: 6px;
+    background: $white;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    &:hover:not(:disabled) { border-color: $amber; }
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+  }
+
+  span {
+    font-size: 0.95rem;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+    color: $dark;
+  }
+}
+
+.sel-extra-remove {
+  background: none;
+  border: none;
+  color: $danger;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  &:hover { background: $danger-bg; }
+}
+.sum-payment {
+  margin: 0 20px 20px;
+  padding-top: 16px;
+  border-top: 1px solid $border;
+}
+
+.sum-payment-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: $dark;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
