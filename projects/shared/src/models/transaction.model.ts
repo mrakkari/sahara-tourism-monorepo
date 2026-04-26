@@ -2,12 +2,13 @@
 
 export type PaymentMethod = 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'BANK_TRANSFER' | 'ONLINE' | 'CHEQUE';
 export type TransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED' | 'CANCELLED';
+export type Currency = 'TND' | 'EUR' | 'USD'; 
 
 export interface TransactionResponse {
   transactionId: string;
   transactionNumber: string;
   amount: number;
-  currency: string;
+  currency: Currency; 
   paymentMethod: PaymentMethod;
   status: TransactionStatus;
   transactionDate: string; // ISO datetime
@@ -18,7 +19,7 @@ export interface TransactionResponse {
 export interface PaymentRequest {
   amount: number;
   paymentMethod: PaymentMethod;
-  currency?: string;
+  currency: Currency;
 }
 
 export interface PaymentSummary {
@@ -36,7 +37,7 @@ export interface PaymentResponse {
   transactionId: string;
   transactionNumber: string;
   amount: number;
-  currency: string;
+  currency: Currency;
   paymentMethod: PaymentMethod;
   status: TransactionStatus;
   transactionDate: string;
@@ -51,4 +52,15 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   BANK_TRANSFER: 'Virement bancaire',
   ONLINE:        'Paiement en ligne',
   CHEQUE:        'Chèque',
+};
+export const CURRENCY_LABELS: Record<Currency, string> = {
+  TND: '🇹🇳 Dinar Tunisien (TND)',
+  EUR: '🇪🇺 Euro (EUR)',
+  USD: '🇺🇸 Dollar US (USD)',
+};
+
+export const CURRENCY_RATES: Record<Currency, number> = {
+  TND: 1.0,
+  EUR: 3.5,
+  USD: 2.9,
 };

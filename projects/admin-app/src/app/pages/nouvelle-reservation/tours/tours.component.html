@@ -34,6 +34,30 @@
             </div>
           </div>
         </div>
+        <!-- Source -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">📡</span>
+              Source <span class="req">*</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="field" style="margin-bottom:0">
+              <label>Origine de la réservation</label>
+              <div *ngIf="isLoadingSources" class="loading">Chargement…</div>
+              <select
+                *ngIf="!isLoadingSources"
+                formControlName="sourceId"
+                class="input">
+                <option value="">— Choisir une source —</option>
+                <option *ngFor="let s of sources" [value]="s.sourceId">
+                  {{ s.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         <!-- Tour Selection -->
         <div class="card">
@@ -59,6 +83,7 @@
         </div>
 
         <!-- Date & Groupe -->
+        <!-- Date & Groupe -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">
@@ -67,10 +92,24 @@
             </div>
           </div>
           <div class="card-body">
-            <div class="field">
-              <label>Date de départ</label>
-              <input type="date" class="input" formControlName="serviceDate">
+          <div class="field">
+            <label>Date de départ</label>
+            <div class="date-wrapper">
+            <input type="text"
+                  class="input date-display"
+                  [value]="serviceDateDisplay"
+                  placeholder="jj/mm/aaaa"
+                  maxlength="10"
+                  (input)="onDateTextInput($event, 'serviceDate')">
+              <input type="date"
+                    class="input date-picker"
+                    formControlName="serviceDate"
+                    (change)="onDatePickerChange($event, 'serviceDate')">
+              <span class="date-icon" (click)="openPicker($event)">📅</span>
             </div>
+            <!-- Error message -->
+            <p class="date-error" *ngIf="serviceDateError">{{ serviceDateError }}</p>
+          </div>
             <div class="counters">
               <div class="counter-card">
                 <div class="counter-left">
@@ -240,7 +279,8 @@
         <app-payment-modal
           *ngIf="showPaymentModal"
           [inlineMode]="true"
-          [currency]="form.get('currency')?.value || 'TND'"
+          [isFirstPayment]="true"
+          [baseTotalTnd]="finalTotal()"
           (closed)="closePaymentModal()"
           (paymentConfirmed)="onPaymentConfirmed($event)"
         />
@@ -266,7 +306,7 @@
                 <span>⏱ Durée</span><span>{{ getSelectedTour()?.duration }}</span>
               </div>
               <div class="sum-row" *ngIf="form.get('serviceDate')?.value">
-                <span>✈️ Départ</span><span>{{ form.get('serviceDate')?.value }}</span>
+                <span>{{ toDisplayDate(form.get('serviceDate')?.value) }}</span>
               </div>
               <div class="sum-row">
                 <span>👥 Groupe</span><span>{{ adults }} ad. · {{ children }} enf.</span>
@@ -295,7 +335,9 @@
               <ng-container *ngIf="!isSubmitting">✅ Créer la réservation</ng-container>
               <ng-container *ngIf="isSubmitting">⏳ Création en cours…</ng-container>
             </button>
-            <p class="sum-note">🔒 Source : ADMIN-APP</p>
+            <p class="sum-note" *ngIf="form.get('sourceId')?.value">
+              📡 {{ getSelectedSourceName() }}
+            </p>
           </div>
 
           <!-- ✅ Payment moved here — directly under the recap -->
@@ -316,7 +358,7 @@
               <div class="payment-preview">
                 <div class="pay-row">
                   <span>Montant</span>
-                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ initialPayment.currency }}</strong>
                 </div>
                 <div class="pay-row">
                   <span>Méthode</span>

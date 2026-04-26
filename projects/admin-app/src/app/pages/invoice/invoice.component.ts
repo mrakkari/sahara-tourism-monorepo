@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { ReservationService } from '../../core/services/reservation.service';
+import { AdminReservationService } from '../../core/services/admin-reservation.service';
 import { Reservation, Invoice } from '../../core/models/reservation.model';
 import { InvoiceService } from '../../core/services/invoice.service';
 
@@ -18,15 +18,15 @@ export class InvoiceComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private reservationService: ReservationService,
+    private adminReservationService: AdminReservationService,
     private invoiceService: InvoiceService
   ) { }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
-      this.reservationService.getAllReservations().subscribe(() => {
-        this.reservation = this.reservationService.getReservationById(id);
+      this.adminReservationService.getAllReservations().subscribe(() => {
+        this.reservation = this.adminReservationService.getReservationById(id);
         if (this.reservation) {
           this.invoice = this.invoiceService.generateInvoice(this.reservation);
         }

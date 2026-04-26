@@ -1,0 +1,103 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">📡 Liste des Sources</h1>
+      <button class="btn-add" (click)="openAddModal()">➕ Ajouter</button>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Rechercher par nom..."
+        [(ngModel)]="searchTerm"
+        (input)="filterItems()"
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="error-banner">⚠️ {{ errorMessage }}</div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">⏳ Chargement...</div>
+
+  <!-- Table -->
+  <div class="content-card" *ngIf="!loading">
+    <table class="tours-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of paginatedItems">
+          <td><strong>{{ item.name }}</strong></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-edit"   (click)="openEditModal(item)" title="Modifier">✏️</button>
+              <button class="btn-delete" (click)="deleteItem(item.sourceId)" title="Supprimer">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="filteredItems.length === 0 && !loading" class="no-results">
+      <p>Aucune source trouvée</p>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="filteredItems.length > 0" class="pagination">
+      <button class="pagination-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+        ← Précédent
+      </button>
+      <div class="pagination-info">
+        <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+        <span class="separator">|</span>
+        <span>{{ filteredItems.length }} sources</span>
+      </div>
+      <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ editingId ? '✏️ Modifier Source' : '➕ Nouvelle Source' }}</h2>
+        <button class="close-btn" (click)="closeModal()">✕</button>
+      </div>
+
+      <form class="tour-form" (ngSubmit)="saveItem()">
+        <div class="form-group">
+          <label>Nom *</label>
+          <input
+            type="text"
+            [(ngModel)]="form.name"
+            name="name"
+            class="form-control"
+            placeholder="ex: Facebook, Booking.com, Direct..."
+            required
+          />
+        </div>
+
+        <div *ngIf="formError" class="form-error">⚠️ {{ formError }}</div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn-submit" [disabled]="saving">
+            {{ saving ? '⏳ Enregistrement...' : (editingId ? '💾 Enregistrer' : '✅ Ajouter') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

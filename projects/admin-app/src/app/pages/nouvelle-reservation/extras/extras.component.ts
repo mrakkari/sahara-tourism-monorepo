@@ -9,6 +9,8 @@ import { UserResponse } from '../../../../../../shared/src/models/user.model';
 import { ReservationRequest } from '../../../../../../shared/src/models/reservation-api.model';
 import { PaymentModalComponent } from '../../../../../../shared/src/lib/components/payment-modal/payment-modal.component';
 import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
+import { SourceService } from '../../../core/services/source.service';
+import { SourceResponse } from '../../../../../../shared/src/models/reservation-api.model';
 @Component({
   selector: 'app-extras',
   standalone: true,
@@ -26,7 +28,7 @@ import { PaymentRequest } from '../../../../../../shared/src/models/transaction.
 })
 export class ExtrasComponent implements OnInit {
 
-  readonly SOURCE = 'ADMIN-APP';
+
 
   form!: FormGroup;
   isSubmitting = false;
@@ -41,10 +43,16 @@ export class ExtrasComponent implements OnInit {
 
   showPaymentModal  = false;
   initialPayment: PaymentRequest | null = null;
+  sources: SourceResponse[] = [];
+  isLoadingSources = false;
+
+    serviceDateDisplay = '';
+    serviceDateError   = '';
 
   constructor(
     private fb: FormBuilder,
     private reservationService: ReservationService,
+    private sourceService: SourceService,
     private router: Router
   ) {}
 
@@ -52,17 +60,26 @@ export class ExtrasComponent implements OnInit {
     this.buildForm();
     this.loadUsers();
     this.loadExtras();
+    this.loadSources(); 
+  }
+
+  loadSources(): void {
+    this.isLoadingSources = true;
+    this.sourceService.getAll().subscribe({
+      next: s => { this.sources = s; this.isLoadingSources = false; },
+      error: () => this.isLoadingSources = false
+    });
   }
 
   private buildForm(): void {
     this.form = this.fb.group({
       userId:          ['', Validators.required],
+      sourceId:        ['', Validators.required], 
       serviceDate:     ['', Validators.required],
       numberOfPeople:  [1, [Validators.required, Validators.min(1)]],
       groupLeaderName: [''],
       groupName:       [''],
       demandeSpecial:  [''],
-      currency:        ['TND'],
     });
   }
 
@@ -150,7 +167,8 @@ export class ExtrasComponent implements OnInit {
 
   canSubmit(): boolean {
     return !!this.form.get('userId')?.value
-      && !!this.form.get('serviceDate')?.value
+      && !!this.form.get('sourceId')?.value 
+      && !!this.form.get('serviceDate')?.value      
       && this.numberOfPeople >= 1
       && this.hasExtras();
   }
@@ -168,7 +186,7 @@ export class ExtrasComponent implements OnInit {
 
     const request: ReservationRequest = {
       userId:           fv.userId,
-      source:           this.SOURCE,
+      sourceId:         fv.sourceId,
       reservationType:  'EXTRAS',
       serviceDate:      fv.serviceDate,
       numberOfAdults:   this.numberOfPeople,
@@ -176,7 +194,6 @@ export class ExtrasComponent implements OnInit {
       groupLeaderName:  fv.groupLeaderName || undefined,
       groupName:        fv.groupName       || undefined,
       demandeSpecial:   fv.demandeSpecial  || undefined,
-      currency:         fv.currency        || 'TND',
       extras:           extrasPayload,
       initialPayment:   this.initialPayment ?? undefined,
     };
@@ -208,6 +225,7 @@ export class ExtrasComponent implements OnInit {
     return labels[method] ?? method;
   }
   onAddExtra(id: string): void {
+
     if (!id) return;
     this.selectedExtras[id] = this.numberOfPeople;
   }
@@ -218,5 +236,80 @@ export class ExtrasComponent implements OnInit {
 
   getSelectedExtras(): ExtraResponse[] {
     return this.extras.filter(e => (this.selectedExtras[e.extraId] || 0) > 0);
+  }
+  getSelectedSourceName(): string {
+    const id = this.form.get('sourceId')?.value;
+    return this.sources.find(s => s.sourceId === id)?.name ?? '';
+  }
+
+
+
+  onDateTextInput(event: Event, field: string): void {
+    const input = event.target as HTMLInputElement;
+    const val   = input.value;
+    this.serviceDateError = '';
+
+    if (val.length === 10 && val[2] === '/' && val[5] === '/') {
+      const [d, m, y] = val.split('/');
+      const iso  = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      const date = new Date(iso);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (isNaN(date.getTime()) || +d > 31 || +m > 12) {
+        this.serviceDateError = '⚠️ Date invalide.';
+        this.form.get(field)?.setValue('', { emitEvent: false });
+      } else if (date < today) {
+        this.serviceDateError = '⚠️ La date doit être dans le futur.';
+        this.form.get(field)?.setValue('', { emitEvent: false });
+      } else {
+        this.form.get(field)?.setValue(iso, { emitEvent: true });
+      }
+    } else {
+      this.form.get(field)?.setValue('', { emitEvent: false });
+    }
+    this.serviceDateDisplay = val;
+  }
+
+  onDatePickerChange(event: Event, field: string): void {
+    const iso = (event.target as HTMLInputElement).value;
+    if (!iso) return;
+    const date  = new Date(iso);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    this.serviceDateError = '';
+
+    if (date < today) {
+      this.serviceDateError = '⚠️ La date doit être dans le futur.';
+      this.form.get(field)?.setValue('', { emitEvent: false });
+      this.serviceDateDisplay = '';
+    } else {
+      this.form.get(field)?.setValue(iso, { emitEvent: true });
+      const display = this.toDisplayDate(iso);
+      this.serviceDateDisplay = display;
+      const wrapper   = (event.target as HTMLElement).closest('.date-wrapper');
+      const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
+      if (textInput) textInput.value = display;
+    }
+  }
+
+  openPicker(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
+    const picker  = wrapper?.querySelector('.date-picker') as HTMLInputElement;
+    if (picker) {
+      picker.style.pointerEvents = 'auto';
+      const today = new Date().toISOString().split('T')[0];
+      picker.min = today;
+      picker.showPicker?.();
+      setTimeout(() => { picker.style.pointerEvents = 'none'; }, 500);
+    }
+  }
+
+  toDisplayDate(val: string): string {
+    if (!val || !val.includes('-')) return '';
+    const [y, m, d] = val.split('-');
+    return `${d}/${m}/${y}`;
   }
 }

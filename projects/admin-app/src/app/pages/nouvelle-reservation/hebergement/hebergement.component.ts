@@ -10,6 +10,8 @@ import { UserResponse } from '../../../../../../shared/src/models/user.model';
 import { ParticipantRequest, ReservationRequest } from '../../../../../../shared/src/models/reservation-api.model';
 import { PaymentModalComponent } from '../../../../../../shared/src/lib/components/payment-modal/payment-modal.component';
 import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
+import { SourceService } from '../../../core/services/source.service';
+import { SourceResponse } from '../../../../../../shared/src/models/reservation-api.model';
 
 @Component({
   selector: 'app-hebergement',
@@ -28,7 +30,6 @@ import { PaymentRequest } from '../../../../../../shared/src/models/transaction.
 })
 export class HebergementComponent implements OnInit {
 
-  readonly SOURCE = 'ADMIN-APP';
 
   form!: FormGroup;
   isSubmitting = false;
@@ -53,10 +54,18 @@ export class HebergementComponent implements OnInit {
 
   showPaymentModal  = false;
   initialPayment: PaymentRequest | null = null;
+  sources: SourceResponse[] = [];
+  isLoadingSources = false;
+
+  checkInDateDisplay  = '';
+  checkOutDateDisplay = '';
+  checkInDateError    = '';
+  checkOutDateError   = '';
 
   constructor(
     private fb: FormBuilder,
     private reservationService: ReservationService,
+    private sourceService: SourceService, 
     private router: Router
   ) {}
 
@@ -65,25 +74,105 @@ export class HebergementComponent implements OnInit {
     this.loadUsers();
     this.loadTourTypes();
     this.loadExtras();
+    this.loadSources();
+  }
+  loadSources(): void {
+    this.isLoadingSources = true;
+    this.sourceService.getAll().subscribe({
+      next: s => { this.sources = s; this.isLoadingSources = false; },
+      error: () => this.isLoadingSources = false
+    });
+  }
+  onDateTextInput(event: Event, field: string): void {
+    const input = event.target as HTMLInputElement;
+    const val   = input.value;
+
+    if (field === 'checkInDate')  this.checkInDateError  = '';
+    if (field === 'checkOutDate') this.checkOutDateError = '';
+
+    if (val.length === 10 && val[2] === '/' && val[5] === '/') {
+      const [d, m, y] = val.split('/');
+      const iso  = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      const date = new Date(iso);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (isNaN(date.getTime()) || +d > 31 || +m > 12) {
+        const err = '⚠️ Date invalide.';
+        if (field === 'checkInDate')  this.checkInDateError  = err;
+        if (field === 'checkOutDate') this.checkOutDateError = err;
+        this.form.get(field)?.setValue('', { emitEvent: false });
+      } else if (field === 'checkInDate' && date < today) {
+        this.checkInDateError = '⚠️ La date doit être dans le futur.';
+        this.form.get(field)?.setValue('', { emitEvent: false });
+      } else {
+        this.form.get(field)?.setValue(iso, { emitEvent: true });
+      }
+    } else {
+      this.form.get(field)?.setValue('', { emitEvent: false });
+    }
+
+    if (field === 'checkInDate')  this.checkInDateDisplay  = val;
+    if (field === 'checkOutDate') this.checkOutDateDisplay = val;
+  }
+
+  onDatePickerChange(event: Event, field: string): void {
+    const iso = (event.target as HTMLInputElement).value;
+    if (!iso) return;
+
+    const date  = new Date(iso);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (field === 'checkInDate')  this.checkInDateError  = '';
+    if (field === 'checkOutDate') this.checkOutDateError = '';
+
+    if (field === 'checkInDate' && date < today) {
+      this.checkInDateError = '⚠️ La date doit être dans le futur.';
+      this.form.get(field)?.setValue('', { emitEvent: false });
+      this.checkInDateDisplay = '';
+      return;
+    }
+
+    this.form.get(field)?.setValue(iso, { emitEvent: true });
+    const display = this.toDisplayDate(iso);
+
+    if (field === 'checkInDate')  this.checkInDateDisplay  = display;
+    if (field === 'checkOutDate') this.checkOutDateDisplay = display;
+
+    const wrapper   = (event.target as HTMLElement).closest('.date-wrapper');
+    const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
+    if (textInput) textInput.value = display;
+  }
+
+  openPicker(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
+    const picker  = wrapper?.querySelector('.date-picker') as HTMLInputElement;
+    if (picker) {
+      picker.style.pointerEvents = 'auto';
+      const today = new Date().toISOString().split('T')[0];
+      picker.min = today;
+      picker.showPicker?.();
+      setTimeout(() => { picker.style.pointerEvents = 'none'; }, 500);
+    }
   }
 
   // ─── Form ──────────────────────────────────────────────────────
 
   private buildForm(): void {
-    const today    = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 86_400_000 * 2).toISOString().split('T')[0];
-
     this.form = this.fb.group({
       userId:          ['', Validators.required],
-      checkInDate:     [today,    Validators.required],
-      checkOutDate:    [tomorrow, Validators.required],
+      sourceId:        ['', Validators.required],
+      checkInDate:     ['', Validators.required],
+      checkOutDate:    ['', Validators.required],
       numberOfAdults:  [2, [Validators.required, Validators.min(1)]],
       numberOfChildren:[0, Validators.min(0)],
       groupLeaderName: [''],
       groupName:       [''],
       demandeSpecial:  [''],
       promoCode:       [''],
-      currency:        ['TND'],
       tourTypes:       this.fb.array([]),
     });
   }
@@ -256,6 +345,7 @@ export class HebergementComponent implements OnInit {
 
   canSubmit(): boolean {
     return !!this.form.get('userId')?.value
+      && !!this.form.get('sourceId')?.value 
       && !!this.form.get('checkInDate')?.value
       && !!this.form.get('checkOutDate')?.value
       && this.nights > 0
@@ -290,7 +380,7 @@ export class HebergementComponent implements OnInit {
 
     const request: ReservationRequest = {
       userId:           fv.userId,
-      source:           this.SOURCE,
+      sourceId:         fv.sourceId,
       reservationType:  'HEBERGEMENT',
       checkInDate:      fv.checkInDate,
       checkOutDate:     fv.checkOutDate,
@@ -300,7 +390,6 @@ export class HebergementComponent implements OnInit {
       groupName:        fv.groupName       || undefined,
       demandeSpecial:   fv.demandeSpecial  || undefined,
       promoCode:        this.appliedPromo  || undefined,
-      currency:         fv.currency        || 'TND',
       tourTypes:        tourTypesPayload,
       extras:           extrasPayload.length > 0 ? extrasPayload : undefined,
       participants:     participantsPayload.length > 0 ? participantsPayload : undefined,
@@ -381,5 +470,22 @@ export class HebergementComponent implements OnInit {
 
   hasParticipants(): boolean {
     return this.participants.some(p => p.fullName.trim() !== '');
+  }
+  getSelectedSourceName(): string {
+    const id = this.form.get('sourceId')?.value;
+    return this.sources.find(s => s.sourceId === id)?.name ?? '';
+  }
+  // Convert dd/MM/yyyy → yyyy-MM-dd for the backend
+  toIsoDate(val: string): string {
+    if (!val || !val.includes('/')) return val;
+    const [d, m, y] = val.split('/');
+    return `${y}-${m}-${d}`;
+  }
+
+  // Convert yyyy-MM-dd → dd/MM/yyyy for display
+  toDisplayDate(val: string): string {
+    if (!val || !val.includes('-')) return val;
+    const [y, m, d] = val.split('-');
+    return `${d}/${m}/${y}`;
   }
 }

@@ -170,6 +170,134 @@
           </div>
         </div>
       </ng-container>
+            <!-- STAFF — only for TOURS type ──────────────────────────────── -->
+      <div class="card" *ngIf="isTours()">
+        <div class="card-title">
+          👥 Personnel
+          <span class="card-badge" *ngIf="guides.length + chauffeurs.length > 0">
+            {{ guides.length + chauffeurs.length }} assigné(s)
+          </span>
+        </div>
+        <div class="staff-locked-banner" *ngIf="!isStaffManageable">
+          🔒 Le personnel ne peut pas être modifié — réservation {{ statusLabel | lowercase }}.
+        </div>
+
+        <!-- ── Guides section ──────────────────────────────────────── -->
+        <div class="staff-section">
+          <div class="staff-section-label">🧭 Guides</div>
+
+          <!-- Placeholder when no guides -->
+          <div class="staff-empty" *ngIf="guides.length === 0 && newGuides.length === 0">
+            Aucun guide assigné pour le moment.
+          </div>
+
+          <!-- Existing guides list -->
+          <div *ngFor="let g of guides" class="staff-row">
+
+            <!-- View mode -->
+            <ng-container *ngIf="editingGuideId !== g.guideId">
+              <div class="staff-info">
+                <strong>{{ g.firstName }} {{ g.lastName }}</strong>
+                <span class="staff-phone" *ngIf="g.phoneNumber">📞 {{ g.phoneNumber }}</span>
+              </div>
+              <div class="staff-actions" *ngIf="isStaffManageable">
+                <button class="btn-icon-sm edit" (click)="startEditGuide(g)" title="Modifier">✏️</button>
+                <button class="btn-icon-sm delete" (click)="deleteGuide(g.guideId)" title="Supprimer">🗑️</button>
+              </div>
+            </ng-container>
+
+            <!-- Edit mode -->
+            <ng-container *ngIf="editingGuideId === g.guideId">
+              <div class="staff-edit-row">
+                <input class="staff-input" [(ngModel)]="editGuideForm.firstName"  placeholder="Prénom *" />
+                <input class="staff-input" [(ngModel)]="editGuideForm.lastName"   placeholder="Nom *" />
+                <input class="staff-input" [(ngModel)]="editGuideForm.phoneNumber" placeholder="Téléphone" />
+                <button class="btn-icon-sm save"   (click)="saveEditGuide(g.guideId)">💾</button>
+                <button class="btn-icon-sm cancel" (click)="cancelEditGuide()">✕</button>
+              </div>
+            </ng-container>
+
+          </div>
+
+          <!-- New guide input rows -->
+          <ng-container *ngIf="isStaffManageable">
+            <div *ngFor="let g of newGuides; let i = index" class="staff-new-row">
+              <input class="staff-input" [(ngModel)]="g.firstName"   placeholder="Prénom *" />
+              <input class="staff-input" [(ngModel)]="g.lastName"    placeholder="Nom *" />
+              <input class="staff-input" [(ngModel)]="g.phoneNumber" placeholder="Téléphone" />
+              <button class="btn-icon-sm delete" (click)="removeGuideRow(i)" title="Retirer">✕</button>
+            </div>
+          </ng-container>
+          <!-- Add guide button -->
+          <button class="btn-add-staff" *ngIf="isStaffManageable" (click)="addGuideRow()">
+            ➕ Ajouter un guide
+          </button>
+        </div>
+
+        <div class="staff-divider"></div>
+
+        <!-- ── Chauffeurs section ───────────────────────────────────── -->
+        <div class="staff-section">
+          <div class="staff-section-label">🚗 Chauffeurs</div>
+
+          <!-- Placeholder when no chauffeurs -->
+          <div class="staff-empty" *ngIf="chauffeurs.length === 0 && newChauffeurs.length === 0">
+            Aucun chauffeur assigné pour le moment.
+          </div>
+
+          <!-- Existing chauffeurs list -->
+          <div *ngFor="let c of chauffeurs" class="staff-row">
+
+            <!-- View mode -->
+            <ng-container *ngIf="editingChauffeurId !== c.chauffeurId">
+              <div class="staff-info">
+                <strong>{{ c.firstName }} {{ c.lastName }}</strong>
+                <span class="staff-phone" *ngIf="c.phoneNumber">📞 {{ c.phoneNumber }}</span>
+              </div>
+              <div class="staff-actions" *ngIf="isStaffManageable">
+                <button class="btn-icon-sm edit"   (click)="startEditChauffeur(c)" title="Modifier">✏️</button>
+                <button class="btn-icon-sm delete" (click)="deleteChauffeur(c.chauffeurId)" title="Supprimer">🗑️</button>
+              </div>
+            </ng-container>
+
+            <!-- Edit mode -->
+            <ng-container *ngIf="editingChauffeurId === c.chauffeurId">
+              <div class="staff-edit-row">
+                <input class="staff-input" [(ngModel)]="editChauffeurForm.firstName"   placeholder="Prénom *" />
+                <input class="staff-input" [(ngModel)]="editChauffeurForm.lastName"    placeholder="Nom *" />
+                <input class="staff-input" [(ngModel)]="editChauffeurForm.phoneNumber" placeholder="Téléphone" />
+                <button class="btn-icon-sm save"   (click)="saveEditChauffeur(c.chauffeurId)">💾</button>
+                <button class="btn-icon-sm cancel" (click)="cancelEditChauffeur()">✕</button>
+              </div>
+            </ng-container>
+
+          </div>
+
+          <!-- New chauffeur input rows -->
+          <ng-container *ngIf="isStaffManageable">
+            <div *ngFor="let c of newChauffeurs; let i = index" class="staff-new-row">
+              <input class="staff-input" [(ngModel)]="c.firstName"   placeholder="Prénom *" />
+              <input class="staff-input" [(ngModel)]="c.lastName"    placeholder="Nom *" />
+              <input class="staff-input" [(ngModel)]="c.phoneNumber" placeholder="Téléphone" />
+              <button class="btn-icon-sm delete" (click)="removeChauffeurRow(i)" title="Retirer">✕</button>
+            </div>
+          </ng-container>
+          <button class="btn-add-staff" *ngIf="isStaffManageable" (click)="addChauffeurRow()">
+            ➕ Ajouter un chauffeur
+          </button>
+        </div>
+
+        <!-- ── Save button + error ──────────────────────────────────── -->
+        <div class="staff-footer" *ngIf="hasNewStaff">
+          <div class="staff-error" *ngIf="staffError">⚠️ {{ staffError }}</div>
+          <button class="btn-save-staff" [disabled]="isSavingStaff" (click)="saveStaff()">
+            <ng-container *ngIf="!isSavingStaff">💾 Enregistrer le personnel</ng-container>
+            <ng-container *ngIf="isSavingStaff">⏳ Enregistrement...</ng-container>
+          </button>
+        </div>
+
+      </div>
+      <!-- END STAFF CARD -->
 
       <!-- EXTRAS type — service date -->
       <div class="card" *ngIf="isExtras()">
@@ -189,22 +317,23 @@
       <div class="card" *ngIf="extras.length > 0">
         <div class="card-title">
           ✨ Extras
-          <span class="card-badge">{{ extrasAmount | number:'1.0-0' }} TND</span>
+          <span class="card-badge">{{ extrasAmount | number:'1.0-0' }} {{ reservation.currency }}</span>
         </div>
         <div class="extras-list">
           <div *ngFor="let e of extras" class="extra-row">
             <div class="extra-left">
               <strong class="extra-name">{{ e.name }}</strong>
               <span class="extra-meta">
-                {{ e.quantity }} × {{ e.unitPrice | number:'1.0-0' }} TND
+                {{ e.quantity }} × {{ e.unitPrice | number:'1.0-0' }} {{ reservation.currency }}
                 <ng-container *ngIf="e.duration"> · {{ e.duration }}</ng-container>
               </span>
             </div>
-            <span class="extra-price">{{ e.totalPrice | number:'1.0-0' }} TND</span>
+            <span class="extra-price">{{ e.totalPrice | number:'1.0-0' }} {{ reservation.currency }}</span>
+
           </div>
           <div class="extras-total-row">
             <span>Total extras</span>
-            <span>{{ extrasAmount | number:'1.0-0' }} TND</span>
+            <span>{{ extrasAmount | number:'1.0-0' }} {{ reservation.currency }}</span>
           </div>
         </div>
       </div>
@@ -245,27 +374,27 @@
         <div class="price-rows">
           <div class="price-row" *ngIf="isHebergement() && totalAmount > 0">
             <span>Hébergement</span>
-            <span>{{ totalAmount | number:'1.0-0' }} TND</span>
+            <span>{{ totalAmount | number:'1.0-0' }} {{ reservation.currency }}</span>
           </div>
           <div class="price-row" *ngIf="isTours() && totalAmount > 0">
             <span>Tour</span>
-            <span>{{ totalAmount | number:'1.0-0' }} TND</span>
+            <span>{{ totalAmount | number:'1.0-0' }} {{ reservation.currency }}</span>
           </div>
           <div class="price-row" *ngIf="extrasAmount > 0">
             <span>Extras</span>
-            <span>{{ extrasAmount | number:'1.0-0' }} TND</span>
+            <span>{{ extrasAmount | number:'1.0-0' }} {{ reservation.currency }}</span>
           </div>
           <div class="price-row price-total">
             <span>Total général</span>
-            <span>{{ grandTotal | number:'1.0-0' }} TND</span>
+            <span>{{ grandTotal | number:'1.0-0' }} {{ reservation.currency }}</span>
           </div>
           <div class="price-row price-paid">
             <span>Payé</span>
-            <span>{{ paidAmount | number:'1.2-2' }} TND</span>
+            <span>{{ paidAmount | number:'1.2-2' }} {{ reservation.currency }}</span>
           </div>
           <div class="price-row price-remaining" *ngIf="remaining > 0">
             <span>Reste à payer</span>
-            <span>{{ remaining | number:'1.2-2' }} TND</span>
+            <span>{{ remaining | number:'1.2-2' }} {{ reservation.currency }}</span>
           </div>
         </div>
 
@@ -339,7 +468,7 @@
           </div>
           <div class="meta-row">
             <span>Source</span>
-            <span>{{ reservation.source || '—' }}</span>
+            <span>{{ reservation.source?.name || '—' }}</span>
           </div>
           <div class="meta-row">
             <span>Créée le</span>
@@ -382,7 +511,9 @@
 <app-payment-modal
   *ngIf="showPaymentModal"
   [summary]="summary"
-  [currency]="reservation?.currency || 'TND'"
+  [isFirstPayment]="summary?.paymentStatus === 'UNPAID'"
+  [lockedCurrency]="reservation?.currency || 'TND'"
+  [baseTotalTnd]="grandTotal"
   (closed)="closePaymentModal()"
   (paymentConfirmed)="onPaymentConfirmed($event)"
 />

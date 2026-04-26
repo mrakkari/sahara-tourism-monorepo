@@ -227,14 +227,47 @@ export class MainLayoutComponent {
         },
       ],
     },
-    { label: 'Réservations',  icon: '📅', route: '/reservations', badge: 5 },
-    { label: 'Factures',      icon: '📄', route: '/factures' },
-    { label: 'Proformas',     icon: '📋', route: '/proformas' },
-    { label: 'Clients',       icon: '👥', route: '/clients' },
-    { label: 'Hébergements',      icon: '📦', route: '/produits' },
-    { label: 'Tours', icon: '🗺️', route: '/tours' },
-    { label: 'Extras', icon: '✨', route: '/extras' },
-    { label: 'Statistiques',  icon: '📊', route: '/statistiques' },
+    { label: 'Réservations', icon: '📅', route: '/reservations', badge: 5 },
+    { label: 'Factures',     icon: '📄', route: '/factures' },
+    { label: 'Proformas',    icon: '📋', route: '/proformas' },
+    { label: 'Clients',      icon: '👥', route: '/clients' },
+
+    // ── NEW — Catalogue group ──────────────────────────────────
+    {
+      label: 'Catalogue',
+      icon: '📦',
+      route: '',
+      action: 'catalogue',
+      children: [
+        {
+          label: 'Hébergements',
+          icon: '🏕️',
+          route: '/produits',
+          description: 'Types de séjours disponibles',
+        },
+        {
+          label: 'Tours',
+          icon: '🗺️',
+          route: '/tours',
+          description: 'Excursions et circuits',
+        },
+        {
+          label: 'Extras',
+          icon: '✨',
+          route: '/extras',
+          description: 'Services additionnels',
+        },
+        {
+          label: 'Sources',
+          icon: '📡',
+          route: '/sources',
+          description: 'Origines des réservations',
+        },
+      ],
+    },
+    // ── REMOVED flat items: Hébergements, Tours, Extras ────────
+
+    { label: 'Statistiques', icon: '📊', route: '/statistiques' },
   ];
 
   toggleMobileMenu(): void {

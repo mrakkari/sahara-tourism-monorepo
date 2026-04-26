@@ -19,7 +19,7 @@
       <span class="search-icon">🔍</span>
       <input type="text"
             [(ngModel)]="searchTerm"
-            (input)="onSearchChange()"
+            (keyup.enter)="onSearchSubmit()"
             placeholder="Rechercher par nom du client ou partenaire..."
             class="glass-input">
       <button class="btn-search" (click)="onSearchSubmit()">Rechercher</button>
@@ -92,28 +92,89 @@
   <!-- Reservations Table -->
   <lib-glass-card class="table-card">
     <div class="card-header">
-      <h3>📝 Réservations Récentes</h3>
+      <h3>📝 Réservations</h3>
       <span class="badge-count">{{ filteredReservations.length }}</span>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-        3-DAY BLOCKS (next 3 days that have reservations)
-    ═══════════════════════════════════════════════ -->
-    <div class="day-blocks-wrapper" *ngIf="!startDate">
-
-      <div class="day-block" *ngFor="let block of upcomingDayBlocks">
-        <!-- Day header -->
-        <div class="day-block-header">
-          <div class="day-block-label">
-            <span class="day-name">{{ block.label }}</span>
-            <span class="day-date">{{ block.dateStr }}</span>
+    <!-- 3 UPCOMING DAY BLOCKS — always shown (hidden if COMPLETED filter) -->
+    <ng-container *ngIf="statusFilter !== 'completed'">
+      <div class="day-blocks-wrapper" *ngIf="upcomingDayBlocks.length > 0">
+        <div class="day-block" *ngFor="let block of upcomingDayBlocks">
+          <div class="day-block-header">
+            <div class="day-block-label">
+              <span class="day-name">{{ block.label }}</span>
+              <span class="day-date">{{ block.dateStr }}</span>
+            </div>
+            <span class="day-badge">
+              {{ block.reservations.length }} réservation{{ block.reservations.length !== 1 ? 's' : '' }}
+            </span>
           </div>
-          <span class="day-badge">
-            {{ block.reservations.length }} réservation{{ block.reservations.length !== 1 ? 's' : '' }}
-          </span>
+          <div class="table-responsive">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>Partenaire</th>
+                  <th>Prestation</th>
+                  <th>Groupe</th>
+                  <th>Source</th>
+                  <th>Statut</th>
+                  <th>Paiement</th>
+                  <th class="text-right">Montant</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of block.reservations" class="table-row">
+                  <td>
+                    <div class="partner-info">
+                      <div class="partner-avatar">{{ r.partnerName.charAt(0) }}</div>
+                      <span>{{ r.partnerName }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="tour-types-cell">
+                      <span class="res-type-chip res-type-{{ r.reservationType?.toLowerCase() }}">{{ getTypeLabel(r) }}</span>
+                      <span *ngFor="let item of getDisplayNames(r)" class="tour-type-badge badge-{{ item.badge }}">{{ item.label }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="guest-info">
+                      <span class="adults-line">👥 {{ r.adults }} adulte{{ r.adults > 1 ? 's' : '' }}</span>
+                      <span class="children-line" *ngIf="r.children > 0">🧒 {{ r.children }} enfant{{ r.children > 1 ? 's' : '' }}</span>
+                    </div>
+                  </td>
+                  <td><span class="source-badge">{{ r.source?.name || 'N/A' }}</span></td>
+                  <td><lib-status-badge [status]="r.status"></lib-status-badge></td>
+                  <td>
+                    <div class="payment-indicator">
+                      <div class="progress-mini">
+                        <div class="fill" [style.width.%]="(r.payment.paidAmount / r.payment.totalAmount) * 100"></div>
+                      </div>
+                      <span class="payment-text">{{ getPaymentStatusLabel(r.payment.paymentStatus) }}</span>
+                    </div>
+                  </td>
+                  <td class="text-right font-bold">{{ r.payment.totalAmount | number:'1.0-0' }} TND</td>
+                  <td class="text-right">
+                    <div class="actions-flex">
+                      <button class="btn-icon view" [routerLink]="['/reservation', r.id]" title="Voir">👁️</button>
+                      <button *ngIf="r.status === 'pending'" class="btn-icon check" (click)="confirmReservation(r.id)" title="Confirmer">✅</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
+      </div>
+    </ng-container>
 
-        <!-- Reservations for this day -->
+    <!-- AUTRES RÉSERVATIONS — single flat table, always shown -->
+    <ng-container *ngIf="otherReservations.length > 0 || statusFilter === 'completed'">
+      <div class="other-section">
+        <div class="other-section-header">
+          <h4>🗂️ Autres réservations</h4>
+          <span class="badge-count">{{ otherReservations.length }}</span>
+        </div>
         <div class="table-responsive">
           <table class="premium-table">
             <thead>
@@ -121,6 +182,7 @@
                 <th>Partenaire</th>
                 <th>Prestation</th>
                 <th>Groupe</th>
+                <th>Date</th>
                 <th>Source</th>
                 <th>Statut</th>
                 <th>Paiement</th>
@@ -129,7 +191,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let r of block.reservations" class="table-row">
+              <tr *ngFor="let r of otherReservations" class="table-row">
                 <td>
                   <div class="partner-info">
                     <div class="partner-avatar">{{ r.partnerName.charAt(0) }}</div>
@@ -148,7 +210,17 @@
                     <span class="children-line" *ngIf="r.children > 0">🧒 {{ r.children }} enfant{{ r.children > 1 ? 's' : '' }}</span>
                   </div>
                 </td>
-                <td><span class="source-badge">{{ r.source || 'N/A' }}</span></td>
+                <td>
+                  <div class="date-col">
+                    <span class="date-main">{{ getDisplayDate(r) }}</span>
+                    <span class="date-sub" *ngIf="r.reservationType === 'HEBERGEMENT' || !r.reservationType">
+                      {{ calculateDuration(r) }} nuit{{ calculateDuration(r) > 1 ? 's' : '' }}
+                    </span>
+                    <span class="date-sub" *ngIf="r.reservationType === 'TOURS'">Départ</span>
+                    <span class="date-sub" *ngIf="r.reservationType === 'EXTRAS'">Service</span>
+                  </div>
+                </td>
+                <td><span class="source-badge">{{ r.source?.name || 'N/A' }}</span></td>
                 <td><lib-status-badge [status]="r.status"></lib-status-badge></td>
                 <td>
                   <div class="payment-indicator">
@@ -170,107 +242,12 @@
           </table>
         </div>
       </div>
+    </ng-container>
 
-      <!-- shown only if we have fewer than 3 days with reservations in the future -->
-      <div class="no-more-days" *ngIf="upcomingDayBlocks.length === 0">
-        
-        <p>Aucune réservation à venir.</p>
-      </div>
-
-    </div>
-
-    <!-- ═══════════════════════════════════════════════
-         OTHER RESERVATIONS (outside 3-day window)
-         OR full filtered list when a filter is active
-    ═══════════════════════════════════════════════ -->
-    <div class="other-section" *ngIf="!startDate && otherReservations.length > 0">
-      <div class="other-section-header">
-        <h4>🗂️ Autres réservations</h4>
-        <span class="badge-count">{{ otherReservations.length }}</span>
-      </div>
-    </div>
-
-    <div class="table-responsive" *ngIf="!startDate && otherReservations.length > 0 || startDate">
-      <table class="premium-table">
-        <thead>
-          <tr>
-            <th>Partenaire</th>
-            <th>Prestation</th>
-            <th>Groupe</th>
-            <th>Date</th>
-            <th>Source</th>
-            <th>Statut</th>
-            <th>Paiement</th>
-            <th class="text-right">Montant</th>
-            <th class="text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let r of (startDate ? pagedReservations : otherReservations)" class="table-row">
-            <td>
-              <div class="partner-info">
-                <div class="partner-avatar">{{ r.partnerName.charAt(0) }}</div>
-                <span>{{ r.partnerName }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="tour-types-cell">
-                <span class="res-type-chip res-type-{{ r.reservationType?.toLowerCase() }}">{{ getTypeLabel(r) }}</span>
-                <span *ngFor="let item of getDisplayNames(r)" class="tour-type-badge badge-{{ item.badge }}">{{ item.label }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="guest-info">
-                <span class="adults-line">👥 {{ r.adults }} adulte{{ r.adults > 1 ? 's' : '' }}</span>
-                <span class="children-line" *ngIf="r.children > 0">🧒 {{ r.children }} enfant{{ r.children > 1 ? 's' : '' }}</span>
-              </div>
-            </td>
-            <td>
-              <div class="date-col">
-                <span class="date-main">{{ getDisplayDate(r) }}</span>
-                <span class="date-sub" *ngIf="r.reservationType === 'HEBERGEMENT' || !r.reservationType">
-                  {{ calculateDuration(r) }} nuit{{ calculateDuration(r) > 1 ? 's' : '' }}
-                </span>
-                <span class="date-sub" *ngIf="r.reservationType === 'TOURS'">Départ</span>
-                <span class="date-sub" *ngIf="r.reservationType === 'EXTRAS'">Service</span>
-              </div>
-            </td>
-            <td><span class="source-badge">{{ r.source || 'N/A' }}</span></td>
-            <td><lib-status-badge [status]="r.status"></lib-status-badge></td>
-            <td>
-              <div class="payment-indicator">
-                <div class="progress-mini">
-                  <div class="fill" [style.width.%]="(r.payment.paidAmount / r.payment.totalAmount) * 100"></div>
-                </div>
-                <span class="payment-text">{{ getPaymentStatusLabel(r.payment.paymentStatus) }}</span>
-              </div>
-            </td>
-            <td class="text-right font-bold">{{ r.payment.totalAmount | number:'1.0-0' }} TND</td>
-            <td class="text-right">
-              <div class="actions-flex">
-                <button class="btn-icon view" [routerLink]="['/reservation', r.id]" title="Voir">👁️</button>
-                <button *ngIf="r.status === 'pending'" class="btn-icon check" (click)="confirmReservation(r.id)" title="Confirmer">✅</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div *ngIf="filteredReservations.length === 0" class="empty-state">
-        <div class="empty-icon">🌵</div>
-        <p>Aucune réservation trouvée pour le moment.</p>
-      </div>
-    </div>
-
-    <!-- Pagination (only for filtered view) -->
-    <div *ngIf="startDate && filteredReservations.length > 0" class="pagination">
-      <button class="pagination-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">← Précédent</button>
-      <div class="pagination-info">
-        <span>Page {{ currentPage }} sur {{ totalPages }}</span>
-        <span class="separator">|</span>
-        <span>{{ filteredReservations.length }} résultats</span>
-      </div>
-      <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">Suivant →</button>
+    <!-- EMPTY STATE -->
+    <div *ngIf="filteredReservations.length === 0" class="empty-state">
+      <div class="empty-icon">🌵</div>
+      <p>Aucune réservation trouvée.</p>
     </div>
 
   </lib-glass-card>

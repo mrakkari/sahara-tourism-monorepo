@@ -1,4 +1,6 @@
-// admin/src/app/core/models/reservation.model.ts
+
+import { ChauffeurResponse, GuideResponse, SourceResponse } from "../../../../../shared/src/models/reservation-api.model";
+import { Currency } from "../../../../../shared/src/models/transaction.model";
 
 export type ReservationType = 'HEBERGEMENT' | 'TOURS' | 'EXTRAS';
 
@@ -58,7 +60,7 @@ export interface Participant {
 export interface PaymentInfo {
   totalAmount: number;
   paidAmount: number;
-  currency: 'TND' | 'EUR' | 'USD';
+  currency?: Currency;
   paymentMethod?: 'card' | 'cash' | 'transfer' | 'flouci' | 'onsite' | 'mixed';
   paymentStatus: 'pending' | 'partial' | 'completed';
   transactions: Transaction[];
@@ -104,7 +106,6 @@ export interface Reservation {
   partnerName: string;
   userId?: string;
   userName?: string;
-  source?: string;
   groupName?: string;
   groupLeaderName?: string;
   numberOfPeople: number;
@@ -135,7 +136,7 @@ export interface Reservation {
 
   totalAmount?: number;
   totalExtrasAmount?: number;
-  currency?: string;
+  currency?: Currency;
   promoCode?: string | null;
   demandeSpecial?: string | null;
   loyaltyPointsEarned?: number;
@@ -143,4 +144,7 @@ export interface Reservation {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  source?: SourceResponse;           // ← was source?: string
+  guides?: GuideResponse[];          // ← NEW
+  chauffeurs?: ChauffeurResponse[];
 }

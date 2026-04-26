@@ -34,6 +34,30 @@
             </div>
           </div>
         </div>
+        <!-- Step 1b · Source -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">📡</span>
+              Source <span class="req">*</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="field" style="margin-bottom:0">
+              <label>Origine de la réservation</label>
+              <div *ngIf="isLoadingSources" class="loading">Chargement…</div>
+              <select
+                *ngIf="!isLoadingSources"
+                formControlName="sourceId"
+                class="input">
+                <option value="">— Choisir une source —</option>
+                <option *ngFor="let s of sources" [value]="s.sourceId">
+                  {{ s.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         <!-- Step 2 · Date & Personnes -->
         <div class="card">
@@ -46,7 +70,20 @@
           <div class="card-body">
             <div class="field">
               <label>Date du service</label>
-              <input type="date" class="input" formControlName="serviceDate">
+              <div class="date-wrapper">
+                <input type="text"
+                      class="input date-display"
+                      [value]="serviceDateDisplay"
+                      placeholder="jj/mm/aaaa"
+                      maxlength="10"
+                      (input)="onDateTextInput($event, 'serviceDate')">
+                <input type="date"
+                      class="input date-picker"
+                      formControlName="serviceDate"
+                      (change)="onDatePickerChange($event, 'serviceDate')">
+                <span class="date-icon" (click)="openPicker($event)">📅</span>
+              </div>
+              <p class="date-error" *ngIf="serviceDateError">{{ serviceDateError }}</p>
             </div>
             <div class="field" style="margin-bottom:0">
               <label>Nombre de personnes</label>
@@ -142,7 +179,8 @@
         <app-payment-modal
           *ngIf="showPaymentModal"
           [inlineMode]="true"
-          [currency]="form.get('currency')?.value || 'TND'"
+          [isFirstPayment]="true"
+          [baseTotalTnd]="extrasTotal()"
           (closed)="closePaymentModal()"
           (paymentConfirmed)="onPaymentConfirmed($event)"
         />
@@ -162,7 +200,8 @@
                 <span>🤝 Client</span><span>{{ getSelectedUser()?.name }}</span>
               </div>
               <div class="sum-row" *ngIf="form.get('serviceDate')?.value">
-                <span>📅 Date</span><span>{{ form.get('serviceDate')?.value }}</span>
+                <span>📅 Date</span>
+                <span>{{ toDisplayDate(form.get('serviceDate')?.value) }}</span>
               </div>
               <div class="sum-row">
                 <span>👥 Personnes</span><span>{{ numberOfPeople }}</span>
@@ -189,7 +228,9 @@
               <ng-container *ngIf="!isSubmitting">✅ Créer la réservation</ng-container>
               <ng-container *ngIf="isSubmitting">⏳ Création en cours…</ng-container>
             </button>
-            <p class="sum-note">🔒 Source : ADMIN-APP</p>
+            <p class="sum-note" *ngIf="form.get('sourceId')?.value">
+              📡 {{ getSelectedSourceName() }}
+            </p>
           </div>
           <!-- Payment — under recap -->
           <div class="sum-payment">
@@ -209,7 +250,7 @@
               <div class="payment-preview">
                 <div class="pay-row">
                   <span>Montant</span>
-                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ initialPayment.currency }}</strong>
                 </div>
                 <div class="pay-row">
                   <span>Méthode</span>

@@ -17,6 +17,7 @@ import { ExtrasComponent } from './pages/nouvelle-reservation/extras/extras.comp
 import { HebergementListComponent } from './pages/produits/hebergementList/hebergement-list.component';
 import { ToursListComponent } from './pages/produits/toursList/tours-list.component';
 import { ExtrasListComponent } from './pages/produits/extrasList/extras-list.component';
+import { SourceListComponent } from './pages/produits/sourcesList/source-list.component';
 
 
 export const routes: Routes = [
@@ -40,6 +41,7 @@ export const routes: Routes = [
       { path: 'statistiques',              component: StatistiquesComponent },
       { path: 'reports',                   component: ReportsComponent },
       { path: 'extras',                    component: ExtrasListComponent },
+      { path: 'sources', component: SourceListComponent },
 
 
       // ── Nouvelle Réservation — 3 routed forms ──────────────────

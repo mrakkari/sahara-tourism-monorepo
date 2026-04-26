@@ -6,7 +6,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { ReservationService } from '../../core/services/reservation.service';
+import { AdminReservationService } from '../../core/services/admin-reservation.service';
 import { Reservation } from '../../core/models/reservation.model';
 import { NotificationService } from '../../../../../shared/src/lib/auth/notification.service';
 import { StatCardComponent } from '../../components/stat-card/stat-card.component';
@@ -67,11 +67,11 @@ export class DashboardComponent implements OnInit {
   private lastNotifCount = 0;
 
   private currentStatusLoaded = 'all';
-  private searchSubject = new Subject<string>();
+  
 
 
   constructor(
-      private reservationService: ReservationService,
+      private adminReservationService: AdminReservationService,
       private notificationService: NotificationService
   ) {
       effect(() => {
@@ -79,36 +79,20 @@ export class DashboardComponent implements OnInit {
           // only reload if unread count actually increased
           if (count > this.lastNotifCount) {
               this.lastNotifCount = count;
-              this.reservationService.fetchAllReservations();
+              this.adminReservationService.fetchActiveReservations();
           }
       });
   }
 
   ngOnInit(): void {
-    this.reservationService.fetchAllReservations();
-    this.reservationService.getAllReservations().subscribe(reservations => {
+    this.adminReservationService.fetchActiveReservations();
+
+    this.adminReservationService.getAllReservations().subscribe(reservations => {
       this.reservations = reservations;
       this.applyFilters();
     });
 
-    this.searchSubject.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      switchMap((term: string) => {  // ← add `: string` here
-        if (!term.trim()) {
-          if (this.statusFilter === 'all') {
-            this.reservationService.fetchAllReservations();
-            return this.reservationService.getAllReservations();
-          } else {
-            return this.reservationService.getReservationsByStatus(this.statusFilter as any);
-          }
-        }
-        return this.reservationService.searchReservationsByName(term);
-      })
-    ).subscribe((reservations: Reservation[]) => {  // ← add `: Reservation[]` here
-      this.reservations = reservations;
-      this.applyFilters();
-    });
+   
   }
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -117,45 +101,101 @@ export class DashboardComponent implements OnInit {
       this.showDatePicker = false;
     }
   }
-  onSearchChange(): void {
-    this.searchSubject.next(this.searchTerm);
-  }
+
   onStatusChange(): void {
-    this.currentStatusLoaded = this.statusFilter;
+    this.selectedDate = null;
+    this.startDate = null;
+    this.endDate = null;
 
     if (this.statusFilter === 'all') {
-      if (this.searchTerm.trim()) {
-        // Search is active — re-run search, applyFilters handles the rest
-        this.reservationService.searchReservationsByName(this.searchTerm)
-          .subscribe(reservations => {
-            this.reservations = reservations;
-            this.applyFilters();
-          });
-      } else {
-        // No search — reload all
-        this.reservationService.fetchAllReservations();
-        // the existing getAllReservations() subscription in ngOnInit picks it up
-      }
+      this.adminReservationService.fetchActiveReservations();
       return;
     }
 
-    // Status selected
-    if (this.searchTerm.trim()) {
-      // Search + status both active — search by name, applyFilters handles status locally
-      // This works because status filter was already applied on the subset
-      this.reservationService.searchReservationsByName(this.searchTerm)
-        .subscribe(reservations => {
-          this.reservations = reservations;
-          this.applyFilters();
-        });
-    } else {
-      // Only status filter active
-      this.reservationService.getReservationsByStatus(this.statusFilter as any)
-        .subscribe(reservations => {
-          this.reservations = reservations;
-          this.applyFilters();
-        });
+    this.adminReservationService.getReservationsByStatus(this.statusFilter as any)
+      .subscribe(reservations => {
+        this.reservations = reservations;
+        this.applyFilters();
+      });
+  }
+  get otherDateBlocks(): { date: Date; label: string; dateStr: string; reservations: Reservation[] }[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const map = new Map<string, { date: Date; label: string; dateStr: string; reservations: Reservation[] }>();
+
+    for (const r of this.otherReservations) {
+      const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
+        ? (r.serviceDate ?? r.checkInDate)
+        : r.checkInDate;
+
+      const d = new Date(rawDate);
+      d.setHours(0, 0, 0, 0);
+      const key = d.toDateString();
+
+      if (!map.has(key)) {
+        const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 3600 * 24));
+        const label = diffDays === 0
+          ? "Aujourd'hui"
+          : diffDays === 1
+            ? 'Demain'
+            : diffDays === 2
+              ? 'Après-demain'
+              : d.toLocaleDateString('fr-FR', { weekday: 'long' });
+
+        const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        map.set(key, { date: d, label, dateStr, reservations: [] });
+      }
+      map.get(key)!.reservations.push(r);
     }
+
+    return Array.from(map.values()).sort((a, b) => {
+      const aIsPast = a.date < today;
+      const bIsPast = b.date < today;
+      if (aIsPast && !bIsPast) return 1;
+      if (!aIsPast && bIsPast) return -1;
+      return a.date.getTime() - b.date.getTime();
+    });
+  }
+  get allDateBlocks(): { date: Date; label: string; dateStr: string; reservations: Reservation[] }[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const map = new Map<string, { date: Date; label: string; dateStr: string; reservations: Reservation[] }>();
+
+    for (const r of this.filteredReservations) {
+      const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
+        ? (r.serviceDate ?? r.checkInDate)
+        : r.checkInDate;
+
+      const d = new Date(rawDate);
+      d.setHours(0, 0, 0, 0);
+      const key = d.toDateString();
+
+      if (!map.has(key)) {
+        const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 3600 * 24));
+        const label = diffDays === 0
+          ? "Aujourd'hui"
+          : diffDays === 1
+            ? 'Demain'
+            : d.toLocaleDateString('fr-FR', { weekday: 'long' });
+
+        const dateStr = d.toLocaleDateString('fr-FR', {
+          day: '2-digit', month: 'long', year: 'numeric'
+        });
+
+        map.set(key, { date: d, label, dateStr, reservations: [] });
+      }
+      map.get(key)!.reservations.push(r);
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      const aIsPast = a.date < today;
+      const bIsPast = b.date < today;
+      if (aIsPast && !bIsPast) return 1;
+      if (!aIsPast && bIsPast) return -1;
+      return a.date.getTime() - b.date.getTime();
+    });
   }
 
   get totalPages(): number {
@@ -163,55 +203,22 @@ export class DashboardComponent implements OnInit {
   }
 
   loadReservations(): void {
-    this.reservationService.getAllReservations().subscribe(reservations => {
+    this.adminReservationService.getAllReservations().subscribe(reservations => {
       this.reservations = reservations;
       this.applyFilters();
     });
   }
 
   filterToday(): void {
-    this.startDate = new Date();
-    this.endDate = new Date();
-    this.applyFilters();
+    const today = new Date();
+    this.selectedDate = today;
+    this.startDate = today;
+    this.endDate = today;
+    this.adminReservationService.fetchReservationsByDate(today); 
   }
 
   applyFilters(): void {
-    this.filteredReservations = this.reservations.filter(r => {
-      // searchMatch removed — handled by API
-      const tourTypeMatch = this.tourTypeFilter === 'all' || 
-        r.tourTypes?.some(t => t.name === this.tourTypeFilter);
-
-      let dateMatch = true;
-      if (this.startDate) {
-        const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
-          ? (r.serviceDate ?? r.checkInDate)
-          : r.checkInDate;
-
-        const d = new Date(rawDate);
-        const start = new Date(this.startDate);
-        start.setHours(0, 0, 0, 0);
-        d.setHours(0, 0, 0, 0);
-
-        if (this.endDate) {
-          const end = new Date(this.endDate);
-          end.setHours(23, 59, 59, 999);
-          dateMatch = d >= start && d <= end;
-        } else {
-          dateMatch = d.getTime() === start.getTime();
-        }
-      }
-
-      return tourTypeMatch && dateMatch;
-    });
-
-    this.filteredReservations.sort((a, b) => {
-      const statusOrder: Record<string, number> = {
-        'pending': 1, 'confirmed': 2, 'checked_in': 3,
-        'completed': 4, 'cancelled': 5, 'rejected': 6,
-      };
-      return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
-    });
-
+    this.filteredReservations = [...this.reservations];
     this.currentPage = 1;
     this.updatePagedData();
   }
@@ -220,9 +227,10 @@ export class DashboardComponent implements OnInit {
     this.statusFilter = 'all';
     this.tourTypeFilter = 'all';
     this.searchTerm = '';
+    this.selectedDate = null;
     this.startDate = null;
     this.endDate = null;
-    this.applyFilters();
+    this.adminReservationService.fetchActiveReservations();
   }
 
   updatePagedData(): void {
@@ -284,7 +292,7 @@ export class DashboardComponent implements OnInit {
       switch (status?.toUpperCase()) {
           case 'CONFIRMED':  return 'status-confirmed';
           case 'PENDING':    return 'status-pending';
-          case 'CHECKED_IN': return 'status-arrived';   // ← add
+          case 'CHECKED_IN': return 'status-arrived';   
           case 'REJECTED':   return 'status-rejected';
           case 'CANCELLED':  return 'status-cancelled';
           case 'COMPLETED':  return 'status-completed';
@@ -295,7 +303,7 @@ export class DashboardComponent implements OnInit {
 
   confirmReservation(id: string): void {
       if (confirm('Confirmer cette réservation ?')) {
-          this.reservationService.confirmReservation(id).subscribe({
+          this.adminReservationService.confirmReservation(id).subscribe({
               next: () => this.loadReservations(),
               error: (err) => console.error('Erreur confirmation:', err)
           });
@@ -328,11 +336,11 @@ export class DashboardComponent implements OnInit {
     // Prepare table data from current page
     const tableData = this.pagedReservations.map(r => [
       r.partnerName,
-      r.tourTypes?.map(t => t.name).join(', ') || 'N/A',  // ← replaces r.tourType || 'N/A'
+      r.tourTypes?.map(t => t.name).join(', ') || 'N/A',
       `${r.numberOfPeople} pers.`,
       this.formatDate(r.checkInDate),
       `${this.calculateDuration(r)} nuits`,
-      r.source || 'N/A',
+      r.source?.name || 'N/A',     // ← was r.source || 'N/A'
       this.getStatusLabel(r.status),
       this.getPaymentStatusLabel(r.payment.paymentStatus),
       `${r.payment.totalAmount} TND`
@@ -447,15 +455,10 @@ export class DashboardComponent implements OnInit {
       day.setDate(today.getDate() + dayOffset);
       day.setHours(0, 0, 0, 0);
 
-      const dayReservations = this.reservations.filter(r => {
-        // Use serviceDate for TOURS and EXTRAS, checkInDate for HEBERGEMENT
-        const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
-          ? (r.serviceDate ?? r.checkInDate)
-          : r.checkInDate;
-
-        const resDate = new Date(rawDate);
-        resDate.setHours(0, 0, 0, 0);
-        return resDate.getTime() === day.getTime();
+      const dayReservations = this.filteredReservations.filter(r => {
+        const d = this.getRelevantDateObj(r, today);
+        if (!d) return false;
+        return d.getTime() === day.getTime();
       });
 
       if (dayReservations.length > 0) {
@@ -467,40 +470,47 @@ export class DashboardComponent implements OnInit {
             : day.toLocaleDateString('fr-FR', { weekday: 'long' });
 
         const dateStr = day.toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric'
+          day: '2-digit', month: 'long', year: 'numeric'
         });
 
         blocks.push({ date: day, label, dateStr, reservations: dayReservations });
       }
-
       dayOffset++;
     }
-
     return blocks;
   }
   get otherReservations(): Reservation[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Collect all dates already shown in the 3 blocks
     const blockDates = new Set(
       this.upcomingDayBlocks.map(b => b.date.getTime())
     );
 
+    // NO sort — backend already sorted correctly
     return this.filteredReservations.filter(r => {
-      const rawDate = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
-        ? (r.serviceDate ?? r.checkInDate)
-        : r.checkInDate;
-
-      const resDate = new Date(rawDate);
-      resDate.setHours(0, 0, 0, 0);
-
-      // Exclude reservations already shown in the 3-day blocks
-      return !blockDates.has(resDate.getTime());
+      const d = this.getRelevantDateObj(r, today);
+      if (!d) return true;
+      return !blockDates.has(d.getTime());
     });
   }
+  private getRelevantDate(r: Reservation): string | null {
+    const raw = (r.reservationType === 'TOURS' || r.reservationType === 'EXTRAS')
+      ? r.serviceDate
+      : r.checkInDate;
+    if (!raw || raw.trim() === '') return null;
+    return raw;
+  }
+
+  private getRelevantDateObj(r: Reservation, today: Date): Date | null {
+    const raw = this.getRelevantDate(r);
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return null;
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
   formatFullDate(date: Date): string {
     return date.toLocaleDateString('fr-FR', {
       weekday: 'long',
@@ -579,14 +589,14 @@ export class DashboardComponent implements OnInit {
   prevMonth(): void {
       this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
       this.buildCalendar();
-    }
-    selectCalendarDate(day: { date: Date; isCurrentMonth: boolean }): void {
+  }
+  selectCalendarDate(day: { date: Date; isCurrentMonth: boolean }): void {
     if (!day.isCurrentMonth) return;
     this.selectedDate = day.date;
     this.startDate = day.date;
     this.endDate = day.date;
     this.showDatePicker = false;
-    this.applyFilters();
+    this.adminReservationService.fetchReservationsByDate(day.date); // ← changed
   }
 
   clearCalendarDate(): void {
@@ -594,7 +604,8 @@ export class DashboardComponent implements OnInit {
     this.startDate = null;
     this.endDate = null;
     this.showDatePicker = false;
-    this.applyFilters();
+    this.statusFilter = 'all';
+    this.adminReservationService.fetchActiveReservations();
   }
 
   nextMonth(): void {
@@ -633,11 +644,10 @@ export class DashboardComponent implements OnInit {
   }
   onSearchSubmit(): void {
     if (!this.searchTerm.trim()) {
-      // Empty → reload all
-      this.reservationService.fetchAllReservations();
+      this.adminReservationService.fetchActiveReservations(); // ← was fetchAllReservations
       return;
     }
-    this.reservationService.searchReservationsByName(this.searchTerm.trim())
+    this.adminReservationService.searchReservationsByName(this.searchTerm.trim())
       .subscribe(reservations => {
         this.reservations = reservations;
         this.applyFilters();

@@ -7,12 +7,20 @@ import {
 } from '../models/reservation.model';
 import { isToday, isTomorrow, isInDateRange } from '../../utils/date-utils';
 import { HttpClient } from '@angular/common/http';
-
-// ── Status mapping ────────────────────────────────────────────────────────
-type BackendStatus = 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'CANCELLED' | 'REJECTED' | 'COMPLETED';
+import {
+  ReservationResponse,
+  ReservationTourTypeResponse,
+  ReservationTourResponse,
+  ParticipantResponse,
+  ReservationExtraResponse,
+  SourceResponse,
+  GuideResponse,
+  ChauffeurResponse,
+  BackendReservationStatus
+} from '../../../../../shared/src/models/reservation-api.model';
 type FrontendStatus = 'pending' | 'confirmed' | 'checked_in' | 'cancelled' | 'rejected' | 'completed';
 
-const STATUS_MAP: Record<BackendStatus, FrontendStatus> = {
+const STATUS_MAP: Record<BackendReservationStatus, FrontendStatus> = {
   PENDING:    'pending',
   CONFIRMED:  'confirmed',
   CHECKED_IN: 'checked_in',
@@ -20,91 +28,8 @@ const STATUS_MAP: Record<BackendStatus, FrontendStatus> = {
   REJECTED:   'rejected',
   COMPLETED:  'completed',
 };
-
-// ── Backend DTO interfaces ────────────────────────────────────────────────
-interface ReservationTourTypeResponse {
-  reservationTourTypeId: string;
-  name: string;
-  description: string;
-  duration: string;
-  adultPrice: number;
-  childPrice: number;
-  numberOfAdults: number;
-  numberOfChildren: number;
-  totalPrice: number;
-  numberOfNights: number;
-}
-
-// NEW — matches ReservationTourResponse from backend
-interface ReservationTourResponse {
-  reservationTourId: string;
-  name: string;
-  description: string;
-  duration: string;
-  adultPrice: number;
-  childPrice: number;
-  numberOfAdults: number;
-  numberOfChildren: number;
-  departureDate: string;
-  totalPrice: number;
-}
-
-interface ParticipantResponse {
-  participantId: string;
-  fullName: string;
-  age: number;
-  isAdult: boolean;
-}
-
-interface ReservationExtraResponse {
-  reservationExtraId: string;
-  reservationId: string;
-  name: string;
-  description: string;
-  duration: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  isActive: boolean;
-}
-
-interface ReservationResponse {
-  reservationId: string;
-  userId: string;
-  userName: string;
-  source: string;
-  reservationType: 'HEBERGEMENT' | 'TOURS' | 'EXTRAS';  // ← NEW
-  checkInDate: string;
-  checkOutDate: string;
-  serviceDate?: string;                                   // ← NEW
-  groupName: string;
-  groupLeaderName: string;
-  numberOfAdults: number;
-  numberOfChildren: number;
-  status: BackendStatus;
-  rejectionReason?: string;
-  totalAmount: number;
-  currency: string;
-  promoCode?: string;
-  demandeSpecial?: string;
-  tourTypes: ReservationTourTypeResponse[];
-  tours: ReservationTourResponse[];                       // ← NEW
-  participants: ParticipantResponse[];
-  extras: ReservationExtraResponse[];
-  totalExtrasAmount: number;
-  createdAt: string;
-  deletedAt?: string;
-
-  paymentSummary?: {
-    originalTotalAmount: number;
-    totalPaid: number;
-    remainingTotal: number;
-    paymentStatus: 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
-  };
-}
-
 @Injectable({ providedIn: 'root' })
-export class ReservationService {
+export class AdminReservationService {
   private readonly NOTIFS_KEY = 'sahara-notifications';
   private readonly API_URL = 'http://localhost:8080/api/reservations';
 
@@ -120,13 +45,21 @@ export class ReservationService {
   private errorSubject = new BehaviorSubject<string | null>(null);
   public error$ = this.errorSubject.asObservable();
 
+
+
   constructor(private http: HttpClient) {
     this.loadNotifications();
+  }
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // ── Mapping ──────────────────────────────────────────────────────────────
 
-  private mapToReservation(dto: ReservationResponse): Reservation {
+   private mapToReservation(dto: ReservationResponse): Reservation {
     const adults   = dto.numberOfAdults  ?? 0;
     const children = dto.numberOfChildren ?? 0;
 
@@ -156,8 +89,8 @@ export class ReservationService {
     const paidAmount = dto.paymentSummary?.totalPaid ?? 0;
 
     const paymentStatus: 'pending' | 'partial' | 'completed' =
-      dto.paymentSummary?.paymentStatus === 'PAID'         ? 'completed' :
-      dto.paymentSummary?.paymentStatus === 'PARTIALLY_PAID' ? 'partial'  : 'pending';
+      dto.paymentSummary?.paymentStatus === 'PAID'           ? 'completed' :
+      dto.paymentSummary?.paymentStatus === 'PARTIALLY_PAID' ? 'partial'   : 'pending';
 
     const tourTypes: TourTypeSnapshot[] = (dto.tourTypes ?? []).map(t => ({
       reservationTourTypeId: t.reservationTourTypeId,
@@ -172,7 +105,6 @@ export class ReservationService {
       numberOfNights:        t.numberOfNights ?? null,
     }));
 
-    // NEW — map tours array (used when reservationType === 'TOURS')
     const tours: TourSnapshot[] = (dto.tours ?? []).map(t => ({
       reservationTourId: t.reservationTourId,
       name:              t.name,
@@ -186,8 +118,8 @@ export class ReservationService {
       totalPrice:        t.totalPrice,
     }));
 
-    const primaryTour   = tourTypes[0];
-    const frontendStatus: Reservation['status'] = STATUS_MAP[dto.status] ?? 'pending';
+    const primaryTour    = tourTypes[0];
+    const frontendStatus = STATUS_MAP[dto.status] ?? 'pending';
 
     return {
       id:                dto.reservationId,
@@ -196,7 +128,9 @@ export class ReservationService {
       partnerName:       dto.userName,
       userId:            dto.userId,
       userName:          dto.userName,
-      source:            dto.source,
+      source:            dto.source,              // ← now SourceResponse object
+      guides:            dto.guides    ?? [],     // ← NEW
+      chauffeurs:        dto.chauffeurs ?? [],    // ← NEW
       groupName:         dto.groupName,
       groupLeaderName:   dto.groupLeaderName,
       numberOfPeople:    adults + children,
@@ -204,10 +138,10 @@ export class ReservationService {
       children,
       numberOfAdults:    adults,
       numberOfChildren:  children,
-      checkInDate:       dto.checkInDate,
-      checkOutDate:      dto.checkOutDate,
-      serviceDate:       dto.serviceDate,          // ← NEW
-      reservationType:   dto.reservationType,       // ← NEW
+      checkInDate:       dto.checkInDate ?? '',
+      checkOutDate:      dto.checkOutDate ?? '',
+      serviceDate:       dto.serviceDate,
+      reservationType:   dto.reservationType,
       status:            frontendStatus,
       rejectionReason:   dto.rejectionReason,
       promoCode:         dto.promoCode,
@@ -217,7 +151,7 @@ export class ReservationService {
       totalExtrasAmount: dto.totalExtrasAmount,
       deletedAt:         dto.deletedAt ?? null,
       tourTypes,
-      tours,                                        // ← NEW
+      tours,
       groupInfo: {
         participants,
         specialRequests: dto.demandeSpecial ?? undefined,
@@ -276,7 +210,7 @@ export class ReservationService {
 
   // ✅ NEW — calls the backend API
   getReservationsByStatus(status: FrontendStatus): Observable<Reservation[]> {
-    const backendStatus = status.toUpperCase() as BackendStatus;
+    const backendStatus = status.toUpperCase() as BackendReservationStatus;
     return this.http.get<ReservationResponse[]>(
       `${this.API_URL}/status/${backendStatus}`
     ).pipe(
@@ -324,7 +258,7 @@ export class ReservationService {
 
   // ── Status (admin-only actions stay here) ───────────────────────────────
 
-  updateStatus(id: string, status: BackendStatus, rejectionReason?: string): Observable<Reservation> {
+  updateStatus(id: string, status: BackendReservationStatus, rejectionReason?: string): Observable<Reservation> {
     let params = `?status=${status}`;
     if (rejectionReason) params += `&rejectionReason=${encodeURIComponent(rejectionReason)}`;
 
@@ -439,4 +373,104 @@ export class ReservationService {
       map(dtos => dtos.map(dto => this.mapToReservation(dto)))
     );
   }
+
+  // ── Staff management — admin only ─────────────────────────────
+
+  addStaff(reservationId: string, request: {
+    guides?: { firstName: string; lastName: string; phoneNumber?: string }[];
+    chauffeurs?: { firstName: string; lastName: string; phoneNumber?: string }[];
+  }): Observable<ReservationResponse> {
+    return this.http.post<ReservationResponse>(
+      `${this.API_URL}/${reservationId}/staff`, request
+    );
+  }
+
+  updateGuide(reservationId: string, guideId: string, request: {
+    firstName?: string; lastName?: string; phoneNumber?: string;
+  }): Observable<ReservationResponse> {
+    return this.http.patch<ReservationResponse>(
+      `${this.API_URL}/${reservationId}/staff/guides/${guideId}`, request
+    );
+  }
+
+  deleteGuide(reservationId: string, guideId: string): Observable<string> {
+    return this.http.delete<string>(
+      `${this.API_URL}/${reservationId}/staff/guides/${guideId}`
+    );
+  }
+
+  updateChauffeur(reservationId: string, chauffeurId: string, request: {
+    firstName?: string; lastName?: string; phoneNumber?: string;
+  }): Observable<ReservationResponse> {
+    return this.http.patch<ReservationResponse>(
+      `${this.API_URL}/${reservationId}/staff/chauffeurs/${chauffeurId}`, request
+    );
+  }
+
+  deleteChauffeur(reservationId: string, chauffeurId: string): Observable<string> {
+    return this.http.delete<string>(
+      `${this.API_URL}/${reservationId}/staff/chauffeurs/${chauffeurId}`
+    );
+  }
+
+  fetchActiveReservations(): void {
+    this.loadingSubject.next(true);
+    this.errorSubject.next(null);
+
+    this.http.get<ReservationResponse[]>(`${this.API_URL}/active`).pipe(
+      tap(dtos => {
+        const reservations = dtos.map(dto => this.mapToReservation(dto));
+        this.reservationsSubject.next(reservations);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('Failed to load active reservations:', err);
+        this.errorSubject.next('Failed to load reservations. Please try again.');
+        this.loadingSubject.next(false);
+        return of([]);
+      })
+    ).subscribe();
+  }
+  fetchActiveReservationsByDate(date: Date): void {
+    this.loadingSubject.next(true);
+    this.errorSubject.next(null);
+
+    const dateStr = this.formatDate(date);
+
+    this.http.get<ReservationResponse[]>(`${this.API_URL}/active?date=${dateStr}`).pipe(
+      tap(dtos => {
+        const reservations = dtos.map(dto => this.mapToReservation(dto));
+        this.reservationsSubject.next(reservations);
+        this.loadingSubject.next(false);
+      }),
+      catchError(err => {
+        console.error('Failed to load reservations by date:', err);
+        this.errorSubject.next('Failed to load reservations. Please try again.');
+        this.loadingSubject.next(false);
+        return of([]);
+      })
+    ).subscribe();
+  }
+
+  fetchReservationsByDate(date: Date): void {
+
+  this.loadingSubject.next(true);
+  this.errorSubject.next(null);
+
+  const dateStr = this.formatDate(date);
+
+  this.http.get<ReservationResponse[]>(`${this.API_URL}/by-date?date=${dateStr}`).pipe(
+    tap(dtos => {
+      const reservations = dtos.map(dto => this.mapToReservation(dto));
+      this.reservationsSubject.next(reservations);
+      this.loadingSubject.next(false);
+    }),
+    catchError(err => {
+      console.error('Failed to load reservations by date:', err);
+      this.errorSubject.next('Failed to load reservations. Please try again.');
+      this.loadingSubject.next(false);
+      return of([]);
+    })
+  ).subscribe();
+}
 }

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ReservationService } from '../../core/services/reservation.service';
+import { AdminReservationService } from '../../core/services/admin-reservation.service';
 import { Reservation } from '../../core/models/reservation.model';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
@@ -27,10 +27,10 @@ export class InvoicesListComponent implements OnInit {
   startDate: string = '';
   endDate: string = '';
 
-  constructor(private reservationService: ReservationService) { }
+  constructor(private adminReservationService: AdminReservationService) { }
 
   ngOnInit(): void {
-    this.reservationService.getAllReservations().subscribe(res => {
+    this.adminReservationService.getAllReservations().subscribe(res => {
       // Show all confirmed/arrived/completed as invoices (exclude cancelled)
       this.invoices = res.filter(r => r.status !== 'cancelled');
       this.filteredInvoices = [...this.invoices];
@@ -68,7 +68,7 @@ export class InvoicesListComponent implements OnInit {
   cancelInvoice(invoice: Reservation): void {
     if (confirm(`Êtes-vous sûr de vouloir annuler la facture ${this.getInvoiceNumber(invoice)} ?`)) {
       // Update the reservation status to cancelled
-      const updatedReservation = this.reservationService.updateReservation(invoice.id, { status: 'cancelled' });
+      const updatedReservation = this.adminReservationService.updateReservation(invoice.id, { status: 'cancelled' });
       
       if (updatedReservation) {
         // Remove from the list

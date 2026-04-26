@@ -10,6 +10,8 @@ import { UserResponse } from '../../../../../../shared/src/models/user.model';
 import { ParticipantRequest, ReservationRequest } from '../../../../../../shared/src/models/reservation-api.model';
 import { PaymentModalComponent } from '../../../../../../shared/src/lib/components/payment-modal/payment-modal.component';
 import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
+import { SourceService } from '../../../core/services/source.service';
+import { SourceResponse } from '../../../../../../shared/src/models/reservation-api.model';
 
 @Component({
   selector: 'app-tours',
@@ -28,7 +30,6 @@ import { PaymentRequest } from '../../../../../../shared/src/models/transaction.
 })
 export class ToursComponent implements OnInit {
 
-  readonly SOURCE = 'ADMIN-APP';
 
   form!: FormGroup;
   isSubmitting = false;
@@ -45,10 +46,16 @@ export class ToursComponent implements OnInit {
   selectedExtras: Record<string, number> = {};
   showPaymentModal  = false;
   initialPayment: PaymentRequest | null = null;
+  sources: SourceResponse[] = [];
+  isLoadingSources = false;
+
+  serviceDateDisplay = '';
+  serviceDateError   = '';
 
   constructor(
     private fb: FormBuilder,
     private reservationService: ReservationService,
+    private sourceService: SourceService, 
     private router: Router
   ) {}
 
@@ -57,21 +64,29 @@ export class ToursComponent implements OnInit {
     this.loadUsers();
     this.loadTours();
     this.loadExtras();
+    this.loadSources();
+  }
+  loadSources(): void {
+    this.isLoadingSources = true;
+    this.sourceService.getAll().subscribe({
+      next: s => { this.sources = s; this.isLoadingSources = false; },
+      error: () => this.isLoadingSources = false
+    });
   }
 
-    private buildForm(): void {
+  private buildForm(): void {
     this.form = this.fb.group({
-        userId:           ['', Validators.required],
-        selectedTourId:   ['', Validators.required],
-        serviceDate:      ['', Validators.required],   // ← was departureDate
-        numberOfAdults:   [2, [Validators.required, Validators.min(1)]],
-        numberOfChildren: [0, Validators.min(0)],
-        groupLeaderName:  [''],
-        groupName:        [''],
-        demandeSpecial:   [''],
-        currency:         ['TND'],
+      userId:           ['', Validators.required],
+      sourceId:         ['', Validators.required],
+      selectedTourId:   ['', Validators.required],
+      serviceDate:      ['', Validators.required], // ← no default
+      numberOfAdults:   [2, [Validators.required, Validators.min(1)]],
+      numberOfChildren: [0, Validators.min(0)],
+      groupLeaderName:  [''],
+      groupName:        [''],
+      demandeSpecial:   [''],
     });
-    }
+  }
 
   // ─── Loaders ───────────────────────────────────────────────────
 
@@ -157,6 +172,7 @@ export class ToursComponent implements OnInit {
 
     canSubmit(): boolean {
     return !!this.form.get('userId')?.value
+        && !!this.form.get('sourceId')?.value
         && !!this.form.get('selectedTourId')?.value
         && !!this.form.get('serviceDate')?.value    // ← was departureDate
         && this.adults >= 1;
@@ -181,7 +197,7 @@ export class ToursComponent implements OnInit {
 
     const request: ReservationRequest = {
       userId:           fv.userId,
-      source:           this.SOURCE,
+      sourceId:         fv.sourceId,
       reservationType:  'TOURS',
       serviceDate:      fv.serviceDate as string,
       numberOfAdults:   this.adults,
@@ -189,7 +205,6 @@ export class ToursComponent implements OnInit {
       groupLeaderName:  fv.groupLeaderName?.trim() || undefined,
       groupName:        fv.groupName?.trim()       || undefined,
       demandeSpecial:   fv.demandeSpecial?.trim()  || undefined,
-      currency:         fv.currency                || 'TND',
       tours: [{ tourId: fv.selectedTourId as string }],
       extras:           extrasPayload.length > 0 ? extrasPayload : undefined,
       participants:     participantsPayload.length > 0 ? participantsPayload : undefined,
@@ -200,6 +215,102 @@ export class ToursComponent implements OnInit {
       next: () => { this.isSubmitting = false; this.router.navigate(['/reservations']); },
       error: err => { console.error('Erreur création tour:', err); this.isSubmitting = false; }
     });
+  }
+  formatDateInput(event: Event, field: string): void {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.replace(/\D/g, ''); // digits only
+    if (val.length >= 3) val = val.slice(0, 2) + '/' + val.slice(2);
+    if (val.length >= 6) val = val.slice(0, 5) + '/' + val.slice(5);
+    input.value = val; // update displayed value with slashes
+
+    // Only update form when full date entered (dd/MM/yyyy = 10 chars)
+    if (val.length === 10) {
+      const [d, m, y] = val.split('/');
+      const iso = `${y}-${m}-${d}`; // yyyy-MM-dd for backend
+      this.form.get(field)?.setValue(iso, { emitEvent: true });
+    } else {
+      this.form.get(field)?.setValue('', { emitEvent: true });
+    }
+  }
+
+
+// Track raw display value separately to avoid full reset on partial delete
+
+
+  onDateTextInput(event: Event, field: string): void {
+    const input = event.target as HTMLInputElement;
+    const val   = input.value;
+
+    this.serviceDateError = '';
+
+    // Only validate when we have a complete date
+    if (val.length === 10 && val[2] === '/' && val[5] === '/') {
+      const [d, m, y] = val.split('/');
+      const iso  = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      const date = new Date(iso);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (isNaN(date.getTime()) || +d > 31 || +m > 12) {
+        this.serviceDateError = '⚠️ Date invalide.';
+        this.form.get(field)?.setValue('', { emitEvent: false });
+      } else if (date < today) {
+        this.serviceDateError = '⚠️ La date doit être dans le futur.';
+        this.form.get(field)?.setValue('', { emitEvent: false });
+      } else {
+        this.form.get(field)?.setValue(iso, { emitEvent: true });
+      }
+    } else {
+      // Incomplete — clear form value but don't show error yet
+      this.form.get(field)?.setValue('', { emitEvent: false });
+    }
+
+    this.serviceDateDisplay = val;
+  }
+
+  onDatePickerChange(event: Event, field: string): void {
+    const iso = (event.target as HTMLInputElement).value;
+    if (!iso) return;
+
+    const date  = new Date(iso);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    this.serviceDateError = '';
+
+    if (date < today) {
+      this.serviceDateError = '⚠️ La date doit être dans le futur.';
+      this.form.get(field)?.setValue('', { emitEvent: false });
+      this.serviceDateDisplay = '';
+    } else {
+      this.form.get(field)?.setValue(iso, { emitEvent: true });
+      const display = this.toDisplayDate(iso);
+      this.serviceDateDisplay = display;
+      const wrapper   = (event.target as HTMLElement).closest('.date-wrapper');
+      const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
+      if (textInput) textInput.value = display;
+    }
+  }
+
+  openPicker(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
+    const picker  = wrapper?.querySelector('.date-picker') as HTMLInputElement;
+    if (picker) {
+      picker.style.pointerEvents = 'auto';
+      // Set min date to today to block past dates in the calendar too
+      const today = new Date().toISOString().split('T')[0];
+      picker.min = today;
+      picker.showPicker?.();
+      setTimeout(() => { picker.style.pointerEvents = 'none'; }, 500);
+    }
+  }
+
+  toDisplayDate(val: string): string {
+    if (!val || !val.includes('-')) return '';
+    const [y, m, d] = val.split('-');
+    return `${d}/${m}/${y}`;
   }
   openPaymentModal(): void  { this.showPaymentModal = true; }
   closePaymentModal(): void { this.showPaymentModal = false; }
@@ -258,6 +369,10 @@ export class ToursComponent implements OnInit {
 
   hasParticipants(): boolean {
     return this.participants.some(p => p.fullName.trim() !== '');
+  }
+  getSelectedSourceName(): string {
+    const id = this.form.get('sourceId')?.value;
+    return this.sources.find(s => s.sourceId === id)?.name ?? '';
   }
 
 }

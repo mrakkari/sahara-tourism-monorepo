@@ -176,7 +176,7 @@ export class ResCampingService {
       partnerId:         dto.userId,
       partnerName:       dto.userName,
       userName:          dto.userName,
-      source:            dto.source,
+      source:            dto.source?.name,
       groupName:         dto.groupName,
       groupLeaderName:   dto.groupLeaderName,
       numberOfPeople:    adults + children,
@@ -409,4 +409,47 @@ export class ResCampingService {
         catchError(() => of([]))
     );
    }
+
+
+  fetchCampingActive(): Observable<Reservation[]> {
+    return this.http.get<ReservationResponse[]>(`${this.API_URL}/camping/active`).pipe(
+      map(dtos => dtos.map(d => this.mapToReservation(d))),
+      catchError(() => of([]))
+    );
+  }
+
+  fetchCampingByDate(date: Date): Observable<Reservation[]> {
+    const dateStr = this.formatDate(date);
+    return this.http.get<ReservationResponse[]>(
+      `${this.API_URL}/camping/by-date?date=${dateStr}`
+    ).pipe(
+      map(dtos => dtos.map(d => this.mapToReservation(d))),
+      catchError(() => of([]))
+    );
+  }
+
+  fetchCampingByStatus(status: 'CONFIRMED' | 'CHECKED_IN'): Observable<Reservation[]> {
+    return this.http.get<ReservationResponse[]>(
+      `${this.API_URL}/camping/status?status=${status}`
+    ).pipe(
+      map(dtos => dtos.map(d => this.mapToReservation(d))),
+      catchError(() => of([]))
+    );
+  }
+
+  searchCampingByName(name: string): Observable<Reservation[]> {
+    return this.http.get<ReservationResponse[]>(
+      `${this.API_URL}/camping/search?name=${encodeURIComponent(name)}`
+    ).pipe(
+      map(dtos => dtos.map(d => this.mapToReservation(d))),
+      catchError(() => of([]))
+    );
+  }
+
+  private formatDate(date: Date): string {
+    const year  = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day   = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 }

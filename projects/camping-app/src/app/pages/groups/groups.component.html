@@ -34,15 +34,58 @@
   <!-- Search & Filters -->
   <!-- Search & Filters -->
   <div class="filters-section" *ngIf="!loading">
+
+    <!-- Search box -->
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input type="text" 
+      <input type="text"
             [(ngModel)]="searchTerm"
             placeholder="Rechercher par nom du client ou partenaire..."
             (keyup.enter)="onSearchSubmit()"
             class="search-input">
       <button class="btn btn-primary" (click)="onSearchSubmit()">Rechercher</button>
     </div>
+
+    <!-- Calendar icon -->
+    <div class="calendar-wrapper">
+      <button class="btn-calendar"
+              (click)="toggleDatePicker($event)"
+              [class.active]="selectedDate"
+              title="Filtrer par date">
+        📅
+        <span *ngIf="selectedDate" class="date-indicator">
+          {{ selectedDate | date:'dd/MM' }}
+        </span>
+      </button>
+
+      <div class="calendar-dropdown" *ngIf="showDatePicker" (click)="$event.stopPropagation()">
+        <div class="cal-header">
+          <button class="cal-nav" (click)="prevMonth()">‹</button>
+          <span class="cal-month-label">{{ calendarMonthLabel }}</span>
+          <button class="cal-nav" (click)="nextMonth()">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span *ngFor="let d of ['Lu','Ma','Me','Je','Ve','Sa','Di']">{{ d }}</span>
+        </div>
+        <div class="cal-grid">
+          <button
+            *ngFor="let day of calendarDays"
+            class="cal-day"
+            [class.other-month]="!day.isCurrentMonth"
+            [class.today]="day.isToday"
+            [class.selected]="day.isSelected"
+            [disabled]="!day.isCurrentMonth"
+            (click)="selectCalendarDate(day)">
+            {{ day.date.getDate() }}
+          </button>
+        </div>
+        <div class="cal-footer" *ngIf="selectedDate">
+          <button class="cal-clear" (click)="clearCalendarDate()">✕ Effacer la date</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status + Reset -->
     <div class="filter-controls">
       <div class="filter-item">
         <label>Statut:</label>
@@ -102,6 +145,9 @@
           <!-- Tour Type — badges like admin app -->
           <td class="col-tour">
             <div class="tour-types-cell">
+              <span class="res-type-chip res-type-{{ r.reservationType?.toLowerCase() }}">
+                {{ getTypeLabel(r) }}
+              </span>
               <span class="tour-type-badge" *ngFor="let name of getTourNames(r)">
                 {{ name }}
               </span>

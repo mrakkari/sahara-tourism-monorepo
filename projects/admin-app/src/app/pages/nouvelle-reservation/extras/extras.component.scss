@@ -869,3 +869,46 @@ textarea.input { resize: vertical; min-height: 80px; line-height: 1.5; }
   align-items: center;
   gap: 6px;
 }
+
+.date-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .date-display {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding-right: 40px;
+    background: #fff;
+  }
+
+  .date-picker {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    left: auto;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    z-index: 10;
+    pointer-events: none;
+    border: none;
+    padding: 0;
+  }
+
+  .date-icon {
+    position: absolute;
+    right: 12px;
+    z-index: 3;
+    cursor: pointer;
+    font-size: 1rem;
+    user-select: none;
+  }
+}
+
+.date-error {
+  font-size: 0.78rem;
+  color: #dc2626;
+  margin-top: 5px;
+}

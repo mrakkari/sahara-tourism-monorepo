@@ -1,12 +1,12 @@
-// shared/src/components/payment-modal/payment-modal.component.ts
-
 import {
-  Component, Input, Output, EventEmitter, OnInit
+  Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } from '../../../models/transaction.model';
-
+import {
+  PAYMENT_METHOD_LABELS, CURRENCY_LABELS, CURRENCY_RATES,
+  PaymentMethod, PaymentRequest, PaymentSummary, Currency
+} from '../../../models/transaction.model';
 
 @Component({
   selector: 'app-payment-modal',
@@ -27,16 +27,33 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
       <div class="payment-summary" *ngIf="summary">
         <div class="sum-row">
           <span>Total général</span>
-          <strong>{{ summary.originalTotalAmount | number:'1.2-2' }} {{ currency }}</strong>
+          <strong>{{ summary.originalTotalAmount | number:'1.2-2' }} {{ effectiveCurrency }}</strong>
         </div>
         <div class="sum-row paid">
           <span>Déjà payé</span>
-          <strong>{{ summary.totalPaid | number:'1.2-2' }} {{ currency }}</strong>
+          <strong>{{ summary.totalPaid | number:'1.2-2' }} {{ effectiveCurrency }}</strong>
         </div>
         <div class="sum-row remaining">
           <span>Reste à payer</span>
-          <strong>{{ summary.remainingTotal | number:'1.2-2' }} {{ currency }}</strong>
+          <strong>{{ summary.remainingTotal | number:'1.2-2' }} {{ effectiveCurrency }}</strong>
         </div>
+      </div>
+
+      <!-- ── Currency selection — only shown on first payment (UNPAID) ── -->
+      <div class="field" *ngIf="isFirstPayment">
+        <label>Devise <span class="req">*</span></label>
+        <select class="input" formControlName="currency" (change)="onCurrencyChange()">
+          <option *ngFor="let c of currencies" [value]="c.value">{{ c.label }}</option>
+        </select>
+        <p class="currency-hint" *ngIf="selectedCurrency !== 'TND' && baseTotalTnd > 0">
+          Total converti : {{ convertedTotal | number:'1.2-2' }} {{ selectedCurrency }}
+        </p>
+      </div>
+
+      <!-- ── Currency locked — shown when payment already started ── -->
+      <div class="currency-locked" *ngIf="!isFirstPayment">
+        <span class="lock-icon">🔒</span>
+        <span>Devise fixée : <strong>{{ effectiveCurrency }}</strong></span>
       </div>
 
       <!-- Amount -->
@@ -51,7 +68,7 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
             min="0.01"
             step="0.01"
           />
-          <span class="currency-tag">{{ currency }}</span>
+          <span class="currency-tag">{{ effectiveCurrency }}</span>
         </div>
         <p class="field-error"
           *ngIf="form.get('amount')?.invalid && form.get('amount')?.touched">
@@ -64,9 +81,7 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
         <label>Méthode de paiement <span class="req">*</span></label>
         <select class="input" formControlName="paymentMethod">
           <option value="">— Choisir —</option>
-          <option *ngFor="let m of paymentMethods" [value]="m.value">
-            {{ m.label }}
-          </option>
+          <option *ngFor="let m of paymentMethods" [value]="m.value">{{ m.label }}</option>
         </select>
         <p class="field-error"
           *ngIf="form.get('paymentMethod')?.invalid && form.get('paymentMethod')?.touched">
@@ -74,21 +89,14 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
         </p>
       </div>
 
-      <!-- Error from server -->
-      <div class="server-error" *ngIf="serverError">
-        ⚠️ {{ serverError }}
-      </div>
+      <!-- Server error -->
+      <div class="server-error" *ngIf="serverError">⚠️ {{ serverError }}</div>
 
     </div>
 
     <div class="modal-footer">
-      <button class="btn-secondary" (click)="onClose()" [disabled]="isSubmitting">
-        Annuler
-      </button>
-      <button
-        class="btn-primary"
-        (click)="onSubmit()"
-        [disabled]="form.invalid || isSubmitting">
+      <button class="btn-secondary" (click)="onClose()" [disabled]="isSubmitting">Annuler</button>
+      <button class="btn-primary" (click)="onSubmit()" [disabled]="form.invalid || isSubmitting">
         <ng-container *ngIf="!isSubmitting">✅ Confirmer le paiement</ng-container>
         <ng-container *ngIf="isSubmitting">⏳ Traitement…</ng-container>
       </button>
@@ -124,7 +132,6 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
       display: flex; gap: 12px; justify-content: flex-end;
       padding: 16px 24px; border-top: 1px solid #e2e8f0;
     }
-
     .payment-summary {
       background: #f8fafc; border-radius: 8px; padding: 16px;
       display: flex; flex-direction: column; gap: 8px;
@@ -135,11 +142,9 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
     }
     .sum-row.paid strong { color: #10b981; }
     .sum-row.remaining strong { color: #ef4444; font-size: 1rem; }
-
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field label { font-size: 0.875rem; font-weight: 500; color: #374151; }
     .req { color: #ef4444; }
-
     .amount-input-wrap {
       position: relative; display: flex; align-items: center;
     }
@@ -148,20 +153,27 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
       position: absolute; right: 12px;
       font-size: 0.85rem; font-weight: 600; color: #64748b;
     }
-
     .input {
       padding: 10px 12px; border: 1px solid #e2e8f0;
       border-radius: 8px; font-size: 0.95rem; width: 100%;
       outline: none; transition: border-color 0.2s; box-sizing: border-box;
     }
     .input:focus { border-color: #3b82f6; }
-
     .field-error { font-size: 0.8rem; color: #ef4444; margin: 0; }
     .server-error {
       background: #fef2f2; border: 1px solid #fecaca;
       border-radius: 8px; padding: 12px; font-size: 0.875rem; color: #dc2626;
     }
-
+    .currency-hint {
+      font-size: 0.78rem; color: #f59e0b; font-weight: 600; margin: 0;
+    }
+    .currency-locked {
+      display: flex; align-items: center; gap: 8px;
+      background: #f1f5f9; border: 1px solid #e2e8f0;
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 0.85rem; color: #475569;
+    }
+    .lock-icon { font-size: 1rem; }
     .btn-primary {
       padding: 10px 20px; background: #3b82f6; color: white;
       border: none; border-radius: 8px; font-size: 0.9rem;
@@ -169,7 +181,6 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
     }
     .btn-primary:hover:not(:disabled) { background: #2563eb; }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-
     .btn-secondary {
       padding: 10px 20px; background: white; color: #64748b;
       border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;
@@ -181,16 +192,18 @@ import { PAYMENT_METHOD_LABELS, PaymentMethod, PaymentRequest, PaymentSummary } 
 })
 export class PaymentModalComponent implements OnInit {
 
-  // When used inline in forms (no reservationId yet — payment sent with request)
   @Input() inlineMode = false;
-
-  // When used in detail page (payment recorded against existing reservation)
   @Input() summary?: PaymentSummary;
-  @Input() currency = 'TND';
+
+  // ── NEW inputs ──────────────────────────────────────────────────
+  // isFirstPayment: true when paymentStatus === 'UNPAID'
+  @Input() isFirstPayment = true;
+  // lockedCurrency: currency of existing transactions (when not first payment)
+  @Input() lockedCurrency: Currency = 'TND';
+  // baseTotalTnd: total in TND before conversion (for inline mode preview)
+  @Input() baseTotalTnd = 0;
 
   @Output() closed = new EventEmitter<void>();
-
-  // Inline mode: emits the PaymentRequest to include in ReservationRequest
   @Output() paymentConfirmed = new EventEmitter<PaymentRequest>();
 
   form!: FormGroup;
@@ -200,13 +213,37 @@ export class PaymentModalComponent implements OnInit {
   paymentMethods: { value: PaymentMethod; label: string }[] = Object.entries(PAYMENT_METHOD_LABELS)
     .map(([value, label]) => ({ value: value as PaymentMethod, label }));
 
+  currencies: { value: Currency; label: string }[] = Object.entries(CURRENCY_LABELS)
+    .map(([value, label]) => ({ value: value as Currency, label }));
+
   constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
       amount:        [null, [Validators.required, Validators.min(0.01)]],
-      paymentMethod: ['',   Validators.required],
+      paymentMethod: ['', Validators.required],
+      currency:      [this.isFirstPayment ? 'TND' : this.lockedCurrency, Validators.required],
     });
+  }
+
+  // ── Computed getters ──────────────────────────────────────────────
+
+  get selectedCurrency(): Currency {
+    return this.form.get('currency')?.value ?? 'TND';
+  }
+
+  get effectiveCurrency(): Currency {
+    return this.isFirstPayment ? this.selectedCurrency : this.lockedCurrency;
+  }
+
+  get convertedTotal(): number {
+    const rate = CURRENCY_RATES[this.selectedCurrency] ?? 1;
+    return Math.round(this.baseTotalTnd * rate * 100) / 100;
+  }
+
+  onCurrencyChange(): void {
+    // Reset amount when currency changes to avoid confusion
+    this.form.get('amount')?.reset();
   }
 
   onClose(): void {
@@ -222,22 +259,17 @@ export class PaymentModalComponent implements OnInit {
     const request: PaymentRequest = {
       amount:        this.form.value.amount,
       paymentMethod: this.form.value.paymentMethod,
-      currency:      this.currency,
+      currency:      this.effectiveCurrency,
     };
 
-    // Always emit — parent decides what to do with it
-    // In inline mode: parent adds it to ReservationRequest.initialPayment
-    // In detail mode: parent calls reservationService.recordPayment()
     this.paymentConfirmed.emit(request);
   }
 
-  // Called by parent to show server error without closing modal
   setError(message: string): void {
     this.serverError = message;
     this.isSubmitting = false;
   }
 
-  // Called by parent to set loading state
   setSubmitting(value: boolean): void {
     this.isSubmitting = value;
   }

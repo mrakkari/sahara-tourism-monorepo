@@ -1,6 +1,4 @@
-// camping-app/src/app/core/pages/groups/groups.component.ts
-
-import { Component, effect, OnInit } from '@angular/core';
+import { Component, effect, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,8 +8,6 @@ import { ResCampingService } from '../../services/res-camping.service';
 import { Reservation } from '../../models/reservation.model';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { NotificationService, ToastService } from '../../../../../shared/src/public-api';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-groups',
@@ -39,15 +35,18 @@ export class GroupsComponent implements OnInit {
 
   statusFilter = 'all';
   searchTerm   = '';
-  hasSearched  = false;
+
+  // Calendar
+  showDatePicker  = false;
+  selectedDate: Date | null = null;
+  calendarDate    = new Date();
+  calendarDays: { date: Date; isCurrentMonth: boolean; isSelected: boolean; isToday: boolean }[] = [];
 
   currentPage  = 1;
   itemsPerPage = 15;
   Math         = Math;
 
   private lastUnreadCount = 0;
-  private searchSubject = new Subject<string>();
-  private currentStatusLoaded = 'all';
 
   constructor(
     private resCampingService:   ResCampingService,
@@ -65,39 +64,24 @@ export class GroupsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadInitialData();
-
-    this.searchSubject.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      switchMap((term: string) => {
-        if (!term.trim()) {
-          // Empty search → respect current status
-          if (this.statusFilter === 'all') {
-            return this.resCampingService.fetchConfirmedAndCheckedIn();
-          } else {
-            const backendStatus = this.statusFilter === 'checked_in' ? 'CHECKED_IN' : 'CONFIRMED';
-            return this.resCampingService.fetchByStatus(backendStatus as any);
-          }
-        }
-        // Search by name — filter to confirmed+checked_in is done inside the service method
-        return this.resCampingService.searchReservationsByName(term);
-      })
-    ).subscribe((reservations: Reservation[]) => {
-      this.allReservations = reservations;
-      this.applyFilters();
-    });
   }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.calendar-wrapper')) {
+      this.showDatePicker = false;
+    }
+  }
+
+  // ── Load ──────────────────────────────────────────────────────
 
   loadInitialData(): void {
     this.loading = true;
-    this.resCampingService.fetchConfirmedAndCheckedIn().subscribe({
+    this.resCampingService.fetchCampingActive().subscribe({
       next: reservations => {
-        this.allReservations = reservations.sort((a, b) => {
-          if (a.status === 'confirmed' && b.status !== 'confirmed') return -1;
-          if (b.status === 'confirmed' && a.status !== 'confirmed') return 1;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-        this.filteredReservations = this.allReservations;
+        this.allReservations      = reservations;
+        this.filteredReservations = reservations;
         this.updatePagedData();
         this.loading = false;
       },
@@ -105,47 +89,166 @@ export class GroupsComponent implements OnInit {
     });
   }
 
-  get totalPages(): number { return Math.ceil(this.filteredReservations.length / this.itemsPerPage); }
+  // ── Search ────────────────────────────────────────────────────
 
-  applyFilters(): void {
-    this.hasSearched = true;
-    let filtered = this.allReservations;
+  onSearchSubmit(): void {
+    if (!this.searchTerm.trim()) {
+      this.reloadBasedOnFilters();
+      return;
+    }
+    this.loading = true;
+    this.resCampingService.searchCampingByName(this.searchTerm.trim()).subscribe({
+      next: reservations => {
+        this.allReservations = reservations;
+        this.applyLocalFilters();
+        this.loading = false;
+      },
+      error: () => this.loading = false
+    });
+  }
 
-    // Status still filtered locally as a safety net
+  // ── Status ────────────────────────────────────────────────────
+
+  onStatusChange(): void {
+    if (this.selectedDate) {
+      // date already loaded — just filter locally
+      this.applyLocalFilters();
+      return;
+    }
+    this.loading = true;
+    if (this.statusFilter === 'all') {
+      this.resCampingService.fetchCampingActive().subscribe({
+        next: res => { this.allReservations = res; this.applyLocalFilters(); this.loading = false; },
+        error: () => this.loading = false
+      });
+    } else {
+      const backendStatus = this.statusFilter === 'checked_in' ? 'CHECKED_IN' : 'CONFIRMED';
+      this.resCampingService.fetchCampingByStatus(backendStatus).subscribe({
+        next: res => { this.allReservations = res; this.applyLocalFilters(); this.loading = false; },
+        error: () => this.loading = false
+      });
+    }
+  }
+
+  // ── Calendar ──────────────────────────────────────────────────
+
+  toggleDatePicker(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showDatePicker = !this.showDatePicker;
+    if (this.showDatePicker) {
+      this.calendarDate = this.selectedDate ? new Date(this.selectedDate) : new Date();
+      this.buildCalendar();
+    }
+  }
+
+  buildCalendar(): void {
+    const year  = this.calendarDate.getFullYear();
+    const month = this.calendarDate.getMonth();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay  = new Date(year, month + 1, 0);
+
+    let startDay = firstDay.getDay();
+    startDay = startDay === 0 ? 6 : startDay - 1;
+
+    const days: { date: Date; isCurrentMonth: boolean; isSelected: boolean; isToday: boolean }[] = [];
+
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = new Date(year, month, 0 - i);
+      days.push({ date: d, isCurrentMonth: false, isSelected: false, isToday: false });
+    }
+
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      const d = new Date(year, month, i);
+      d.setHours(0, 0, 0, 0);
+      const isSelected = this.selectedDate
+        ? d.getTime() === new Date(this.selectedDate).setHours(0, 0, 0, 0)
+        : false;
+      days.push({ date: d, isCurrentMonth: true, isSelected, isToday: d.getTime() === today.getTime() });
+    }
+
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(year, month + 1, i);
+      days.push({ date: d, isCurrentMonth: false, isSelected: false, isToday: false });
+    }
+
+    this.calendarDays = days;
+  }
+
+  prevMonth(): void {
+    this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() - 1, 1);
+    this.buildCalendar();
+  }
+
+  nextMonth(): void {
+    this.calendarDate = new Date(this.calendarDate.getFullYear(), this.calendarDate.getMonth() + 1, 1);
+    this.buildCalendar();
+  }
+
+  get calendarMonthLabel(): string {
+    return this.calendarDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  }
+
+  selectCalendarDate(day: { date: Date; isCurrentMonth: boolean }): void {
+    if (!day.isCurrentMonth) return;
+    this.selectedDate    = day.date;
+    this.showDatePicker  = false;
+    this.loading         = true;
+
+    this.resCampingService.fetchCampingByDate(day.date).subscribe({
+      next: res => {
+        this.allReservations = res;
+        this.applyLocalFilters(); // applies status filter on top if selected
+        this.loading = false;
+      },
+      error: () => this.loading = false
+    });
+  }
+
+  clearCalendarDate(): void {
+    this.selectedDate   = null;
+    this.showDatePicker = false;
+    this.statusFilter   = 'all';
+    this.searchTerm     = '';
+    this.loadInitialData();
+  }
+
+  // ── Filters ───────────────────────────────────────────────────
+
+  applyLocalFilters(): void {
+    let filtered = [...this.allReservations];
+
     if (this.statusFilter !== 'all') {
       filtered = filtered.filter(r => r.status === this.statusFilter);
     }
 
-    // Local search fallback (works instantly without waiting for API)
-    if (this.searchTerm.trim() && !this.searchSubject) {
-      const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(r =>
-        r.partnerName.toLowerCase().includes(term)              ||
-        r.userName?.toLowerCase().includes(term)                ||
-        r.groupLeaderName?.toLowerCase().includes(term)         ||
-        this.getTourLabel(r).toLowerCase().includes(term)       ||
-        r.id.toLowerCase().includes(term)
-      );
-    }
-
-    this.filteredReservations = filtered.sort((a, b) => {
-      if (a.status === 'checked_in' && b.status !== 'checked_in') return -1;
-      if (b.status === 'checked_in' && a.status !== 'checked_in') return 1;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-
+    this.filteredReservations = filtered;
     this.currentPage = 1;
     this.updatePagedData();
+  }
+
+  reloadBasedOnFilters(): void {
+    if (this.selectedDate) {
+      this.selectCalendarDate({ date: this.selectedDate, isCurrentMonth: true });
+      return;
+    }
+    this.onStatusChange();
   }
 
   resetFilters(): void {
     this.statusFilter = 'all';
     this.searchTerm   = '';
-    this.hasSearched  = false;
-    this.filteredReservations = this.allReservations;
-    this.currentPage  = 1;
-    this.updatePagedData();
+    this.selectedDate = null;
+    this.showDatePicker = false;
+    this.loadInitialData();
   }
+
+  // ── Pagination ────────────────────────────────────────────────
+
+  get totalPages(): number { return Math.ceil(this.filteredReservations.length / this.itemsPerPage); }
 
   updatePagedData(): void {
     const start = (this.currentPage - 1) * this.itemsPerPage;
@@ -156,8 +259,12 @@ export class GroupsComponent implements OnInit {
     if (page >= 1 && page <= this.totalPages) { this.currentPage = page; this.updatePagedData(); }
   }
 
+  // ── Stats ─────────────────────────────────────────────────────
+
   getConfirmedCount(): number { return this.allReservations.filter(r => r.status === 'confirmed').length; }
   getArrivedCount():   number { return this.allReservations.filter(r => r.status === 'checked_in').length; }
+
+  // ── Display helpers ───────────────────────────────────────────
 
   formatDate(d?: string): string {
     if (!d) return '—';
@@ -189,9 +296,16 @@ export class GroupsComponent implements OnInit {
   }
 
   getTourNames(r: Reservation): string[] {
-    if (r.reservationType === 'TOURS' && r.tours?.length) return r.tours.map(t => t.name);
-    if (r.tourTypes?.length) return r.tourTypes.map(t => t.name);
-    return [r.groupInfo?.tourType ?? 'N/A'];
+    if (r.reservationType === 'HEBERGEMENT' && r.tourTypes?.length) 
+      return r.tourTypes.map(t => t.name);
+    
+    if (r.reservationType === 'TOURS' && r.tours?.length) 
+      return r.tours.map(t => t.name);
+    
+    if (r.reservationType === 'EXTRAS' && r.extras?.length)
+      return r.extras.filter(e => e.isActive).map(e => e.name);
+    
+    return [];  // ← return empty instead of ['N/A']
   }
 
   getTypeLabel(r: Reservation): string {
@@ -220,81 +334,10 @@ export class GroupsComponent implements OnInit {
   }
 
   markArrived(id: string): void {
-      if (!confirm('Confirmer l\'arrivée de ce groupe au campement ?')) return;
-      this.resCampingService.markAsArrived(id).subscribe({
-        next: () => { this.toastService.showSuccess('✅ Groupe enregistré avec succès !'); this.loadInitialData(); },
-        error: err => { console.error('Check-in failed:', err); this.toastService.showError('❌ Erreur lors du check-in.'); }
-      });
-    }
-  onSearchSubmit(): void {
-    if (!this.searchTerm.trim()) {
-      // Empty → reload based on current status
-      if (this.statusFilter === 'all') {
-        this.resCampingService.fetchConfirmedAndCheckedIn()
-          .subscribe((reservations: Reservation[]) => {
-            this.allReservations = reservations;
-            this.applyFilters();
-          });
-      } else {
-        const backendStatus = this.statusFilter === 'checked_in' ? 'CHECKED_IN' : 'CONFIRMED';
-        this.resCampingService.fetchByStatus(backendStatus as any)
-          .subscribe((reservations: Reservation[]) => {
-            this.allReservations = reservations;
-            this.applyFilters();
-          });
-      }
-      return;
-    }
-
-    this.resCampingService.searchReservationsByName(this.searchTerm.trim())
-      .subscribe((reservations: Reservation[]) => {
-        this.allReservations = reservations;
-        this.applyFilters();
-      });
-  }
-
-  onStatusChange(): void {
-    this.currentStatusLoaded = this.statusFilter;
-    this.loading = true;
-
-    if (this.statusFilter === 'all') {
-      if (this.searchTerm.trim()) {
-        this.resCampingService.searchReservationsByName(this.searchTerm)
-          .subscribe((reservations: Reservation[]) => {
-            this.allReservations = reservations;
-            this.applyFilters();
-            this.loading = false;
-          });
-      } else {
-        this.resCampingService.fetchConfirmedAndCheckedIn()
-          .subscribe((reservations: Reservation[]) => {
-            this.allReservations = reservations;
-            this.applyFilters();
-            this.loading = false;
-          });
-      }
-      return;
-    }
-
-    // 'confirmed' or 'checked_in' selected
-    const backendStatus = this.statusFilter === 'checked_in' ? 'CHECKED_IN' : 'CONFIRMED';
-
-    if (this.searchTerm.trim()) {
-      this.resCampingService.searchReservationsByName(this.searchTerm)
-        .subscribe((reservations: Reservation[]) => {
-          // searchReservationsByName already filters confirmed+checkedin
-          // applyFilters() handles the specific status narrowing locally
-          this.allReservations = reservations;
-          this.applyFilters();
-          this.loading = false;
-        });
-    } else {
-      this.resCampingService.fetchByStatus(backendStatus as any)
-        .subscribe((reservations: Reservation[]) => {
-          this.allReservations = reservations;
-          this.applyFilters();
-          this.loading = false;
-        });
-    }
+    if (!confirm('Confirmer l\'arrivée de ce groupe au campement ?')) return;
+    this.resCampingService.markAsArrived(id).subscribe({
+      next: () => { this.toastService.showSuccess('✅ Groupe enregistré avec succès !'); this.loadInitialData(); },
+      error: err => { console.error('Check-in failed:', err); this.toastService.showError('❌ Erreur lors du check-in.'); }
+    });
   }
 }

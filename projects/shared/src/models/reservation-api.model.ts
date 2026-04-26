@@ -1,6 +1,6 @@
 // shared/src/models/reservation-api.model.ts
 
-import { PaymentRequest, PaymentSummary, TransactionResponse } from './transaction.model';
+import { Currency, PaymentRequest, PaymentSummary, TransactionResponse } from './transaction.model';
 
 // =============================================
 // ENUMS
@@ -38,7 +38,7 @@ export interface ReservationExtraRequest {
 
 export interface ReservationRequest {
   userId?: string;
-  source?: string;
+  sourceId?: string;
   reservationType: ReservationType;
 
   // HEBERGEMENT only
@@ -53,7 +53,6 @@ export interface ReservationRequest {
   demandeSpecial?: string;
   numberOfAdults: number;
   numberOfChildren: number;
-  currency?: string;
   promoCode?: string;
 
   // HEBERGEMENT — min 1 required
@@ -119,12 +118,31 @@ export interface ReservationExtraResponse {
   totalPrice: number;
   isActive: boolean;
 }
+export interface SourceResponse {
+  sourceId: string;
+  name: string;
+}
 
+export interface GuideResponse {
+  guideId: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  reservationId: string;
+}
+
+export interface ChauffeurResponse {
+  chauffeurId: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  reservationId: string;
+}
 export interface ReservationResponse {
   reservationId: string;
   userId: string;
   userName: string;
-  source: string;
+  source?: SourceResponse;
   reservationType: ReservationType;
   checkInDate?: string;
   checkOutDate?: string;
@@ -136,7 +154,7 @@ export interface ReservationResponse {
   status: BackendReservationStatus;
   rejectionReason?: string;
   totalAmount?: number;
-  currency: string;
+  currency: Currency;
   promoCode?: string;
   demandeSpecial?: string | null;
   createdAt: string;
@@ -150,4 +168,6 @@ export interface ReservationResponse {
   // ── NEW — Payment fields (computed from transactions in backend) ──
   paymentSummary?: PaymentSummary;
   transactions?: TransactionResponse[];
+  guides?: GuideResponse[];          
+  chauffeurs?: ChauffeurResponse[];
 }

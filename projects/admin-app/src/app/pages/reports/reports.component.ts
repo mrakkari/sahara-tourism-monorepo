@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReservationService } from '../../core/services/reservation.service';
+import { AdminReservationService } from '../../core/services/admin-reservation.service';
 import { Reservation } from '../../core/models/reservation.model';
 import { StatCardComponent } from '../../components/stat-card/stat-card.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
@@ -97,10 +97,10 @@ export class ReportsComponent implements OnInit {
     }
   };
 
-  constructor(private reservationService: ReservationService) { }
+  constructor(private adminReservationService: AdminReservationService) { }
 
   ngOnInit(): void {
-    this.reservationService.getAllReservations().subscribe(data => {
+    this.adminReservationService.getAllReservations().subscribe(data => {
       this.reservations = data;
       this.calculateMetrics();
       this.generateChartData();

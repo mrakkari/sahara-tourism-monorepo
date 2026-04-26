@@ -11,7 +11,7 @@ import { ResCampingService } from '../../services/res-camping.service';
 import { NotificationService, ToastService } from '../../../../../shared/src/public-api';
 
 import { Reservation, Extra, ExtraCatalog } from '../../models/reservation.model';
-import { PaymentMethod, PAYMENT_METHOD_LABELS } from '../../../../../shared/src/models/transaction.model';
+import { PaymentMethod, PAYMENT_METHOD_LABELS, Currency } from '../../../../../shared/src/models/transaction.model';
 
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
@@ -103,7 +103,9 @@ export class GroupDetailComponent implements OnInit {
     this.isRecordingPayment = true;
     this.paymentError       = null;
     this.resCampingService.recordPayment(this.reservation.id, {
-      amount, paymentMethod, currency: this.reservation.currency ?? 'TND',
+      amount,
+      paymentMethod,
+      currency: this.reservation.currency as Currency,
     }).subscribe({
       next: () => {
         this.isRecordingPayment = false;
@@ -203,7 +205,9 @@ export class GroupDetailComponent implements OnInit {
 
   formatDate(d?: string): string {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    return new Date(d).toLocaleDateString('fr-FR', { 
+      day: 'numeric', month: 'short', year: 'numeric' 
+    });
   }
 
   formatDateTime(d?: string): string {
@@ -239,4 +243,5 @@ export class GroupDetailComponent implements OnInit {
     if (r.tourTypes?.length) return r.tourTypes.map(t => t.name).join(', ');
     return r.groupInfo?.tourType ?? 'N/A';
   }
+  
 }

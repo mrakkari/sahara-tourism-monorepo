@@ -34,6 +34,30 @@
             </div>
           </div>
         </div>
+        <!-- Source -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="title-icon">📡</span>
+              Source <span class="req">*</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="field" style="margin-bottom:0">
+              <label>Origine de la réservation</label>
+              <div *ngIf="isLoadingSources" class="loading">Chargement…</div>
+              <select
+                *ngIf="!isLoadingSources"
+                formControlName="sourceId"
+                class="input">
+                <option value="">— Choisir une source —</option>
+                <option *ngFor="let s of sources" [value]="s.sourceId">
+                  {{ s.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         <!-- Dates & Groupe -->
         <div class="card">
@@ -44,17 +68,44 @@
             </div>
           </div>
           <div class="card-body">
-            <div class="row-2">
-              <div class="field">
-                <label>Date d'arrivée</label>
-                <input type="date" class="input" formControlName="checkInDate">
+          <div class="row-2">
+            <div class="field">
+              <label>Date d'arrivée</label>
+              <div class="date-wrapper">
+                <input type="text"
+                      class="input date-display"
+                      [value]="checkInDateDisplay"
+                      placeholder="jj/mm/aaaa"
+                      maxlength="10"
+                      (input)="onDateTextInput($event, 'checkInDate')">
+                <input type="date"
+                      class="input date-picker"
+                      formControlName="checkInDate"
+                      (change)="onDatePickerChange($event, 'checkInDate')">
+                <span class="date-icon" (click)="openPicker($event)">📅</span>
               </div>
-              <div class="field">
-                <label>Date de départ</label>
-                <input type="date" class="input" formControlName="checkOutDate">
-              </div>
+              <p class="date-error" *ngIf="checkInDateError">{{ checkInDateError }}</p>
             </div>
-            <div class="nights-chip" *ngIf="nights > 0">
+
+            <div class="field">
+              <label>Date de départ</label>
+              <div class="date-wrapper">
+                <input type="text"
+                      class="input date-display"
+                      [value]="checkOutDateDisplay"
+                      placeholder="jj/mm/aaaa"
+                      maxlength="10"
+                      (input)="onDateTextInput($event, 'checkOutDate')">
+                <input type="date"
+                      class="input date-picker"
+                      formControlName="checkOutDate"
+                      (change)="onDatePickerChange($event, 'checkOutDate')">
+                <span class="date-icon" (click)="openPicker($event)">📅</span>
+              </div>
+              <p class="date-error" *ngIf="checkOutDateError">{{ checkOutDateError }}</p>
+            </div>
+          </div>
+                        <div class="nights-chip" *ngIf="nights > 0">
               🌙 {{ nights }} nuit{{ nights > 1 ? 's' : '' }}
             </div>
             <div class="counters">
@@ -299,7 +350,8 @@
         <app-payment-modal
           *ngIf="showPaymentModal"
           [inlineMode]="true"
-          [currency]="form.get('currency')?.value || 'TND'"
+          [isFirstPayment]="true"
+          [baseTotalTnd]="finalTotal()"
           (closed)="closePaymentModal()"
           (paymentConfirmed)="onPaymentConfirmed($event)"
         />
@@ -355,7 +407,9 @@
               <ng-container *ngIf="!isSubmitting">✅ Créer la réservation</ng-container>
               <ng-container *ngIf="isSubmitting">⏳ Création en cours…</ng-container>
             </button>
-            <p class="sum-note">🔒 Source : ADMIN-APP</p>
+            <p class="sum-note" *ngIf="form.get('sourceId')?.value">
+              📡 {{ getSelectedSourceName() }}
+            </p>
           </div>
 
           <!-- Payment — under recap -->
@@ -374,7 +428,7 @@
               <div class="payment-preview">
                 <div class="pay-row">
                   <span>Montant</span>
-                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ form.get('currency')?.value || 'TND' }}</strong>
+                  <strong>{{ initialPayment.amount | number:'1.2-2' }} {{ initialPayment.currency }}</strong>
                 </div>
                 <div class="pay-row">
                   <span>Méthode</span>
