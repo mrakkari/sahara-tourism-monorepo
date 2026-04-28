@@ -572,7 +572,8 @@ export class CreateReservationComponent implements OnInit {
       const userId = JSON.parse(localStorage.getItem('auth_user') || '{}')?.userId ?? undefined;
       const request: ReservationRequest = {
           userId,
-          source:           'PARTNER_APP',
+          sourceId:         'PARTNER_APP',
+          reservationType:  'HEBERGEMENT',
           checkInDate:      formValue.checkInDate,
           checkOutDate:     formValue.checkOutDate,
           groupLeaderName:  formValue.groupLeaderName,
@@ -580,7 +581,7 @@ export class CreateReservationComponent implements OnInit {
           groupName:        formValue.groupName || formValue.groupLeaderName,
           numberOfAdults:   formValue.adults,
           numberOfChildren: formValue.children,
-          currency:         'TND',
+          // currency removed — not part of ReservationRequest
           promoCode:        this.appliedPromoCode || undefined,
           tourTypes,
           participants:     participants.length > 0 ? participants : undefined,

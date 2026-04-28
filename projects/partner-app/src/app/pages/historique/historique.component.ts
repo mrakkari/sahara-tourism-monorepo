@@ -236,8 +236,8 @@ Groupe: ${res.groupName}
 Chef de groupe: ${res.groupLeaderName}
 
 Tours: ${this.getTourTypeNames(res)}
-Date d'arrivée: ${new Date(res.checkInDate).toLocaleDateString()}
-Date de départ: ${new Date(res.checkOutDate).toLocaleDateString()}
+Date d'arrivée: ${res.checkInDate ? new Date(res.checkInDate).toLocaleDateString() : '—'}
+Date de départ: ${res.checkOutDate ? new Date(res.checkOutDate).toLocaleDateString() : '—'}
 
 Participants:
 - Adultes: ${res.numberOfAdults}
@@ -291,7 +291,7 @@ Créée le: ${new Date(res.createdAt).toLocaleDateString()}
 
     isCancellable(res: ReservationResponse): boolean {
         // Only PENDING or CONFIRMED can be cancelled
-        if (!['PENDING', 'CONFIRMED'].includes(res.status)) return false;
+        if (!res.checkInDate) return false;
 
         // Must be more than 48H before checkInDate
         const checkIn = new Date(res.checkInDate);
