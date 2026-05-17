@@ -3,13 +3,8 @@
   <!-- Welcome Hero -->
   <div class="hero-section">
     <div class="hero-content">
-      <h1 class="gradient-text">👋 Bonjour</h1>
-      <p class="subtitle">Voici ce qui se passe aujourd'hui sur Sahara Reservations.</p>
-    </div>
-    <div class="hero-actions">
-      <button class="btn-glass-primary" (click)="exportToPDF()">
-        📥 Exporter en PDF
-      </button>
+      <h1 class="gradient-text"> Vos prochaines réservations</h1>
+      <p class="subtitle">Suivez vos groupes et leurs arrivées en temps réel.</p>
     </div>
   </div>
 
@@ -94,6 +89,11 @@
     <div class="card-header">
       <h3>📝 Réservations</h3>
       <span class="badge-count">{{ filteredReservations.length }}</span>
+      <button class="btn-print-pdf"
+              *ngIf="upcomingDayBlocks.length > 0"
+              (click)="printUpcomingReservations()">
+        🖨️ Imprimer
+      </button>
     </div>
 
     <!-- 3 UPCOMING DAY BLOCKS — always shown (hidden if COMPLETED filter) -->
@@ -116,6 +116,7 @@
                   <th>Partenaire</th>
                   <th>Prestation</th>
                   <th>Groupe</th>
+                  <th>Durée</th>
                   <th>Source</th>
                   <th>Statut</th>
                   <th>Paiement</th>
@@ -124,7 +125,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let r of block.reservations" class="table-row">
+                <tr *ngFor="let r of block.reservations" class="table-row" (click)="goToReservation(r.id)" style="cursor: pointer;">
                   <td>
                     <div class="partner-info">
                       <div class="partner-avatar">{{ r.partnerName.charAt(0) }}</div>
@@ -143,6 +144,9 @@
                       <span class="children-line" *ngIf="r.children > 0">🧒 {{ r.children }} enfant{{ r.children > 1 ? 's' : '' }}</span>
                     </div>
                   </td>
+                  <td>
+                    <span class="duration-badge">{{ getDuration(r) }}</span>
+                  </td>
                   <td><span class="source-badge">{{ r.source?.name || 'N/A' }}</span></td>
                   <td><lib-status-badge [status]="r.status"></lib-status-badge></td>
                   <td>
@@ -157,7 +161,7 @@
                   <td class="text-right">
                     <div class="actions-flex">
                       <button class="btn-icon view" [routerLink]="['/reservation', r.id]" title="Voir">👁️</button>
-                      <button *ngIf="r.status === 'pending'" class="btn-icon check" (click)="confirmReservation(r.id)" title="Confirmer">✅</button>
+                      <button *ngIf="r.status === 'pending'" class="btn-icon check" (click)="$event.stopPropagation(); confirmReservation(r.id)" title="Confirmer">✅</button>
                     </div>
                   </td>
                 </tr>
@@ -183,6 +187,7 @@
                 <th>Prestation</th>
                 <th>Groupe</th>
                 <th>Date</th>
+                <th>Durée</th>
                 <th>Source</th>
                 <th>Statut</th>
                 <th>Paiement</th>
@@ -191,7 +196,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let r of otherReservations" class="table-row">
+              <tr *ngFor="let r of otherReservations" class="table-row" (click)="goToReservation(r.id)" style="cursor: pointer;">
                 <td>
                   <div class="partner-info">
                     <div class="partner-avatar">{{ r.partnerName.charAt(0) }}</div>
@@ -220,6 +225,9 @@
                     <span class="date-sub" *ngIf="r.reservationType === 'EXTRAS'">Service</span>
                   </div>
                 </td>
+                <td>
+                  <span class="duration-badge">{{ getDuration(r) }}</span>
+                </td>
                 <td><span class="source-badge">{{ r.source?.name || 'N/A' }}</span></td>
                 <td><lib-status-badge [status]="r.status"></lib-status-badge></td>
                 <td>
@@ -234,7 +242,7 @@
                 <td class="text-right">
                   <div class="actions-flex">
                     <button class="btn-icon view" [routerLink]="['/reservation', r.id]" title="Voir">👁️</button>
-                    <button *ngIf="r.status === 'pending'" class="btn-icon check" (click)="confirmReservation(r.id)" title="Confirmer">✅</button>
+                    <button *ngIf="r.status === 'pending'" class="btn-icon check" (click)="$event.stopPropagation(); confirmReservation(r.id)" title="Confirmer">✅</button>
                   </div>
                 </td>
               </tr>

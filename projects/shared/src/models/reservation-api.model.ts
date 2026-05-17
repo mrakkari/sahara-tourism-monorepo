@@ -5,6 +5,8 @@ import { Currency, PaymentRequest, PaymentSummary, TransactionResponse } from '.
 // =============================================
 // ENUMS
 // =============================================
+export type TenteType = 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'X4' | 'X5' | 'X6' | 'X7';
+
 
 export type ReservationType = 'HEBERGEMENT' | 'TOURS' | 'EXTRAS';
 export type BackendReservationStatus =
@@ -35,7 +37,18 @@ export interface ReservationExtraRequest {
   extraId: string;
   quantity: number;
 }
+export interface RepartitionRequest {
+  tenteType: TenteType;
+  numberOfTentes: number;
+}
 
+export interface RepartitionResponse {
+  repartitionId: string;
+  tenteType: TenteType;
+  numberOfTentes: number;
+  capacityPerTente: number;
+  totalPersonnes: number;
+}
 export interface ReservationRequest {
   userId?: string;
   sourceId?: string;
@@ -63,6 +76,7 @@ export interface ReservationRequest {
 
   participants?: ParticipantRequest[];
   extras?: ReservationExtraRequest[];
+  repartitions?: RepartitionRequest[]; 
 
   // ── NEW — Optional initial payment at creation time ──────────
   // If provided → a Transaction is created immediately after save
@@ -162,6 +176,7 @@ export interface ReservationResponse {
   tours: ReservationTourResponse[];
   participants: ParticipantResponse[];
   extras: ReservationExtraResponse[];
+  repartitions?: RepartitionResponse[];
   totalExtrasAmount: number;
   deletedAt?: string | null;
 

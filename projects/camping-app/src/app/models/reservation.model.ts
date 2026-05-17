@@ -37,8 +37,7 @@ export interface TourSnapshot {
   totalPrice: number;
 }
 
-// ── Extra ─────────────────────────────────────────────────────────
-
+// ── Extra ────────────────────────
 export interface Extra {
   id: string;
   reservationExtraId: string;
@@ -109,6 +108,13 @@ export interface PaymentInfo {
 }
 
 // ── Reservation (fully mapped, used throughout camping-app) ───────
+export interface RepartitionSnapshot {
+  repartitionId: string;
+  tenteType: string;
+  numberOfTentes: number;
+  capacityPerTente: number;
+  totalPersonnes: number;
+}
 
 export interface Reservation {
   id: string;
@@ -136,6 +142,7 @@ export interface Reservation {
 
   groupInfo: GroupInfo;
   payment: PaymentInfo;
+  repartitions?: RepartitionSnapshot[];
 
   tourTypes?: TourTypeSnapshot[];
   tours?: TourSnapshot[];

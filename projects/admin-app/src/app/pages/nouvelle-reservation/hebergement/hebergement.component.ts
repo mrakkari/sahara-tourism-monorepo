@@ -12,6 +12,8 @@ import { PaymentModalComponent } from '../../../../../../shared/src/lib/componen
 import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
 import { SourceService } from '../../../core/services/source.service';
 import { SourceResponse } from '../../../../../../shared/src/models/reservation-api.model';
+import { RepartitionRequest, TenteType } from '../../../../../../shared/src/models/reservation-api.model';
+
 
 @Component({
   selector: 'app-hebergement',
@@ -61,6 +63,19 @@ export class HebergementComponent implements OnInit {
   checkOutDateDisplay = '';
   checkInDateError    = '';
   checkOutDateError   = '';
+  tourRepartitions: Record<string, { tenteType: TenteType; numberOfTentes: number }[]> = {};
+
+  tenteTypes: { value: TenteType; label: string; capacity: number }[] = [
+    { value: 'SINGLE',  label: 'Tente Simple (1 pers.)',  capacity: 1 },
+    { value: 'DOUBLE',  label: 'Tente Double (2 pers.)',  capacity: 2 },
+    { value: 'TRIPLE',  label: 'Tente Triple (3 pers.)',  capacity: 3 },
+    { value: 'X4',      label: 'Tente ×4 (4 pers.)',     capacity: 4 },
+    { value: 'X5',      label: 'Tente ×5 (5 pers.)',     capacity: 5 },
+    { value: 'X6',      label: 'Tente ×6 (6 pers.)',     capacity: 6 },
+    { value: 'X7',      label: 'Tente ×7 (7 pers.)',     capacity: 7 },
+  ];
+  repartitions: { tenteType: TenteType; numberOfTentes: number }[] = [];
+  repartitionError = '';
 
   constructor(
     private fb: FormBuilder,
@@ -351,7 +366,8 @@ export class HebergementComponent implements OnInit {
       && this.nights > 0
       && this.adults >= 1
       && this.tourTypesArray.length > 0
-      && this.isAllocationValid();
+      && this.isAllocationValid()
+      && this.isRepartitionValid();
   }
 
   showGroupName(): boolean { return this.adults + this.children > 2; }
@@ -378,6 +394,15 @@ export class HebergementComponent implements OnInit {
       ? this.participants.filter(p => p.fullName.trim() !== '')
       : [];
 
+    // ── Build repartitions payload ────────────────────────────────
+    let repartitionsPayload: RepartitionRequest[] | undefined;
+
+    if (this.isMulti && Object.keys(this.tourRepartitions).length > 0) {
+      repartitionsPayload = Object.values(this.tourRepartitions).flat();
+    } else if (!this.isMulti && this.repartitions.length > 0) {
+      repartitionsPayload = this.repartitions;
+    }
+
     const request: ReservationRequest = {
       userId:           fv.userId,
       sourceId:         fv.sourceId,
@@ -394,6 +419,7 @@ export class HebergementComponent implements OnInit {
       extras:           extrasPayload.length > 0 ? extrasPayload : undefined,
       participants:     participantsPayload.length > 0 ? participantsPayload : undefined,
       initialPayment:   this.initialPayment ?? undefined,
+      repartitions:     repartitionsPayload,
     };
 
     this.reservationService.createReservation(request).subscribe({
@@ -487,5 +513,149 @@ export class HebergementComponent implements OnInit {
     if (!val || !val.includes('-')) return val;
     const [y, m, d] = val.split('-');
     return `${d}/${m}/${y}`;
+  }
+  addRepartition(tenteType: TenteType): void {
+    if (!tenteType) return;
+    const exists = this.repartitions.find(r => r.tenteType === tenteType);
+    if (exists) return;
+    this.repartitions.push({ tenteType, numberOfTentes: 1 });
+    this.validateRepartition();
+  }
+
+  removeRepartition(tenteType: TenteType): void {
+    this.repartitions = this.repartitions.filter(r => r.tenteType !== tenteType);
+    this.validateRepartition();
+  }
+
+  adjustRepartitionCount(tenteType: TenteType, delta: number): void {
+    const r = this.repartitions.find(r => r.tenteType === tenteType);
+    if (!r) return;
+    r.numberOfTentes = Math.max(1, r.numberOfTentes + delta);
+    this.validateRepartition();
+  }
+
+  getTenteLabel(type: TenteType): string {
+    return this.tenteTypes.find(t => t.value === type)?.label ?? type;
+  }
+
+  getTenteCapacity(type: TenteType): number {
+    const found = this.tenteTypes.find(t => t.value === type);
+    console.log('getTenteCapacity:', type, found); 
+    return found?.capacity ?? 0;
+  }
+
+  getRepartitionTotal(): number {
+    return this.repartitions.reduce((sum, r) =>
+      sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0);
+  }
+
+  validateRepartition(): void {
+    if (this.isMulti) {
+      // ── Only validate tourTypes that HAVE repartitions ──
+      for (const [tourTypeId, reps] of Object.entries(this.tourRepartitions)) {
+        if (reps.length === 0) continue;
+
+        const ctrl = this.tourTypesArray.controls.find(
+          c => c.get('tourTypeId')?.value === tourTypeId
+        );
+        if (!ctrl) continue;
+
+        const tourAdults   = +(ctrl.get('numberOfAdults')?.value)   || 0;
+        const tourChildren = +(ctrl.get('numberOfChildren')?.value) || 0;
+        const tourTotal    = tourAdults + tourChildren;
+
+        const repTotal = reps.reduce(
+          (sum, r) => sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0
+        );
+
+        if (repTotal !== tourTotal) {
+          this.repartitionError =
+            `⚠️ La répartition de "${ctrl.get('name')?.value ?? tourTypeId}" ` +
+            `couvre ${repTotal} personne(s) — l'activité en a ${tourTotal}.`;
+          return;
+        }
+      }
+      this.repartitionError = '';
+
+    } else {
+      // ── Single tourType mode ──
+      if (this.repartitions.length === 0) { this.repartitionError = ''; return; }
+
+      const total    = this.getRepartitionTotal();
+      const expected = this.adults + this.children;
+
+      this.repartitionError = total !== expected
+        ? `⚠️ La répartition couvre ${total} personne(s) — le groupe en a ${expected}.`
+        : '';
+    }
+  }
+
+  isRepartitionValid(): boolean {
+    if (this.isMulti) {
+      for (const [tourTypeId, reps] of Object.entries(this.tourRepartitions)) {
+        if (reps.length === 0) continue;
+
+        const ctrl = this.tourTypesArray.controls.find(
+          c => c.get('tourTypeId')?.value === tourTypeId
+        );
+        if (!ctrl) continue;
+
+        const tourTotal = (+(ctrl.get('numberOfAdults')?.value) || 0)
+                        + (+(ctrl.get('numberOfChildren')?.value) || 0);
+
+        const repTotal = reps.reduce(
+          (sum, r) => sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0
+        );
+
+        if (repTotal !== tourTotal) return false;
+      }
+      return true;
+    }
+
+    if (this.repartitions.length === 0) return true;
+    return this.getRepartitionTotal() === this.adults + this.children;
+  }
+  isTenteSelected(tenteType: TenteType): boolean {
+    return this.repartitions.some(r => r.tenteType === tenteType);
+  }
+
+  
+  getTourRepartition(tourTypeId: string): { tenteType: TenteType; numberOfTentes: number }[] {
+    return this.getTourRepartitions(tourTypeId);
+  }
+
+  addRepartitionForTour(tourTypeId: string): void {
+    if (!this.tourRepartitions[tourTypeId]) {
+      this.tourRepartitions[tourTypeId] = [];
+    }
+    this.tourRepartitions[tourTypeId].push({ tenteType: 'SINGLE', numberOfTentes: 1 }); // ← was DOUBLE
+    this.validateRepartition();
+  }
+
+  removeRepartitionForTour(tourTypeId: string, index: number): void {
+    if (this.tourRepartitions[tourTypeId]) {
+      this.tourRepartitions[tourTypeId].splice(index, 1);
+      if (this.tourRepartitions[tourTypeId].length === 0) {
+        delete this.tourRepartitions[tourTypeId];
+      }
+    }
+    this.validateRepartition();
+  }
+
+  setRepartitionCount(tourTypeId: string, index: number, count: number): void {
+    if (this.tourRepartitions[tourTypeId]?.[index]) {
+      this.tourRepartitions[tourTypeId][index].numberOfTentes = Math.max(1, count);
+      this.validateRepartition();
+    }
+  }
+
+  setRepartitionType(tourTypeId: string, index: number, tenteType: TenteType): void {
+    if (this.tourRepartitions[tourTypeId]?.[index]) {
+      this.tourRepartitions[tourTypeId][index].tenteType = tenteType;
+      this.validateRepartition();
+    }
+  }
+  getTourRepartitions(tourTypeId: string): { tenteType: TenteType; numberOfTentes: number }[] {
+    return this.tourRepartitions[tourTypeId] ?? [];
   }
 }

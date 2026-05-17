@@ -34,7 +34,9 @@ export interface SidebarChild {
       <!-- Header -->
       <div class="sidebar-header">
         <div class="logo-wrapper">
-          <div class="logo-icon">{{ icon }}</div>
+          <div class="logo-icon">
+            <img [src]="logoUrl" alt="Logo" class="logo-img">
+          </div>
           <div class="logo-text" *ngIf="!collapsed">
             <span class="logo-title">{{ title }}</span>
           </div>
@@ -356,6 +358,15 @@ export interface SidebarChild {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(220,38,38,0.4);
     }
+    .logo-img {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: contain;   /* ← contain instead of cover */
+      background: #fff;      /* ← white background */
+      padding: 4px;
+      border: 2px solid rgba(255,255,255,0.15);
+    }
 
     .logout-icon { font-size: 1.25rem; }
     .logout-text { white-space: nowrap; }
@@ -384,7 +395,8 @@ export class SidebarComponent implements OnInit {
   @Output() itemClick        = new EventEmitter<SidebarItem>();
 
   isMobile = false;
-  expandedAction: string | null = null;  // tracks which action item is open
+  expandedAction: string | null = null; 
+  @Input() logoUrl = '';
 
   ngOnInit() { this.checkScreenSize(); }
 

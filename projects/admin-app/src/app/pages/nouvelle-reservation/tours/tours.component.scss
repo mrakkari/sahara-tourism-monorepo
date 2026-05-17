@@ -710,3 +710,28 @@ select.input   { cursor: pointer; }
   align-items: center;
   gap: 4px;
 }
+// ── Tours identity color ──────────────────────────────────────────
+
+.resa-header {
+  h1 { color: #92400e; }
+  .subtitle { color: #92400e; opacity: 0.7; }
+}
+
+.card {
+  border-left: 3px solid #f59e0b;
+
+  .card-title {
+    .title-icon {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+  }
+}
+
+.btn-submit {
+  background: #d97706;
+  &:hover:not(:disabled) { background: #b45309; }
+}

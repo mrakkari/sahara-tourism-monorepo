@@ -1,0 +1,222 @@
+<!-- admin/src/app/pages/proformas/proformas.component.html -->
+
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">📋 Liste des Proformas</h1>
+    <span class="total-badge">{{ filteredProformas.length }} proforma(s)</span>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Chargement des proformas...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-state" *ngIf="error && !isLoading">
+    <p>⚠️ {{ error }}</p>
+    <button (click)="loadProformas()" class="btn-retry">Réessayer</button>
+  </div>
+
+  <ng-container *ngIf="!isLoading && !error">
+
+    <!-- Filters -->
+    <div class="filters-section">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          placeholder="Rechercher par client ou numéro..."
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+          class="search-input"
+        />
+      </div>
+
+      <select class="select-input" [(ngModel)]="statusFilter" (change)="applyFilters()">
+        <option value="">Tous les statuts</option>
+        <option value="UNPAID">Non payé</option>
+        <option value="PARTIALLY_PAID">Partiellement payé</option>
+        <option value="PAID">Payé</option>
+      </select>
+
+      <input type="date" [(ngModel)]="startDate" (change)="applyFilters()" class="date-input"/>
+      <input type="date" [(ngModel)]="endDate"   (change)="applyFilters()" class="date-input"/>
+    </div>
+
+    <!-- Table -->
+    <div class="content-card">
+      <table class="proformas-table">
+        <thead>
+          <tr>
+            <th>Numéro</th>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Total TTC</th>
+            <th>Payé</th>
+            <th>Reste</th>
+            <th>Statut paiement</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of paginatedProformas">
+            <td class="mono">{{ p.invoiceNumber }}</td>
+            <td>{{ formatDate(p.invoiceDate) }}</td>
+            <td>{{ getUserName(p) }}</td>
+            <td>{{ p.totalAmount | number:'1.2-2' }} TND</td>
+            <td class="paid-cell">{{ p.paidAmount | number:'1.2-2' }} TND</td>
+            <td class="remaining-cell" [class.zero]="p.remainingAmount <= 0">
+              {{ p.remainingAmount | number:'1.2-2' }} TND
+            </td>
+            <td>
+              <span class="pay-badge" [ngClass]="p.paymentStatus.toLowerCase()">
+                {{ paymentStatusLabel(p.paymentStatus) }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-voir" (click)="viewProforma(p)">Voir</button>
+                <a class="btn-resa" [routerLink]="['/reservation', p.reservationId]">Réservation</a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="no-results" *ngIf="filteredProformas.length === 0">
+        <p>Aucune proforma trouvée.</p>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="filteredProformas.length > 0">
+        <button class="pagination-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+          ← Précédent
+        </button>
+        <div class="pagination-info">
+          <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+          <span class="separator">|</span>
+          <span>{{ filteredProformas.length }} résultats</span>
+        </div>
+        <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+          Suivant →
+        </button>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+<!-- ── Proforma Detail Modal ──────────────────────────────────────── -->
+<div *ngIf="selectedProforma" class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="close-btn" (click)="closeModal()">✕</button>
+
+    <div class="invoice-preview">
+
+      <!-- Company Header -->
+      <div class="invoice-header">
+        <div class="company-info">
+          <img
+            src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png"
+            alt="Dunes Insolites"
+            class="logo-img">
+          <div class="logo-text">Les Dunes Insolites</div>
+        </div>
+
+        <div class="company-details">
+          <h3>Campement Dunes Insolites</h3>
+          <p>Sabria, El Faouar – Kébili</p>
+          <p>M.F : 1710104/R – RIB : TN59 25081000000896143 70</p>
+          <p>Tél : 75 461 016 – GSM : 27 391 501</p>
+          <p>✉ dunesinsolites&#64;gmail.com</p>
+        </div>
+
+        <div class="invoice-date">
+          <strong>Date :</strong> {{ formatDate(selectedProforma.invoiceDate) }}
+        </div>
+      </div>
+
+      <!-- Client Section -->
+      <div class="client-section">
+        <div class="client-block">
+          <p><strong>Client :</strong> {{ selectedProforma.userName || '—' }}</p>
+          <p *ngIf="selectedProforma.userAgencyAddress">
+            <strong>Adresse :</strong> {{ selectedProforma.userAgencyAddress }}
+          </p>
+          <p *ngIf="selectedProforma.userMatriculeFiscal">
+            <strong>M.F :</strong> {{ selectedProforma.userMatriculeFiscal }}
+          </p>
+          <p *ngIf="selectedProforma.userPhone">
+            <strong>Tél :</strong> {{ selectedProforma.userPhone }}
+          </p>
+          <p *ngIf="selectedProforma.userEmail">
+            <strong>Email :</strong> {{ selectedProforma.userEmail }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Invoice Title -->
+      <h1 class="invoice-title">{{ selectedProforma.invoiceNumber.toUpperCase() }}</h1>
+
+      <!-- Line Items -->
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>DÉSIGNATION</th>
+            <th>QTÉ</th>
+            <th>PRIX UNITAIRE</th>
+            <th>MONTANT TTC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of selectedProforma.items">
+            <td>{{ item.description }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unitPrice | number:'1.2-2' }} TND</td>
+            <td>{{ item.totalPrice | number:'1.2-2' }} TND</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Totals -->
+      <div class="totals-section">
+        <table class="totals-table">
+          <tr>
+            <td><strong>Total TTC</strong></td>
+            <td>{{ selectedProforma.totalAmount | number:'1.2-2' }} TND</td>
+          </tr>
+          <tr>
+            <td><strong>Payé</strong></td>
+            <td class="paid-cell">{{ selectedProforma.paidAmount | number:'1.2-2' }} TND</td>
+          </tr>
+          <tr class="total-row">
+            <td><strong>Reste à payer</strong></td>
+            <td><strong>{{ selectedProforma.remainingAmount | number:'1.2-2' }} TND</strong></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Payment Status -->
+      <div class="proforma-status-row">
+        <span>Statut paiement :</span>
+        <span class="pay-badge" [ngClass]="selectedProforma.paymentStatus.toLowerCase()">
+          {{ paymentStatusLabel(selectedProforma.paymentStatus) }}
+        </span>
+      </div>
+
+      <!-- Footer -->
+      <div class="invoice-footer">
+        DUNES INSOLITES - EL FAOUAR 4264 KEBILI TUNISIE - TEL/FAX : 75 461 016 - GSM: 27 391 501 - EMAIL : dunesinsolites&#64;gmail.com
+      </div>
+    </div>
+
+    <!-- Modal Actions -->
+    <div class="modal-actions">
+      <button class="btn-print" (click)="printInvoice()">🖨️ Imprimer</button>
+      <a class="btn-resa-link" [routerLink]="['/reservation', selectedProforma.reservationId]" (click)="closeModal()">
+        🔗 Voir la réservation
+      </a>
+    </div>
+  </div>
+</div>

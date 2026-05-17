@@ -41,6 +41,15 @@ const STATUS_MAP: Record<BackendReservationStatus, FrontendStatus> = {
   COMPLETED:  'completed',
 };
 
+export interface CampingStats {
+  inCampAdults:        number;
+  inCampChildren:      number;
+  inCampTotal:         number;
+  arrivingTodayAdults:   number;
+  arrivingTodayChildren: number;
+  arrivingTodayTotal:    number;
+}
+
 // ── Method mapping (backend PaymentMethod → local) ────────────────
 function mapPaymentMethod(method: string): Transaction['method'] {
   const map: Record<string, Transaction['method']> = {
@@ -169,6 +178,13 @@ export class ResCampingService {
       paymentStatus,
       transactions,
     };
+    const repartitions = (dto.repartitions ?? []).map(r => ({
+      repartitionId:    r.repartitionId,
+      tenteType:        r.tenteType,
+      numberOfTentes:   r.numberOfTentes,
+      capacityPerTente: r.capacityPerTente,
+      totalPersonnes:   r.totalPersonnes,
+    }));
 
     return {
       id:                dto.reservationId,
@@ -202,6 +218,7 @@ export class ResCampingService {
       payment,
       extras,
       loyaltyPointsEarned: Math.floor(grandTotal * 0.1),
+      repartitions,
       createdAt:  dto.createdAt,
       updatedAt:  dto.createdAt,
     };
@@ -451,5 +468,13 @@ export class ResCampingService {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day   = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+  fetchCampingStats(): Observable<CampingStats> {
+    return this.http.get<CampingStats>(`${this.API_URL}/camping/stats`).pipe(
+      catchError(() => of({
+        inCampAdults: 0, inCampChildren: 0, inCampTotal: 0,
+        arrivingTodayAdults: 0, arrivingTodayChildren: 0, arrivingTodayTotal: 0
+      }))
+    );
   }
 }

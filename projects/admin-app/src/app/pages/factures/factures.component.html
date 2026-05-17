@@ -1,0 +1,249 @@
+<!-- admin/src/app/pages/factures/factures.component.html -->
+
+<div class="page-container">
+  <div class="page-header">
+    <h1 class="page-title">🧾 Liste des Factures</h1>
+    <span class="total-badge">{{ filteredFactures.length }} facture(s)</span>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Chargement des factures...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-state" *ngIf="error && !isLoading">
+    <p>⚠️ {{ error }}</p>
+    <button (click)="loadFactures()" class="btn-retry">Réessayer</button>
+  </div>
+
+  <ng-container *ngIf="!isLoading && !error">
+
+    <!-- Filters -->
+    <div class="filters-section">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          placeholder="Rechercher par client ou numéro..."
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()"
+          class="search-input"
+        />
+      </div>
+
+      <select class="select-input" [(ngModel)]="statusFilter" (change)="applyFilters()">
+        <option value="">Tous les statuts</option>
+        <option value="UNPAID">Non payé</option>
+        <option value="PARTIALLY_PAID">Partiellement payé</option>
+        <option value="PAID">Payé</option>
+        <option value="OVERDUE">En retard</option>
+      </select>
+
+      <input type="date" [(ngModel)]="startDate" (change)="applyFilters()" class="date-input"/>
+      <input type="date" [(ngModel)]="endDate"   (change)="applyFilters()" class="date-input"/>
+    </div>
+
+    <!-- Table -->
+    <div class="content-card">
+      <table class="factures-table">
+        <thead>
+          <tr>
+            <th>Numéro</th>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Total HT</th>
+            <th>TVA 7%</th>
+            <th>Total TTC</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of paginatedFactures">
+            <td class="mono">{{ f.invoiceNumber }}</td>
+            <td>{{ formatDate(f.invoiceDate) }}</td>
+            <td>{{ getClientName(f) }}</td>
+            <td>{{ (f.totalHt ?? 0) | number:'1.3-3' }} {{ getCurrencyLabel(f.currency) }}</td>
+            <td>{{ (f.tvaAmount ?? 0) | number:'1.3-3' }} {{ getCurrencyLabel(f.currency) }}</td>
+            <td class="ttc-cell">{{ (f.totalTtc ?? f.totalAmount) | number:'1.3-3' }} {{ getCurrencyLabel(f.currency) }}</td>
+            <td>
+              <span class="pay-badge" [ngClass]="f.paymentStatus.toLowerCase()">
+                {{ paymentStatusLabel(f.paymentStatus) }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-voir" (click)="viewFacture(f)">Voir</button>
+                <a class="btn-resa" [routerLink]="['/reservation', f.reservationId]">
+                  Réservation
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="no-results" *ngIf="filteredFactures.length === 0">
+        <p>Aucune facture trouvée.</p>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="filteredFactures.length > 0">
+        <button class="pagination-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+          ← Précédent
+        </button>
+        <div class="pagination-info">
+          <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+          <span class="separator">|</span>
+          <span>{{ filteredFactures.length }} résultats</span>
+        </div>
+        <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+          Suivant →
+        </button>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+<!-- ── Facture Detail Modal ────────────────────────────────────────── -->
+<div *ngIf="selectedFacture" class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button class="close-btn" (click)="closeModal()">✕</button>
+
+    <div class="invoice-preview">
+
+      <!-- Company Header -->
+      <div class="invoice-header">
+        <div class="company-info">
+          <img
+            src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png"
+            alt="Dunes Insolites"
+            class="logo-img">
+          <div class="logo-text">Les Dunes Insolites</div>
+        </div>
+        <div class="company-details">
+          <h3>Campement Dunes Insolites</h3>
+          <p>Sabria, El Faouar – Kébili</p>
+          <p>M.F : 1710104/R – RIB : TN59 25081000000896143 70</p>
+          <p>Tél : 75 461 016 – GSM : 27 391 501</p>
+          <p>✉ dunesinsolites&#64;gmail.com</p>
+        </div>
+        <div class="invoice-date">
+          <strong>Date :</strong> {{ formatDate(selectedFacture.invoiceDate) }}
+        </div>
+      </div>
+
+      <!-- Invoice Title -->
+      <h1 class="invoice-title">FACTURE {{ selectedFacture.invoiceNumber.toUpperCase() }}</h1>
+
+      <!-- Client Section -->
+      <div class="client-section">
+        <div class="client-block">
+          <p><strong>Client :</strong> {{ selectedFacture.userName || '—' }}</p>
+          <p *ngIf="selectedFacture.userAgencyAddress">
+            <strong>Adresse :</strong> {{ selectedFacture.userAgencyAddress }}
+          </p>
+          <p *ngIf="selectedFacture.userMatriculeFiscal">
+            <strong>M.F :</strong> {{ selectedFacture.userMatriculeFiscal }}
+            <span *ngIf="selectedFacture.userPhone"> | Tél : {{ selectedFacture.userPhone }}</span>
+          </p>
+          <p *ngIf="selectedFacture.userEmail">
+            <strong>Email :</strong> {{ selectedFacture.userEmail }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Line Items Table -->
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>DATE</th>
+            <th>DÉSIGNATION</th>
+            <th>QTÉ</th>
+            <th>PRIX PAX TTC</th>
+            <th>MONTANT TTC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of selectedFacture.items">
+            <td>{{ formatDate(selectedFacture.invoiceDate) }}</td>
+            <td>{{ item.description }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unitPrice | number:'1.3-3' }} {{ getCurrencyLabel(selectedFacture.currency) }}</td>
+            <td>{{ item.totalPrice | number:'1.3-3' }} {{ getCurrencyLabel(selectedFacture.currency) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- TVA Totals -->
+      <div class="totals-section">
+        <table class="totals-table">
+          <tr>
+            <td>Total HT</td>
+            <td class="amount-cell">
+              {{ (selectedFacture.totalHt ?? 0) | number:'1.3-3' }}
+              <span class="dt-label">{{ getCurrencyLabel(selectedFacture.currency) }}</span>
+            </td>
+          </tr>
+          <tr>
+            <td>TVA {{ selectedFacture.tvaRate ?? 7 }}%</td>
+            <td class="amount-cell">
+              {{ (selectedFacture.tvaAmount ?? 0) | number:'1.3-3' }}
+              {{ getCurrencyLabel(selectedFacture.currency) }}
+            </td>
+          </tr>
+          <tr>
+            <td>Timbre fiscal</td>
+            <td class="amount-cell">
+              {{ (selectedFacture.timbreFiscal ?? 0) | number:'1.3-3' }}
+              {{ getCurrencyLabel(selectedFacture.currency) }}
+            </td>
+          </tr>
+          <tr class="total-ttc-row">
+            <td><strong>TOTAL TTC</strong></td>
+            <td class="amount-cell">
+              <strong>
+                {{ (selectedFacture.totalTtc ?? selectedFacture.totalAmount) | number:'1.3-3' }}
+                <span class="dt-label">{{ getCurrencyLabel(selectedFacture.currency) }}</span>
+              </strong>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Arrêté -->
+      <div class="arrete-section" *ngIf="selectedFacture.arreteLaPresente">
+        <strong>ARRÊTÉ LA PRÉSENTE FACTURE À LA SOMME DE : {{ selectedFacture.arreteLaPresente }}</strong>
+      </div>
+
+      <!-- Payment Status -->
+      <div class="proforma-status-row">
+        <span>Statut paiement :</span>
+        <span class="pay-badge" [ngClass]="selectedFacture.paymentStatus.toLowerCase()">
+          {{ paymentStatusLabel(selectedFacture.paymentStatus) }}
+        </span>
+      </div>
+
+      <!-- Signature -->
+      <div class="signature-section">
+        <span>Signature &amp; Cachet</span>
+      </div>
+
+      <!-- Footer -->
+      <div class="invoice-footer">
+        DUNES INSOLITES - EL FAOUAR 4264 KEBILI TUNISIE - TEL/FAX : 75 461 016 - GSM: 27 391 501 - EMAIL : dunesinsolites&#64;gmail.com
+      </div>
+    </div>
+
+    <!-- Modal Actions -->
+    <div class="modal-actions">
+      <button class="btn-print" (click)="printFacture()">🖨️ Imprimer</button>
+      <a class="btn-resa-link" [routerLink]="['/reservation', selectedFacture.reservationId]" (click)="closeModal()">
+        🔗 Voir la réservation
+      </a>
+    </div>
+  </div>
+</div>

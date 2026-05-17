@@ -1,81 +1,128 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { ReservationStats, RevenueStats } from '../models/admin.models';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
-@Injectable({
-    providedIn: 'root'
-})
+// ─── Response interfaces matching backend DTOs exactly ───────────────────────
+
+export interface DashboardStatsDTO {
+  totalRevenue: number;
+  revenueGrowth: number;
+  totalReservations: number;
+  confirmedReservations: number;
+  pendingReservations: number;
+  cancelledReservations: number;
+  reservationGrowth: number;
+  passengerDirectRevenue: number;
+  passengerDirectCount: number;
+  passengerRevenuePercentage: number;
+  period: number;
+}
+
+export interface MonthlyTrendDTO {
+  labels: string[];       // ["Jan", "Fév", ..., "Déc"]
+  revenue: number[];      // one entry per month
+  reservations: number[]; // one entry per month
+  year: number;
+}
+
+export interface PartnerEntryDTO {
+  name: string;
+  revenue: number;
+  percentage: number;
+}
+
+export interface PartnerRevenueDTO {
+  partners: PartnerEntryDTO[];
+  totalPartnerRevenue: number;
+  partnerRevenuePercentage: number;
+}
+
+export interface SourceEntryDTO {
+  source: string;
+  count: number;
+  percentage: number;
+}
+
+export interface SourceStatsDTO {
+  sources: SourceEntryDTO[];
+  totalReservations: number;
+}
+
+export interface RevenueDistributionDTO {
+  partnerRevenue: number;
+  directRevenue: number;
+  partnerPercentage: number;
+  directPercentage: number;
+  totalRevenue: number;
+}
+
+export interface PassengerTrendDTO {
+  labels: string[];
+  revenue: number[];
+  reservations: number[];
+  totalRevenue: number;
+  totalCount: number;
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
+
+@Injectable({ providedIn: 'root' })
 export class StatisticsService {
-    constructor() { }
 
-    /**
-     * Get reservation statistics
-     */
-    getReservationStats(): Observable<ReservationStats> {
-        // Mock data - replace with actual API call
-        return of({
-            totalReservations: 247,
-            confirmedReservations: 189,
-            pendingReservations: 43,
-            cancelledReservations: 15,
-            growthPercentage: 12.5
-        });
-    }
+  private readonly base = `${environment.apiUrl}/api/admin/statistics`;
 
-    /**
-     * Get revenue statistics
-     */
-    getRevenueStats(): Observable<RevenueStats> {
-        // Mock data - replace with actual API call
-        return of({
-            totalRevenue: 125000,
-            monthlyRevenue: [
-                8500, 9200, 10100, 11400, 12800,
-                13500, 14200, 15800, 16400, 17200,
-                18500, 19800
-            ],
-            revenueGrowth: 18.3
-        });
-    }
+  constructor(private http: HttpClient) {}
 
-    /**
-     * Get reservation count by status
-     */
-    getReservationsByStatus(): Observable<{ status: string, count: number }[]> {
-        return of([
-            { status: 'Confirmé', count: 189 },
-            { status: 'En attente', count: 43 },
-            { status: 'Annulé', count: 15 }
-        ]);
-    }
+  /**
+   * GET /api/admin/statistics/dashboard?period=30|90
+   * Feeds all four KPI cards.
+   */
+  getDashboard(period: 30 | 90 = 30): Observable<DashboardStatsDTO> {
+    const params = new HttpParams().set('period', period);
+    return this.http.get<DashboardStatsDTO>(`${this.base}/dashboard`, { params });
+  }
 
-    /**
-     * Get monthly reservations trend
-     */
-    getMonthlyReservationsTrend(): Observable<{ month: string, count: number }[]> {
-        const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-        const data = months.map((month, index) => ({
-            month,
-            count: Math.floor(15 + Math.random() * 10) + index
-        }));
-        return of(data);
-    }
+  /**
+   * GET /api/admin/statistics/monthly-trend
+   * Feeds the main bar chart (full current calendar year, 12 months).
+   */
+  getMonthlyTrend(): Observable<MonthlyTrendDTO> {
+    return this.http.get<MonthlyTrendDTO>(`${this.base}/monthly-trend`);
+  }
 
-    /**
-     * Get client statistics
-     */
-    getClientStats(): Observable<{ total: number, partenaires: number, passagers: number }> {
-        return of({
-            total: 156,
-            partenaires: 48,
-            passagers: 108
-        });
-    }
+  /**
+   * GET /api/admin/statistics/partner-revenue?period=30|90
+   * Feeds the horizontal bar chart + partner ranking list.
+   */
+  getPartnerRevenue(period: 30 | 90 = 30): Observable<PartnerRevenueDTO> {
+    const params = new HttpParams().set('period', period);
+    return this.http.get<PartnerRevenueDTO>(`${this.base}/partner-revenue`, { params });
+  }
 
-    /**
-     * Get average revenue per reservation
-     */
-    getAverageRevenuePerReservation(): Observable<number> {
-        return of(506);
-    }
+  /**
+   * GET /api/admin/statistics/sources?period=30|90
+   * Feeds the doughnut chart + sources table.
+   */
+  getSources(period: 30 | 90 = 30): Observable<SourceStatsDTO> {
+    const params = new HttpParams().set('period', period);
+    return this.http.get<SourceStatsDTO>(`${this.base}/sources`, { params });
+  }
+
+  /**
+   * GET /api/admin/statistics/revenue-distribution?period=30|90
+   * Feeds the pie chart (Partenaires vs Directs).
+   */
+  getRevenueDistribution(period: 30 | 90 = 30): Observable<RevenueDistributionDTO> {
+    const params = new HttpParams().set('period', period);
+    return this.http.get<RevenueDistributionDTO>(`${this.base}/revenue-distribution`, { params });
+  }
+
+  /**
+   * GET /api/admin/statistics/passenger-trend
+   * Feeds the mini sparkline in the highlight card.
+   */
+  getPassengerTrend(): Observable<PassengerTrendDTO> {
+    return this.http.get<PassengerTrendDTO>(`${this.base}/passenger-trend`);
+  }
 }

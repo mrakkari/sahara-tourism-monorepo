@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild, AfterViewInit, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -12,7 +12,6 @@ import { NotificationService } from '../../../../../shared/src/lib/auth/notifica
 import { StatCardComponent } from '../../components/stat-card/stat-card.component';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { GlassCardComponent } from '../../components/glass-card/glass-card.component';
-import { TOUR_TYPES, RESERVATION_SOURCES } from '../../core/constants/business-data.constants';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Subject } from 'rxjs';
@@ -56,8 +55,8 @@ export class DashboardComponent implements OnInit {
   endDate: Date | null = null;
 
   // Tour types and sources for filtering
-  tourTypes = Array.from(TOUR_TYPES);
-  reservationSources = Array.from(RESERVATION_SOURCES);
+//  tourTypes = Array.from(TOUR_TYPES);
+ // reservationSources = Array.from(RESERVATION_SOURCES);
 
   // Pagination
   pageSize = 5;
@@ -72,7 +71,8 @@ export class DashboardComponent implements OnInit {
 
   constructor(
       private adminReservationService: AdminReservationService,
-      private notificationService: NotificationService
+      private notificationService: NotificationService,
+      private router: Router 
   ) {
       effect(() => {
           const count = this.notificationService.unreadCount();
@@ -310,103 +310,213 @@ export class DashboardComponent implements OnInit {
       }
   }
 
-  exportToCSV(): void {
-    this.exportToPDF();
-  }
-  
-  exportToPDF(): void {
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(18);
-    doc.setTextColor(30, 41, 59);
-    doc.text('Réservations Sahara', 14, 22);
-    
-    // Add subtitle with filters info
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    const today = new Date().toLocaleDateString('fr-FR', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    doc.text(`Exporté le ${today}`, 14, 30);
-    doc.text(`Page ${this.currentPage} sur ${this.totalPages} | ${this.filteredReservations.length} réservations au total`, 14, 36);
-    
-    // Prepare table data from current page
-    const tableData = this.pagedReservations.map(r => [
-      r.partnerName,
-      r.tourTypes?.map(t => t.name).join(', ') || 'N/A',
-      `${r.numberOfPeople} pers.`,
-      this.formatDate(r.checkInDate),
-      `${this.calculateDuration(r)} nuits`,
-      r.source?.name || 'N/A',     // ← was r.source || 'N/A'
-      this.getStatusLabel(r.status),
-      this.getPaymentStatusLabel(r.payment.paymentStatus),
-      `${r.payment.totalAmount} TND`
-    ]);
-    
-    // Generate table
-    autoTable(doc, {
-      head: [[
-        'Partenaire', 
-        'Type Tour', 
-        'Personnes', 
-        'Check-in', 
-        'Durée', 
-        'Source', 
-        'Statut', 
-        'Paiement', 
-        'Montant'
-      ]],
-      body: tableData,
-      startY: 42,
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-      },
-      headStyles: {
-        fillColor: [14, 165, 233],
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center'
-      },
-      alternateRowStyles: {
-        fillColor: [241, 245, 249],
-      },
-      columnStyles: {
-        0: { cellWidth: 25 }, // Partenaire
-        1: { cellWidth: 20 }, // Type
-        2: { cellWidth: 18 }, // Personnes
-        3: { cellWidth: 20 }, // Check-in
-        4: { cellWidth: 15 }, // Durée
-        5: { cellWidth: 20 }, // Source
-        6: { cellWidth: 22 }, // Statut
-        7: { cellWidth: 20 }, // Paiement
-        8: { cellWidth: 25, halign: 'right' } // Montant
-      },
-      margin: { top: 42 },
-    });
-    
-    // Add footer with page numbers
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.text(
-        `Page ${i} sur ${pageCount}`,
-        doc.internal.pageSize.getWidth() / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: 'center' }
-      );
-    }
-    
-    // Save the PDF
-    const timestamp = new Date().toISOString().split('T')[0];
-    doc.save(`reservations_page${this.currentPage}_${timestamp}.pdf`);
-  
-  }
+ printUpcomingReservations(): void {
+  const labelMap: Record<string, string> = {
+    SINGLE: 'SQL', DOUBLE: 'DBL', TRIPLE: 'TRP',
+    X4: '4 PAX', X5: '5 PAX', X6: '6 PAX', X7: '7 PAX',
+  };
+
+  const blocksHtml = this.upcomingDayBlocks.map(block => {
+    const rows = block.reservations.map(r => {
+      const names = this.getDisplayNames(r).map(d => d.label).join(', ') || '—';
+      const type  = this.getTypeLabel(r);
+      const group = `${r.adults} Ad${r.children > 0 ? ', ' + r.children + ' Enf' : ''}`;
+      const date  = this.getDisplayDate(r);
+      const duration = this.getDuration(r);
+      const source = (r.source as any)?.name ?? r.source ?? 'N/A';
+      const statut  = this.getStatusLabel(r.status);
+      const payment = this.getPaymentStatusLabel(r.payment.paymentStatus);
+      const amount  = `${r.payment.totalAmount?.toLocaleString('fr-FR') ?? '0'} TND`;
+
+      return `
+        <tr>
+          <td>${r.partnerName}</td>
+          <td>${type}<br><small>${names}</small></td>
+          <td>${group}</td>
+          <td>${date}</td>
+          <td>${duration}</td>
+          <td>${source}</td>
+          <td>${statut}</td>
+          <td>${payment}</td>
+          <td class="right">${amount}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="block">
+        <div class="block-header">
+          <span class="block-label">${block.label}</span>
+          <span class="block-date">${block.dateStr}</span>
+          <span class="block-count">${block.reservations.length} réservation${block.reservations.length > 1 ? 's' : ''}</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Partenaire</th>
+              <th>Prestation</th>
+              <th>Groupe</th>
+              <th>Date</th>
+              <th>Durée</th>
+              <th>Source</th>
+              <th>Statut</th>
+              <th>Paiement</th>
+              <th class="right">Montant</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  const printedOn = new Date().toLocaleString('fr-FR');
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <title>Réservations à venir</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          font-size: 11px;
+          color: #1e293b;
+          padding: 20px;
+          background: #fff;
+        }
+        .print-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 20px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #1e293b;
+        }
+        .print-header h1 {
+          font-size: 20px; 
+          font-weight: 800;
+          color: #1e293b;
+          margin-bottom: 3px;
+        }
+        .print-header .sub {
+          font-size: 11px;
+          color: #64748b;
+        }
+        .print-header .meta {
+          text-align: right;
+          font-size: 10px;
+          color: #64748b;
+        }
+        .block {
+          margin-bottom: 18px;
+        }
+        .block-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: #1e293b;
+          color: #d3d1c7;
+          padding: 9px 12px;
+          border-radius: 6px 6px 0 0;
+        }
+        .block-label {
+          font-size: 12px;
+          font-weight: 800;
+          color: #fff;
+          text-transform: capitalize;
+        }
+        .block-date {
+          font-size: 11px;
+          color: #94a3b8;
+          text-transform: capitalize;
+        }
+        .block-count {
+          margin-left: auto;
+          background: #334155;
+          color: #cbd5e1;
+          padding: 1px 8px;
+          border-radius: 99px;
+          font-size: 10px;
+          font-weight: 600;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 0.5px solid #e2e8f0;
+          border-top: none;
+        }
+        thead tr {
+          background: #f8fafc;
+        }
+        thead th {
+          color: #334155; 
+          font-size: 9px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 8px 8px;
+          text-align: left;
+          border-bottom: 1.5px solid #cbd5e1;
+          white-space: nowrap;
+        }
+        tbody tr {
+          border-bottom: 0.5px solid #f1f5f9;
+        }
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        td {
+          padding: 8px 8px;
+          vertical-align: top;
+          line-height: 1.4;
+          font-size: 11px;          /* ← was inherited 9px */
+          font-weight: 500;         /* ← added */
+          color: #0f172a;
+        }
+        td small {
+          display: block;
+          color: #64748b;
+          font-size: 9px;
+          margin-top: 1px;
+        }
+        .right { text-align: right; font-weight: 800; }
+        .footer {
+          margin-top: 18px;
+          padding-top: 8px;
+          border-top: 1px solid #e2e8f0;
+          font-size: 9px; 
+          color: #64748b;
+          text-align: center;
+        }
+        @media print {
+          body { padding: 8px; }
+          @page { margin: 8mm; size: A4 portrait; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <div>
+          <h1>📋 Réservations à venir</h1>
+          <div class="sub">Campement Dunes Insolites — Tableau de bord admin</div>
+        </div>
+        <div class="meta">
+          Imprimé le ${printedOn}
+        </div>
+      </div>
+      ${blocksHtml}
+      <div class="footer">
+        Dunes Insolites — El Faouar, Kébili — dunesinsolites@gmail.com
+      </div>
+    </body>
+    </html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 500);
+}
   getDisplayNames(r: Reservation): { label: string; badge: 'hebergement' | 'tour' | 'extra' }[] {
     switch (r.reservationType) {
       case 'HEBERGEMENT':
@@ -652,5 +762,28 @@ export class DashboardComponent implements OnInit {
         this.reservations = reservations;
         this.applyFilters();
       });
+  }
+
+  getDuration(r: Reservation): string {
+    if (r.reservationType === 'HEBERGEMENT' || !r.reservationType) {
+      const diff = new Date(r.checkOutDate).getTime() - new Date(r.checkInDate).getTime();
+      const nights = Math.max(1, Math.ceil(diff / 86_400_000));
+      return `${nights} nuit${nights > 1 ? 's' : ''}`;
+    }
+
+    if (r.reservationType === 'TOURS') {
+      const duration = r.tours?.[0]?.duration;
+      return duration ?? '—';
+    }
+
+    if (r.reservationType === 'EXTRAS') {
+      const duration = r.extras?.[0]?.duration;
+      return duration ?? '—';
+    }
+
+    return '—';
+  }
+  goToReservation(id: string): void {
+    this.router.navigate(['/reservation', id]);
   }
 }

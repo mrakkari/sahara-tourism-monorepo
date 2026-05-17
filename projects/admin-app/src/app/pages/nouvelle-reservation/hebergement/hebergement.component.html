@@ -142,6 +142,7 @@
         </div>
 
         <!-- Tour Types — dropdown, multi-select -->
+        <!-- Tour Types — dropdown, multi-select -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">
@@ -169,41 +170,126 @@
 
               <!-- Selected tour types list -->
               <div class="selected-extras" *ngIf="tourTypesArray.length > 0">
-                <div class="selected-extra-row"
-                     *ngFor="let ctrl of tourTypesArray.controls">
-                  <span class="sel-extra-name">
-                    {{ getTourByTypeId(ctrl.get('tourTypeId')?.value)?.name }}
-                  </span>
+                <ng-container *ngFor="let ctrl of tourTypesArray.controls">
 
-                  <!-- Per-tour allocation (only when multi) -->
-                  <div class="sel-extra-ctrl" *ngIf="isMulti" [formGroup]="$any(ctrl)">
-                    <span style="font-size:0.75rem;color:#64748b">Ad.</span>
-                    <button type="button"
-                            (click)="ctrl.get('numberOfAdults')?.setValue(max(0,(ctrl.get('numberOfAdults')?.value||0)-1))">−</button>
-                    <span>{{ ctrl.get('numberOfAdults')?.value || 0 }}</span>
-                    <button type="button"
-                            (click)="ctrl.get('numberOfAdults')?.setValue((ctrl.get('numberOfAdults')?.value||0)+1)">+</button>
-                    <span style="font-size:0.75rem;color:#64748b;margin-left:8px">Enf.</span>
-                    <button type="button"
-                            (click)="ctrl.get('numberOfChildren')?.setValue(max(0,(ctrl.get('numberOfChildren')?.value||0)-1))">−</button>
-                    <span>{{ ctrl.get('numberOfChildren')?.value || 0 }}</span>
-                    <button type="button"
-                            (click)="ctrl.get('numberOfChildren')?.setValue((ctrl.get('numberOfChildren')?.value||0)+1)">+</button>
+                  <!-- Tour type row -->
+                  <div class="selected-extra-row">
+                    <span class="sel-extra-name">
+                      {{ getTourByTypeId(ctrl.get('tourTypeId')?.value)?.name }}
+                    </span>
+
+                    <!-- Per-tour allocation (only when multi) -->
+                    <div class="sel-extra-ctrl" *ngIf="isMulti" [formGroup]="$any(ctrl)">
+                      <span style="font-size:0.75rem;color:#64748b">Ad.</span>
+                      <button type="button"
+                              (click)="ctrl.get('numberOfAdults')?.setValue(max(0,(ctrl.get('numberOfAdults')?.value||0)-1))">−</button>
+                      <span>{{ ctrl.get('numberOfAdults')?.value || 0 }}</span>
+                      <button type="button"
+                              (click)="ctrl.get('numberOfAdults')?.setValue((ctrl.get('numberOfAdults')?.value||0)+1)">+</button>
+                      <span style="font-size:0.75rem;color:#64748b;margin-left:8px">Enf.</span>
+                      <button type="button"
+                              (click)="ctrl.get('numberOfChildren')?.setValue(max(0,(ctrl.get('numberOfChildren')?.value||0)-1))">−</button>
+                      <span>{{ ctrl.get('numberOfChildren')?.value || 0 }}</span>
+                      <button type="button"
+                              (click)="ctrl.get('numberOfChildren')?.setValue((ctrl.get('numberOfChildren')?.value||0)+1)">+</button>
+                    </div>
+
+                    <button type="button" class="sel-extra-remove"
+                            (click)="onRemoveTourType(ctrl.get('tourTypeId')?.value)">✕</button>
                   </div>
 
-                  <button type="button" class="sel-extra-remove"
-                          (click)="onRemoveTourType(ctrl.get('tourTypeId')?.value)">✕</button>
-                </div>
+                 <!-- ── Repartition rows — shown per tourType when multi ── -->
+                  <div class="repartition-inline" *ngIf="isMulti">
+
+                    <div class="repartition-row"
+                        *ngFor="let rep of getTourRepartitions(ctrl.get('tourTypeId')?.value); let ri = index">
+                      <span class="rep-label">⛺</span>
+                      <input type="number"
+                            class="input rep-number"
+                            [value]="rep.numberOfTentes"
+                            min="1"
+                            (input)="setRepartitionCount(ctrl.get('tourTypeId')?.value, ri, +$any($event.target).value)">
+                      <select class="input rep-select"
+                              [value]="rep.tenteType"
+                              (change)="setRepartitionType(ctrl.get('tourTypeId')?.value, ri, $any($event.target).value)">
+                        <option *ngFor="let t of tenteTypes" [value]="t.value">{{ t.label }}</option>
+                      </select>
+                      <span class="rep-total">
+                        = {{ rep.numberOfTentes * getTenteCapacity(rep.tenteType) }} pers.
+                      </span>
+                      <button type="button" class="sel-extra-remove"
+                              (click)="removeRepartitionForTour(ctrl.get('tourTypeId')?.value, ri)">✕</button>
+                    </div>
+
+                    <button type="button"
+                            class="btn-add-repartition"
+                            (click)="addRepartitionForTour(ctrl.get('tourTypeId')?.value)">
+                      + Ajouter une tente
+                    </button>
+
+                  </div>
+
+                </ng-container>
 
                 <div class="alloc-warn" *ngIf="isMulti && allocationMessage()">
                   ⚠️ {{ allocationMessage() }}
+                </div>
+
+                <!-- Repartition validation error -->
+                <div class="alloc-warn" *ngIf="repartitionError">
+                  {{ repartitionError }}
+                </div>
+              </div>
+
+              <!-- Single tourType — show repartition below -->
+              <div class="repartition-single" *ngIf="tourTypesArray.length === 1">
+                <div class="repartition-title">⛺ Répartition des tentes <span class="optional">optionnel</span></div>
+
+                <div class="field">
+                  <label>Ajouter un type de tente</label>
+                  <select class="input"
+                          (change)="addRepartition($any($event.target).value); $any($event.target).value = ''">
+                    <option value="">— Choisir un type —</option>
+                    <option *ngFor="let t of tenteTypes"
+                            [value]="t.value"
+                            [disabled]="isTenteSelected(t.value)">
+                      {{ t.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="selected-extras" *ngIf="repartitions.length > 0">
+                  <div class="selected-extra-row" *ngFor="let r of repartitions">
+                    <span class="sel-extra-name">
+                      {{ getTenteLabel(r.tenteType) }}
+                      <span class="tente-sub">→ {{ r.numberOfTentes * getTenteCapacity(r.tenteType) }} pers.</span>
+                    </span>
+                    <div class="sel-extra-ctrl">
+                      <button type="button"
+                              (click)="adjustRepartitionCount(r.tenteType, -1)"
+                              [disabled]="r.numberOfTentes <= 1">−</button>
+                      <span>{{ r.numberOfTentes }}</span>
+                      <button type="button"
+                              (click)="adjustRepartitionCount(r.tenteType, 1)">+</button>
+                    </div>
+                    <button type="button" class="sel-extra-remove"
+                            (click)="removeRepartition(r.tenteType)">✕</button>
+                  </div>
+
+                  <div class="repartition-total"
+                      [class.valid]="isRepartitionValid()"
+                      [class.invalid]="!isRepartitionValid()">
+                    <span>Total répartition</span>
+                    <strong>{{ getRepartitionTotal() }} / {{ adults + children }} personnes</strong>
+                  </div>
+
+                  <div class="alloc-warn" *ngIf="repartitionError">{{ repartitionError }}</div>
                 </div>
               </div>
 
             </div>
           </div>
         </div>
-
         <!-- Extras — dropdown multi-select -->
         <div class="card" *ngIf="extras.length > 0">
           <div class="card-header">
@@ -237,6 +323,7 @@
               </div>
             </div>
           </div>
+          
         </div>
 
         <!-- Informations & Promo -->
@@ -378,21 +465,6 @@
               </div>
               <div class="sum-row" *ngIf="tourTypesArray.length > 0">
                 <span>🗺️ Activités</span><span>{{ tourTypesArray.length }} sélectionnée(s)</span>
-              </div>
-            </div>
-
-            <div class="sum-breakdown" *ngIf="tourTypesTotal() > 0">
-              <div class="breakdown-row">
-                <span>Hébergement ({{ nights }} nuit{{ nights > 1 ? 's' : '' }})</span>
-                <span>{{ tourTypesTotal() | number:'1.0-0' }} TND</span>
-              </div>
-              <div class="breakdown-row" *ngIf="extrasTotal() > 0">
-                <span>Extras</span>
-                <span>{{ extrasTotal() | number:'1.0-0' }} TND</span>
-              </div>
-              <div class="breakdown-row discount" *ngIf="discountAmount > 0">
-                <span>Remise promo</span>
-                <span>−{{ discountAmount | number:'1.0-0' }} TND</span>
               </div>
             </div>
           </div>

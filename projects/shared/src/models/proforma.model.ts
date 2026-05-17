@@ -28,4 +28,9 @@ export interface ProformaResponse {
   reservationId: string;
   userId: string;
   items: InvoiceItemResponse[];
+  userName?: string;
+  userEmail?: string;
+  userPhone?: string;
+  userMatriculeFiscal?: string;
+  userAgencyAddress?: string;
 }

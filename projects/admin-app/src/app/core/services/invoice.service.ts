@@ -1,34 +1,44 @@
+// admin/src/app/core/services/invoice.service.ts
+
 import { Injectable } from '@angular/core';
-import { Reservation, Invoice } from '../models/reservation.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { FactureResponse } from '../models/facture.model';
 
-@Injectable({
-    providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class InvoiceService {
-    generateInvoice(reservation: Reservation): Invoice {
-        const baseAmount = reservation.payment.totalAmount - reservation.extras.reduce((sum, e) => sum + e.totalPrice, 0);
-        const extrasAmount = reservation.extras.reduce((sum, e) => sum + e.totalPrice, 0);
 
-        return {
-            reservationId: reservation.id,
-            invoiceNumber: `INV-${new Date().getFullYear()}-${reservation.id.toUpperCase().slice(0, 8)}`,
-            issueDate: new Date().toISOString(),
-            partnerName: reservation.partnerName,
-            baseAmount,
-            extrasAmount,
-            totalAmount: reservation.payment.totalAmount,
-            paidAmount: reservation.payment.paidAmount,
-            remainingAmount: reservation.payment.totalAmount - reservation.payment.paidAmount
-        };
-    }
+  private readonly API_URL = 'http://localhost:8080/api/invoices';
 
-    formatCurrency(amount: number): string {
-        return `${amount.toFixed(2)} TND`;
-    }
+  constructor(private http: HttpClient) {}
 
-    calculateBasePrice(adults: number, children: number): number {
-        const adultPrice = 200; // TND per adult per night
-        const childPrice = 100; // TND per child per night
-        return (adults * adultPrice) + (children * childPrice);
-    }
+  // ── Factures (STANDARD) ───────────────────────────────────────
+  getAllFactures(): Observable<FactureResponse[]> {
+    return this.http.get<FactureResponse[]>(`${this.API_URL}/factures`);
+  }
+
+  getFacturesByReservation(reservationId: string): Observable<FactureResponse[]> {
+    return this.http.get<FactureResponse[]>(
+      `${this.API_URL}/factures/reservation/${reservationId}`
+    );
+  }
+
+  getFactureById(invoiceId: string): Observable<FactureResponse> {
+    return this.http.get<FactureResponse>(`${this.API_URL}/${invoiceId}`);
+  }
+
+  // ── Proformas (PROFORMA) ──────────────────────────────────────
+  getAllProformas(): Observable<FactureResponse[]> {
+    return this.http.get<FactureResponse[]>(`${this.API_URL}`).pipe(
+      map(list => list.filter(i => i.invoiceType === 'PROFORMA'))
+    );
+  }
+
+  getProformasByReservation(reservationId: string): Observable<FactureResponse[]> {
+    return this.http.get<FactureResponse[]>(
+      `${this.API_URL}/reservation/${reservationId}`
+    ).pipe(
+      map(list => list.filter(i => i.invoiceType === 'PROFORMA'))
+    );
+  }
 }

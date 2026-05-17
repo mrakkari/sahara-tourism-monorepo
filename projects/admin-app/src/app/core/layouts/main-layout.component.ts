@@ -14,8 +14,8 @@ import { AuthService } from '../../../../../shared/src/lib/auth/auth.service';
 
       <!-- Dark Sidebar -->
       <lib-sidebar
-        title="Campement Dunes Insolites"
-        icon="🌐"
+        title="Dunes Insolites"
+        logoUrl="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png"
         [items]="sidebarItems"
         [(collapsed)]="sidebarCollapsed"
         [(mobileOpen)]="mobileMenuOpen"
@@ -32,19 +32,7 @@ import { AuthService } from '../../../../../shared/src/lib/auth/auth.service';
             <h1 class="page-title">{{ pageTitle }}</h1>
           </div>
           <div class="top-bar-right">
-            <div class="search-box">
-              <span class="search-icon">🔍</span>
-              <input type="search" placeholder="Rechercher..." class="search-input">
-            </div>
             <app-notification-panel></app-notification-panel>
-            <button class="btn-deconnexion" (click)="handleLogout()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              Déconnexion
-            </button>
           </div>
         </header>
         <div class="page-content">
@@ -113,48 +101,6 @@ import { AuthService } from '../../../../../shared/src/lib/auth/auth.service';
 
     .top-bar-right { display: flex; align-items: center; gap: 20px; }
 
-    .search-box {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #f8fafc;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 12px;
-      padding: 10px 16px;
-      transition: all 0.3s ease;
-    }
-
-    .search-box:focus-within {
-      border-color: #f59e0b;
-      box-shadow: 0 0 0 3px rgba(245,158,11,0.1);
-    }
-
-    .search-icon { opacity: 0.6; }
-
-    .search-input {
-      border: none; background: transparent; outline: none;
-      font-size: 0.95rem; min-width: 200px;
-    }
-
-    .btn-deconnexion {
-      display: flex; align-items: center; gap: 8px;
-      padding: 9px 18px;
-      background: transparent;
-      border: 1.5px solid #ef4444;
-      border-radius: 10px;
-      color: #ef4444;
-      font-size: 0.9rem; font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-
-      svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-      &:hover {
-        background: #ef4444; color: white;
-        box-shadow: 0 4px 12px rgba(239,68,68,0.3);
-      }
-    }
 
     .page-content {
       flex: 1;
@@ -185,7 +131,7 @@ import { AuthService } from '../../../../../shared/src/lib/auth/auth.service';
   `]
 })
 export class MainLayoutComponent {
-  pageTitle = 'Dashboard';
+  pageTitle = 'Campement Dunes Insolites';
   sidebarCollapsed = false;
   mobileMenuOpen = false;
 

@@ -18,6 +18,8 @@
   font-weight: 600;
   color: #1e293b;
   margin: 0;
+  border-left: 4px solid #a855f7;  
+  padding-left: 12px;
 }
 
 .btn-add {
@@ -94,15 +96,15 @@
   border-collapse: collapse;
   min-width: 500px;
 
-  thead { background: #fef3c7; }
+  thead { background: #f3e8ff;}
 
   th {
     padding: 12px 14px;
     text-align: left;
     font-weight: 600;
-    color: #1e293b;
+    color: #6b21a8; 
     font-size: 0.82rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #d8b4fe;
     white-space: nowrap;
   }
 

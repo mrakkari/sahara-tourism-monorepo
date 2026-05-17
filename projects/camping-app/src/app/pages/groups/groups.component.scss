@@ -79,7 +79,7 @@
   gap: 0.75rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   padding: 12px 16px;
   border-radius: 12px;
   background: #fff;
@@ -94,20 +94,28 @@
   align-items: center;
   background: #f5f4f0;
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 0 0 12px;  // ← remove right padding so button sits flush
   border: 0.5px solid #e2e2df;
+  overflow: hidden;      // ← clips button to match border-radius
 
-  .search-icon { font-size: 0.95rem; color: #888780; }
+  .search-icon { font-size: 0.95rem; color: #888780; flex-shrink: 0; }
 
   .search-input {
     border: none;
     background: transparent;
     padding: 9px;
-    width: 100%;
+    flex: 1;
     font-size: 0.9rem;
     color: #2c2c2a;
     &:focus { outline: none; }
     &::placeholder { color: #b4b2a9; }
+  }
+
+  .btn.btn-primary {
+    border-radius: 0;     // ← no radius, clipped by parent overflow:hidden
+    margin: 0;
+    align-self: stretch;
+    padding: 0 18px;
   }
 }
 
@@ -665,4 +673,169 @@ span.nights-badge:not(:empty) {
     background: #fef3c7;
     color: #92400e;
   }
+}
+/* ==================== SECTION BLOCKS ==================== */
+.section-block {
+  margin-bottom: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  margin-bottom: 0.5rem;
+
+  .section-icon { font-size: 1.1rem; }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c2c2a;
+    margin: 0;
+  }
+
+  .section-count {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #fff;
+    background: #888780;
+    padding: 2px 10px;
+    border-radius: 50px;
+  }
+}
+
+.block-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 0.5px dashed #d3d1c7;
+  color: #888780;
+  font-size: 0.9rem;
+
+  .block-empty-icon { font-size: 1.2rem; }
+  p { margin: 0; }
+}
+.source-name {
+  font-weight: 400;
+  color: #2c2c2a;
+  font-size: 0.88rem;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* ==================== STATUS BADGE ==================== */
+.status-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.status-pending    { background: #fef3c7; color: #92400e; }
+  &.status-confirmed  { background: #e0f2fe; color: #0369a1; }
+  &.status-checked_in { background: #e1f5ee; color: #085041; }
+  &.status-completed  { background: #f3e8ff; color: #6b21a8; }
+  &.status-cancelled  { background: #fcebeb; color: #791f1f; }
+  &.status-rejected   { background: #fce8e8; color: #991f1f; }
+}
+
+/* ==================== ROW COLORS ==================== */
+.row-completed { border-left: 3px solid #6b21a8 !important; }
+.row-pending   { border-left: 3px solid #92400e !important; }
+
+/* ==================== COL WIDTHS (with status col) ==================== */
+.groups-table thead th {
+  &.col-group       { width: 10%; }
+  &.col-partner     { width: 8%;  }
+  &.col-tour        { width: 13%; }
+  &.col-people      { width: 8%;  }
+  &.col-repartition { width: 9%;  }
+  &.col-source      { width: 7%;  }
+  &.col-date        { width: 8%;  }
+  &.col-nights      { width: 6%;  }
+  &.col-payment     { width: 8%;  }
+  &.col-status      { width: 8%;  }
+  &.col-actions     { width: 7%;  }
+}
+
+.partner-cell {
+  display: flex;
+  flex-direction: column;  // ← ensures vertical stacking
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.group-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2c2c2a;        // ← dark slate — primary, prominent
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.group-leader {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #c8960f;        // ← amber — matches the "confirmed" badge color
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.group-empty {
+  color: #b4b2a9;
+  font-size: 0.85rem;
+}
+.repartition-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.repartition-line {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #2c2c2a;
+  white-space: nowrap;
+  font-family: monospace;
+  letter-spacing: 0.02em;
+}
+
+.btn-print {
+  margin-left: auto;
+  padding: 6px 14px;
+  background: #2c2c2a;
+  color: #f1efe8;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  &:hover { background: #444441; }
+}
+
+.stat-card {
+  &.in-camp   { border-left: 3px solid #3a7d44; }
+  &.arriving  { border-left: 3px solid #c8960f; }
+}
+
+.stat-breakdown {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #888780;
+  margin-top: 2px;
 }

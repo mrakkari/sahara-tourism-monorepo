@@ -630,3 +630,141 @@ select.input   { cursor: pointer; }
   color: #dc2626;
   margin-top: 5px;
 }
+
+.repartition-inline {
+  margin: -6px 0 8px 16px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-left: 2px solid $border;
+  border-radius: 0 8px 8px 0;
+}
+
+.btn-add-repartition {
+  background: none;
+  border: 1px dashed #94a3b8;
+  color: $gray;
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover { border-color: $amber; color: $amber; background: #fffbeb; }
+}
+
+.repartition-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rep-label {
+  font-size: 0.82rem;
+  color: $gray;
+  white-space: nowrap;
+}
+
+.rep-number {
+  width: 70px !important;
+  padding: 6px 10px !important;
+  font-size: 0.88rem !important;
+}
+
+.rep-select {
+  flex: 1;
+  min-width: 140px;
+  padding: 6px 10px !important;
+  font-size: 0.88rem !important;
+}
+
+.rep-total {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $amber;
+  white-space: nowrap;
+}
+
+.repartition-single {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid $border;
+}
+
+.repartition-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: $dark;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tente-sub {
+  font-size: 0.75rem;
+  color: $gray;
+  margin-left: 6px;
+}
+
+.repartition-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  border: 1px solid;
+
+  &.valid {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
+    strong { color: #15803d; }
+  }
+
+  &.invalid {
+    background: #fef3c7;
+    border-color: #fcd34d;
+    color: #92400e;
+    strong { color: #92400e; }
+  }
+}
+// ── Hebergement identity color ────────────────────────────────
+
+.resa-header {
+  h1 {
+    color: #0369a1; // ← blue identity for hebergement
+  }
+
+  .subtitle {
+    color: #0369a1;
+    opacity: 0.7;
+  }
+}
+
+.card {
+  .card-title {
+    .title-icon {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+  }
+
+  // ── Blue left border accent on every card ──
+  border-left: 3px solid #0369a1;
+}
+
+.nights-chip {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.btn-submit {
+  background: #0369a1; // ← blue submit instead of dark
+  &:hover:not(:disabled) { background: #0284c7; }
+}

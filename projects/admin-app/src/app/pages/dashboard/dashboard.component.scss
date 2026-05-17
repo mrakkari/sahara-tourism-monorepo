@@ -506,8 +506,8 @@ h1 { margin: 0; font-size: 2rem; }
   }
 
   &.badge-extra {
-    background: #fae8ff;
-    color: #701a75;
+    background: #f3e8ff;
+    color: #6b21a8; 
   }
 }
 
@@ -917,5 +917,39 @@ h1 { margin: 0; font-size: 2rem; }
 
   &:hover {
     opacity: 0.88;
+  }
+}
+.duration-badge {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #334155;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .btn-print-pdf {
+    margin-left: auto;
+    padding: 6px 14px;
+    background: #1e293b;
+    color: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s;
+    white-space: nowrap;
+
+    &:hover { background: #334155; }
   }
 }

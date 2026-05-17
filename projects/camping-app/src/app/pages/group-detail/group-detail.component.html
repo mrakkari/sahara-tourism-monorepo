@@ -24,7 +24,7 @@
         <button *ngIf="reservation.status === 'checked_in'"
                 class="btn-action danger"
                 (click)="checkOut()">
-          👋 Départ / Check-out
+          👋 Arrivée / Check-in
         </button>
       </div>
     </div>
@@ -58,6 +58,7 @@
             <span class="v leader">{{ reservation.groupLeaderName || reservation.groupInfo?.groupLeaderName || '—' }}</span>
           </div>
 
+
           <div class="info-box" *ngIf="reservation.groupName">
             <span class="l">Nom du Groupe</span>
             <span class="v">{{ reservation.groupName }}</span>
@@ -68,18 +69,19 @@
             <span class="l">Séjour</span>
             <div class="stay-dates">
               <div class="date-p">
-                <span class="lbl">Départ</span>
+                <span class="lbl">Arrivée</span>
                 <span class="d">{{ formatDate(reservation.checkInDate) }}</span>
               </div>
               <div class="stay-arrow">
                 <span></span>
               </div>
               <div class="date-p">
-                <span class="lbl">Arrivée</span>
+                <span class="lbl">Sortie</span>
                 <span class="d">{{ formatDate(reservation.checkOutDate) }}</span>
               </div>
             </div>
           </div>
+
 
           <!-- TOURS / EXTRAS single date -->
           <div class="info-box" *ngIf="reservation.reservationType === 'TOURS' || reservation.reservationType === 'EXTRAS'">
@@ -91,7 +93,39 @@
             <span class="l">⚠️ Demande Spéciale</span>
             <span class="v">{{ reservation.demandeSpecial }}</span>
           </div>
+          <div class="info-box" *ngIf="reservation.source">
+            <span class="l">Source</span>
+            <span class="v source-chip">{{ reservation.source }}</span>
+          </div>
 
+
+        </div>
+        <!-- Répartition des tentes — HEBERGEMENT only -->
+        <div class="info-box full repartition-box"
+            *ngIf="(reservation.reservationType === 'HEBERGEMENT' || !reservation.reservationType)
+                    && reservation.repartitions && reservation.repartitions.length > 0">
+          <span class="l">⛺ Répartition des tentes</span>
+
+          <div class="repartition-list">
+            <div class="repartition-row" *ngFor="let r of reservation.repartitions">
+              <div class="rep-left">
+                <span class="rep-type">{{ getTenteLabel(r.tenteType) }}</span>
+                <span class="rep-detail">
+                  {{ r.numberOfTentes }} tente{{ r.numberOfTentes > 1 ? 's' : '' }}
+                  × {{ r.capacityPerTente }} pers.
+                </span>
+              </div>
+              <span class="rep-total-chip">{{ r.totalPersonnes }} pers.</span>
+            </div>
+
+            <div class="rep-summary">
+              <span>Total</span>
+              <strong>
+                {{ getTotalRepartitionPersonnes() }} /
+                {{ reservation.numberOfPeople }} personnes
+              </strong>
+            </div>
+          </div>
         </div>
 
       </app-glass-card>

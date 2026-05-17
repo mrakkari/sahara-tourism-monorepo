@@ -1,0 +1,302 @@
+<div class="statistics-page" #statisticsPage>
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">📊 Tableau de Bord Analytique</h1>
+      <p class="page-subtitle">Analyse en temps réel de vos performances</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-period" [class.active]="selectedPeriod === 30" (click)="changePeriod(30)">30 jours</button>
+      <button class="btn-period" [class.active]="selectedPeriod === 90" (click)="changePeriod(90)">90 jours</button>
+      <button class="btn-export" (click)="exportToPDF()">📥 Exporter</button>
+    </div>
+  </div>
+
+  <!-- Loading skeleton for KPIs -->
+  <div class="kpi-grid" *ngIf="isLoading">
+    <div class="kpi-card skeleton" *ngFor="let i of [1,2,3,4]">
+      <div class="skeleton-line wide"></div>
+      <div class="skeleton-line narrow"></div>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" *ngIf="!isLoading && dashboard">
+
+    <div class="kpi-card primary">
+      <div class="kpi-header">
+        <span class="kpi-icon">💰</span>
+        <span class="kpi-trend" [class.up]="dashboard.revenueGrowth >= 0" [class.down]="dashboard.revenueGrowth < 0">
+          {{ dashboard.revenueGrowth >= 0 ? '+' : '' }}{{ dashboard.revenueGrowth }}%
+        </span>
+      </div>
+      <div class="kpi-body">
+        <h3 class="kpi-value">{{ formatCurrency(dashboard.totalRevenue) }}</h3>
+        <p class="kpi-label">Revenus Total</p>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-subtext">vs période précédente</span>
+      </div>
+    </div>
+
+    <div class="kpi-card success">
+      <div class="kpi-header">
+        <span class="kpi-icon">📅</span>
+        <span class="kpi-trend" [class.up]="dashboard.reservationGrowth >= 0" [class.down]="dashboard.reservationGrowth < 0">
+          {{ dashboard.reservationGrowth >= 0 ? '+' : '' }}{{ dashboard.reservationGrowth }}%
+        </span>
+      </div>
+      <div class="kpi-body">
+        <h3 class="kpi-value">{{ dashboard.totalReservations }}</h3>
+        <p class="kpi-label">Total Réservations</p>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-subtext">{{ dashboard.confirmedReservations }} confirmées</span>
+      </div>
+    </div>
+
+    <div class="kpi-card warning">
+      <div class="kpi-header">
+        <span class="kpi-icon">⏳</span>
+        <span class="kpi-badge">{{ dashboard.pendingReservations }}</span>
+      </div>
+      <div class="kpi-body">
+        <h3 class="kpi-value">{{ getPendingPercentage() }}%</h3>
+        <p class="kpi-label">Taux d'Attente</p>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-subtext">Nécessite une action</span>
+      </div>
+    </div>
+
+    <div class="kpi-card info">
+      <div class="kpi-header">
+        <span class="kpi-icon">👥</span>
+        <span class="kpi-trend up">{{ dashboard.passengerRevenuePercentage }}%</span>
+      </div>
+      <div class="kpi-body">
+        <h3 class="kpi-value">{{ dashboard.passengerDirectCount }}</h3>
+        <p class="kpi-label">Clients Directs</p>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-subtext">{{ formatCurrency(dashboard.passengerDirectRevenue) }}</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="content-grid">
+
+    <!-- Left Column -->
+    <div class="left-column">
+
+      <!-- Main Bar Chart -->
+      <div class="chart-card featured">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">
+              📈 {{ currentView === 'revenue' ? 'Évolution des Revenus' : 'Évolution des Réservations' }}
+            </h2>
+            <p class="card-subtitle">
+              {{ currentView === 'revenue' ? 'Performance mensuelle (TND)' : 'Nombre de réservations par mois' }}
+            </p>
+          </div>
+          <div class="card-actions">
+            <button class="btn-filter" [class.active]="currentView === 'revenue'" (click)="changeView('revenue')">Revenus</button>
+            <button class="btn-filter" [class.active]="currentView === 'reservations'" (click)="changeView('reservations')">Réservations</button>
+          </div>
+        </div>
+        <div class="chart-container large">
+          <canvas baseChart
+            *ngIf="barChartData"
+            [data]="barChartData"
+            [options]="barChartOptions"
+            [type]="'bar'">
+          </canvas>
+        </div>
+        <div class="chart-stats">
+          <div class="stat-pill">
+            <span class="stat-label">Moyenne mensuelle</span>
+            <span class="stat-value">
+              {{ currentView === 'revenue' ? formatCurrency(getMonthlyAverage()) : getMonthlyAverage().toFixed(0) }}
+            </span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">Meilleur mois</span>
+            <span class="stat-value">{{ getBestMonth() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Partner Revenue Chart -->
+      <div class="chart-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">🤝 Top Partenaires</h2>
+            <p class="card-subtitle">Performance par partenaire</p>
+          </div>
+        </div>
+        <div class="chart-container medium">
+          <canvas baseChart
+            *ngIf="partnerRevenueChartData"
+            [data]="partnerRevenueChartData"
+            [options]="partnerRevenueChartOptions"
+            [type]="'bar'">
+          </canvas>
+        </div>
+        <div class="partner-list">
+          <div class="partner-item" *ngFor="let partner of partnerRevenueData.slice(0, 3); let i = index">
+            <div class="partner-rank">
+              <span class="rank-badge">{{ i + 1 }}</span>
+              <span class="partner-name">{{ partner.name }}</span>
+            </div>
+            <div class="partner-metrics">
+              <span class="partner-revenue">{{ formatCurrency(partner.revenue) }}</span>
+              <span class="partner-percentage">{{ partner.percentage }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-column">
+
+      <!-- Source Doughnut -->
+      <div class="chart-card compact">
+        <div class="card-header">
+          <h2 class="card-title">📍 Sources de Réservation</h2>
+          <p class="card-subtitle">Canaux d'acquisition</p>
+        </div>
+        <div class="chart-container small">
+          <canvas baseChart
+            *ngIf="doughnutChartData"
+            [data]="doughnutChartData"
+            [options]="doughnutChartOptions"
+            [type]="'doughnut'">
+          </canvas>
+        </div>
+        <div class="source-list">
+          <div class="source-item-compact" *ngFor="let source of sourceData.slice(0, 4)">
+            <div class="source-indicator" [style.background-color]="getSourceColor(source.source)"></div>
+            <span class="source-name">{{ source.source }}</span>
+            <span class="source-value">{{ source.percentage }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Distribution Pie -->
+      <div class="chart-card compact">
+        <div class="card-header">
+          <h2 class="card-title">💼 Distribution Revenus</h2>
+          <p class="card-subtitle">Partenaires vs Directs</p>
+        </div>
+        <div class="chart-container small">
+          <canvas baseChart
+            *ngIf="revenueDistributionChartData"
+            [data]="revenueDistributionChartData"
+            [options]="pieChartOptions"
+            [type]="'pie'">
+          </canvas>
+        </div>
+        <div class="distribution-summary" *ngIf="revenueDistribution">
+          <div class="summary-row">
+            <div class="summary-dot partners"></div>
+            <span class="summary-label">Partenaires</span>
+            <span class="summary-value">{{ revenueDistribution.partnerPercentage }}%</span>
+          </div>
+          <div class="summary-row">
+            <div class="summary-dot direct"></div>
+            <span class="summary-label">Directs</span>
+            <span class="summary-value">{{ revenueDistribution.directPercentage }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passenger Highlight Card -->
+      <div class="chart-card highlight" *ngIf="dashboard">
+        <div class="highlight-content">
+          <div class="highlight-icon">👥</div>
+          <div class="highlight-data">
+            <h3 class="highlight-title">Passagers Directs</h3>
+            <p class="highlight-value">{{ formatCurrency(dashboard.passengerDirectRevenue) }}</p>
+            <div class="highlight-stats">
+              <span class="highlight-count">{{ dashboard.passengerDirectCount }} réservations</span>
+              <span class="highlight-badge">{{ dashboard.passengerRevenuePercentage }}%</span>
+            </div>
+          </div>
+        </div>
+        <div class="mini-trend">
+          <canvas baseChart
+            *ngIf="passengerTrendChartData"
+            [data]="passengerTrendChartData"
+            [options]="miniChartOptions"
+            [type]="'line'">
+          </canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Sources Table -->
+  <div class="bottom-section">
+    <div class="table-card">
+      <div class="card-header">
+        <h2 class="card-title">📊 Analyse Détaillée des Sources</h2>
+      </div>
+      <div class="sources-table">
+        <div class="table-header">
+          <div class="th rank">#</div>
+          <div class="th source">Source</div>
+          <div class="th count">Réservations</div>
+          <div class="th percentage">Part de marché</div>
+          <div class="th trend">Tendance</div>
+        </div>
+        <div class="table-row" *ngFor="let source of sourceData; let i = index">
+          <div class="td rank">{{ i + 1 }}</div>
+          <div class="td source">
+            <div class="source-badge" [style.background-color]="getSourceColor(source.source)"></div>
+            <span class="source-text">{{ source.source }}</span>
+          </div>
+          <div class="td count">{{ source.count }}</div>
+          <div class="td percentage">
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar-fill"
+                   [style.width.%]="source.percentage"
+                   [style.background-color]="getSourceColor(source.source)">
+              </div>
+              <span class="progress-text">{{ source.percentage }}%</span>
+            </div>
+          </div>
+          <div class="td trend">
+            <span class="trend-indicator up">↗ En hausse</span>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" *ngIf="sourceData.length === 0 && !isLoading">
+          <p>Aucune donnée de source disponible pour cette période.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  <div class="error-banner" *ngIf="hasError">
+    ⚠️ Impossible de charger les données. Vérifiez votre connexion et réessayez.
+    <button (click)="loadAllData()">Réessayer</button>
+  </div>
+
+  <!-- PDF Export Overlay -->
+  <div class="loading-overlay" *ngIf="isExporting">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Génération du PDF en cours...</p>
+    </div>
+  </div>
+
+</div>

@@ -204,6 +204,18 @@ app-glass-card {
       font-weight: 700;
       color: var(--terra);
     }
+      &.source-chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--terra-xlt);
+        color: var(--terra);
+        border: 1px solid rgba(193, 97, 31, 0.25);
+        padding: 3px 12px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+      }
   }
 
   .s {
@@ -1131,4 +1143,66 @@ app-glass-card {
   .main-layout   { padding: 0 12px; }
   .qty-controls  { grid-template-columns: 1fr 1fr; }
   .extra-preview { grid-column: 1 / -1; height: auto; padding: 10px; }
+}
+
+// ── Repartition box ───────────────────────────────────────────────
+.repartition-box {
+  .repartition-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .repartition-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--sand);
+    border: 1px solid var(--sand-mid);
+    border-radius: var(--radius-sm);
+  }
+
+  .rep-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .rep-type {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--slate);
+  }
+
+  .rep-detail {
+    font-size: 0.75rem;
+    color: var(--slate-lt);
+  }
+
+  .rep-total-chip {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--terra);
+    background: var(--terra-xlt);
+    border: 1px solid rgba(193,97,31,0.2);
+    padding: 3px 10px;
+    border-radius: 50px;
+    white-space: nowrap;
+  }
+
+  .rep-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--sand-mid);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    color: var(--slate-lt);
+    margin-top: 4px;
+
+    strong { color: var(--slate); font-weight: 700; }
+  }
 }

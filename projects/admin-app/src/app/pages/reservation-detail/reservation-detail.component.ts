@@ -402,4 +402,21 @@ export class ReservationDetailComponent implements OnInit {
         && status !== 'REJECTED'
         && status !== 'COMPLETED';
   }
+  getTenteLabel(tenteType: string): string {
+    const map: Record<string, string> = {
+      SINGLE: 'Tente Simple (1 pers.)',
+      DOUBLE: 'Tente Double (2 pers.)',
+      TRIPLE: 'Tente Triple (3 pers.)',
+      X4:     'Tente ×4 (4 pers.)',
+      X5:     'Tente ×5 (5 pers.)',
+      X6:     'Tente ×6 (6 pers.)',
+      X7:     'Tente ×7 (7 pers.)',
+    };
+    return map[tenteType] ?? tenteType;
+  }
+
+  getTotalRepartitionPersonnes(): number {
+    return (this.reservation?.repartitions ?? [])
+      .reduce((sum, r) => sum + r.totalPersonnes, 0);
+  }
 }

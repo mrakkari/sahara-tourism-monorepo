@@ -7,7 +7,7 @@ export interface SidebarItem {
   icon: string;
   route: string;
   badge?: number;
-  highlight?: boolean; // For highlighting special items like "Nouvelle Réservation"
+  highlight?: boolean; 
 }
 
 @Component({
