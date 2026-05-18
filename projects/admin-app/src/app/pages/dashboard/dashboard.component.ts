@@ -67,8 +67,6 @@ export class DashboardComponent implements OnInit {
 
   private currentStatusLoaded = 'all';
   
-
-
   constructor(
       private adminReservationService: AdminReservationService,
       private notificationService: NotificationService,

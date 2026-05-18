@@ -9,7 +9,7 @@ export interface SidebarItem {
   badge?: number;
   highlight?: boolean;
   action?: string;
-  children?: SidebarChild[];   // ← new: inline expandable sub-items
+  children?: SidebarChild[];
 }
 
 export interface SidebarChild {
@@ -41,7 +41,9 @@ export interface SidebarChild {
             <span class="logo-title">{{ title }}</span>
           </div>
         </div>
-        <button class="collapse-btn" (click)="toggleCollapse()" *ngIf="!isMobile"
+        <button class="collapse-btn"
+          (click)="toggleCollapse()"
+          *ngIf="!isMobile"
           [title]="collapsed ? 'Expand' : 'Collapse'">
           <span *ngIf="collapsed">→</span>
           <span *ngIf="!collapsed">←</span>
@@ -52,13 +54,13 @@ export interface SidebarChild {
       <ul class="nav-items">
         <li *ngFor="let item of items" class="nav-li">
 
-          <!-- ── Action item (expandable with children) ── -->
+          <!-- Action item (expandable) -->
           <button *ngIf="item.action"
             class="nav-item nav-item-btn"
             [class.highlight]="item.highlight"
             [class.expanded]="expandedAction === item.action"
             [title]="collapsed ? item.label : ''"
-            (click)="onActionItem(item)">
+            (click)="$event.stopPropagation(); onActionItem(item)">
             <span class="nav-icon">{{ item.icon }}</span>
             <span class="nav-label" *ngIf="!collapsed">{{ item.label }}</span>
             <span class="expand-chevron" *ngIf="!collapsed && item.children">
@@ -66,7 +68,7 @@ export interface SidebarChild {
             </span>
           </button>
 
-          <!-- ── Inline children panel ── -->
+          <!-- Inline children panel (expanded) -->
           <div class="children-panel"
             *ngIf="item.children && expandedAction === item.action && !collapsed">
             <a *ngFor="let child of item.children"
@@ -81,7 +83,7 @@ export interface SidebarChild {
             </a>
           </div>
 
-          <!-- ── Collapsed: tooltip popover for children ── -->
+          <!-- Collapsed: icon-only children -->
           <div class="collapsed-children"
             *ngIf="item.children && expandedAction === item.action && collapsed">
             <a *ngFor="let child of item.children"
@@ -93,7 +95,7 @@ export interface SidebarChild {
             </a>
           </div>
 
-          <!-- ── Regular routed item ── -->
+          <!-- Regular routed item -->
           <a *ngIf="!item.action"
             [routerLink]="item.route"
             routerLinkActive="active"
@@ -107,6 +109,7 @@ export interface SidebarChild {
             <span class="nav-badge" *ngIf="item.badge && !collapsed">{{ item.badge }}</span>
             <span class="nav-dot"   *ngIf="item.badge && collapsed"></span>
           </a>
+
         </li>
       </ul>
 
@@ -120,24 +123,36 @@ export interface SidebarChild {
     </nav>
   `,
   styles: [`
-    :host { display: block; position: fixed; top: 0; left: 0; height: 100vh; z-index: 1000; }
+    * { box-sizing: border-box; }
+
+    :host {
+      display: block;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      z-index: 1000;
+    }
 
     .mobile-backdrop {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5); z-index: 999;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
       animation: fadeIn 0.3s ease;
     }
 
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     .dark-sidebar {
-      height: 100%; width: 280px;
+      height: 100%;
+      width: 280px;
       background: #000;
       border-right: 1px solid rgba(255,255,255,0.1);
       box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-      display: flex; flex-direction: column;
+      display: flex;
+      flex-direction: column;
       transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-      position: relative; z-index: 1000;
+      position: relative;
+      z-index: 1000;
     }
 
     .dark-sidebar.collapsed { width: 80px; }
@@ -148,43 +163,82 @@ export interface SidebarChild {
       .dark-sidebar.mobile-hidden { transform: translateX(-100%); }
     }
 
+    /* ── Header ── */
     .sidebar-header {
       padding: 24px 20px;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       border-bottom: 1px solid rgba(255,255,255,0.05);
       min-height: 80px;
+      flex-shrink: 0;
     }
 
-    .logo-wrapper { display: flex; align-items: center; gap: 12px; overflow: hidden; flex: 1; }
-    .logo-icon { font-size: 1.75rem; min-width: 32px; display: flex; align-items: center; justify-content: center; }
+    .logo-wrapper {
+      display: flex; align-items: center; gap: 12px;
+      overflow: hidden; flex: 1;
+    }
+
+    .logo-icon {
+      min-width: 32px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .logo-img {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      object-fit: contain;
+      background: #fff;
+      padding: 4px;
+      border: 2px solid rgba(255,255,255,0.15);
+    }
+
     .logo-text { display: flex; flex-direction: column; overflow: hidden; }
-    .logo-title { font-weight: 700; font-size: 1rem; color: #fff; white-space: nowrap; }
+    .logo-title {
+      font-weight: 700; font-size: 1rem;
+      color: #fff; white-space: nowrap;
+    }
 
     .collapse-btn {
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
-      color: #94a3b8; width: 32px; height: 32px;
-      border-radius: 8px; cursor: pointer;
+      color: #94a3b8;
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s; font-size: 1rem; flex-shrink: 0;
+      transition: all 0.2s;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .collapse-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-color: rgba(245,158,11,0.3);
     }
 
-    .collapse-btn:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(245,158,11,0.3); }
-
+    /* ── Nav items ── */
     .nav-items {
-      list-style: none; padding: 16px 12px; margin: 0;
-      flex: 1; display: flex; flex-direction: column; gap: 4px;
-      overflow-y: auto; overflow-x: hidden;
+      list-style: none;
+      padding: 16px 12px;
+      margin: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .nav-li { display: flex; flex-direction: column; }
 
-    /* ── Shared nav-item styles ── */
     .nav-item, .nav-item-btn {
       position: relative;
       display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px; border-radius: 10px;
-      color: #94a3b8; text-decoration: none;
+      padding: 14px 16px;
+      border-radius: 10px;
+      color: #94a3b8;
+      text-decoration: none;
       transition: all 0.2s ease;
       font-size: 0.95rem; font-weight: 500;
       border-left: 4px solid transparent;
@@ -198,25 +252,35 @@ export interface SidebarChild {
       text-align: left;
     }
 
-    .nav-icon { font-size: 1.25rem; min-width: 24px; text-align: center; transition: transform 0.2s; }
-    .nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+    .nav-icon {
+      font-size: 1.25rem; min-width: 24px;
+      text-align: center; transition: transform 0.2s;
+    }
 
-    .nav-item:hover, .nav-item-btn:hover { background: rgba(31,41,55,0.7); color: #fff; }
+    .nav-label {
+      white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; flex: 1;
+    }
+
+    .nav-item:hover, .nav-item-btn:hover {
+      background: rgba(31,41,55,0.7); color: #fff;
+    }
     .nav-item:hover .nav-icon, .nav-item-btn:hover .nav-icon { transform: scale(1.05); }
 
-    .nav-item.active { background: #1f2937; color: #fff; border-left-color: #f59e0b; }
+    .nav-item.active {
+      background: #1f2937; color: #fff;
+      border-left-color: #f59e0b;
+    }
 
     .nav-item.highlight, .nav-item-btn.highlight {
       background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.1));
       color: #fbbf24; font-weight: 600;
     }
-
     .nav-item.highlight:hover, .nav-item-btn.highlight:hover {
       background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(251,191,36,0.2));
       color: #fcd34d;
     }
 
-    /* expanded state: left border indicator */
     .nav-item-btn.expanded {
       background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(251,191,36,0.15));
       color: #fcd34d;
@@ -224,12 +288,9 @@ export interface SidebarChild {
       border-radius: 10px 10px 0 0;
     }
 
-    /* chevron */
     .expand-chevron {
-      font-size: 0.55rem;
-      margin-left: auto;
-      color: #64748b;
-      transition: transform 0.2s;
+      font-size: 0.55rem; margin-left: auto;
+      color: #64748b; transition: transform 0.2s;
     }
 
     .nav-badge {
@@ -245,7 +306,7 @@ export interface SidebarChild {
       background: #dc2626; border-radius: 50%;
     }
 
-    /* ── Children panel (expanded, not collapsed sidebar) ── */
+    /* ── Children panel ── */
     .children-panel {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(245,158,11,0.2);
@@ -262,132 +323,105 @@ export interface SidebarChild {
     }
 
     .child-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: flex; align-items: center; gap: 12px;
       padding: 11px 16px 11px 20px;
-      text-decoration: none;
-      color: #94a3b8;
+      text-decoration: none; color: #94a3b8;
       transition: all 0.18s ease;
       border-bottom: 1px solid rgba(255,255,255,0.04);
       cursor: pointer;
-
-      &:last-child { border-bottom: none; }
-
-      &:hover {
-        background: rgba(245,158,11,0.1);
-        color: #fbbf24;
-
-        .child-icon { transform: scale(1.1); }
-        strong { color: #fcd34d; }
-      }
     }
+    .child-item:last-child { border-bottom: none; }
+    .child-item:hover {
+      background: rgba(245,158,11,0.1);
+      color: #fbbf24;
+    }
+    .child-item:hover .child-icon { transform: scale(1.1); }
+    .child-item:hover strong { color: #fcd34d; }
 
     .child-icon {
-      font-size: 1.1rem;
-      min-width: 24px;
-      text-align: center;
-      transition: transform 0.2s;
+      font-size: 1.1rem; min-width: 24px;
+      text-align: center; transition: transform 0.2s;
     }
 
-    .child-text {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-
-      strong {
-        font-size: 0.88rem;
-        font-weight: 600;
-        color: #cbd5e1;
-        display: block;
-      }
-
-      small {
-        font-size: 0.73rem;
-        color: #475569;
-        display: block;
-        line-height: 1.3;
-      }
+    .child-text { display: flex; flex-direction: column; gap: 1px; }
+    .child-text strong {
+      font-size: 0.88rem; font-weight: 600;
+      color: #cbd5e1; display: block;
+    }
+    .child-text small {
+      font-size: 0.73rem; color: #475569;
+      display: block; line-height: 1.3;
     }
 
-    /* ── Collapsed children: stacked icon-only buttons ── */
+    /* ── Collapsed children ── */
     .collapsed-children {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 4px 8px;
+      display: flex; flex-direction: column;
+      gap: 4px; padding: 4px 8px;
       animation: slideDown 0.2s ease;
     }
 
     .collapsed-child {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 48px;
-      height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 40px;
       border-radius: 8px;
       background: rgba(245,158,11,0.08);
       border: 1px solid rgba(245,158,11,0.2);
-      text-decoration: none;
-      font-size: 1.1rem;
-      transition: all 0.18s;
-      margin: 0 auto;
-      cursor: pointer;
-
-      &:hover {
-        background: rgba(245,158,11,0.2);
-        border-color: #f59e0b;
-        transform: scale(1.05);
-      }
+      text-decoration: none; font-size: 1.1rem;
+      transition: all 0.18s; margin: 0 auto; cursor: pointer;
+    }
+    .collapsed-child:hover {
+      background: rgba(245,158,11,0.2);
+      border-color: #f59e0b;
+      transform: scale(1.05);
     }
 
     /* ── Footer ── */
-    .sidebar-footer { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      flex-shrink: 0;
+    }
 
     .logout-btn {
-      width: 100%; display: flex; align-items: center; gap: 12px;
+      width: 100%;
+      display: flex; align-items: center; gap: 12px;
       padding: 14px 16px;
       background: #dc2626; color: white;
       border: none; border-radius: 10px;
       cursor: pointer; font-size: 0.95rem; font-weight: 600;
       transition: all 0.2s; justify-content: center;
     }
-
     .logout-btn:hover {
       background: #b91c1c;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(220,38,38,0.4);
-    }
-    .logo-img {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      object-fit: contain;   /* ← contain instead of cover */
-      background: #fff;      /* ← white background */
-      padding: 4px;
-      border: 2px solid rgba(255,255,255,0.15);
     }
 
     .logout-icon { font-size: 1.25rem; }
     .logout-text { white-space: nowrap; }
 
     /* ── Collapsed overrides ── */
-    .dark-sidebar.collapsed .sidebar-header { padding: 24px 12px; justify-content: center; }
+    .dark-sidebar.collapsed .sidebar-header {
+      padding: 24px 12px; justify-content: center;
+    }
     .dark-sidebar.collapsed .logo-wrapper { justify-content: center; }
     .dark-sidebar.collapsed .nav-items { padding: 16px 8px; }
     .dark-sidebar.collapsed .nav-item,
-    .dark-sidebar.collapsed .nav-item-btn { justify-content: center; padding: 14px 8px; gap: 0; }
-    .dark-sidebar.collapsed .logout-btn { padding: 14px 8px; justify-content: center; }
-
-    * { box-sizing: border-box; }
+    .dark-sidebar.collapsed .nav-item-btn {
+      justify-content: center; padding: 14px 8px; gap: 0;
+    }
+    .dark-sidebar.collapsed .logout-btn {
+      padding: 14px 8px; justify-content: center;
+    }
   `]
 })
 export class SidebarComponent implements OnInit {
-  @Input() title = 'Campement Dunes Insolites';
-  @Input() icon  = '🌐';
+  @Input() title   = 'Campement Dunes Insolites';
+  @Input() icon    = '🌐';
+  @Input() logoUrl = '';
   @Input() items: SidebarItem[] = [];
-  @Input() collapsed   = false;
-  @Input() mobileOpen  = false;
+  @Input() collapsed  = false;
+  @Input() mobileOpen = false;
 
   @Output() collapsedChange  = new EventEmitter<boolean>();
   @Output() mobileOpenChange = new EventEmitter<boolean>();
@@ -395,8 +429,7 @@ export class SidebarComponent implements OnInit {
   @Output() itemClick        = new EventEmitter<SidebarItem>();
 
   isMobile = false;
-  expandedAction: string | null = null; 
-  @Input() logoUrl = '';
+  expandedAction: string | null = null;
 
   ngOnInit() { this.checkScreenSize(); }
 
@@ -422,10 +455,8 @@ export class SidebarComponent implements OnInit {
 
   onActionItem(item: SidebarItem): void {
     if (item.children?.length) {
-      // Toggle the inline sub-menu
       this.expandedAction = this.expandedAction === item.action ? null : (item.action ?? null);
     } else {
-      // No children — bubble up to parent as before
       this.itemClick.emit(item);
     }
   }
