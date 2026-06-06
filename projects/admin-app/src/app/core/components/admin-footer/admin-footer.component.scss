@@ -45,10 +45,7 @@
         color: rgba(white, 0.8);
         text-decoration: none;
         transition: color $transition-fast;
-
-        &:hover {
-          color: white;
-        }
+        &:hover { color: white; }
       }
     }
   }
@@ -63,5 +60,21 @@
     margin: 0;
     opacity: 0.8;
     font-size: 0.9rem;
+  }
+}
+
+/* ─── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  .admin-footer {
+    padding: 2rem 0 1rem;
+    margin-top: 2rem;
   }
 }

@@ -90,6 +90,12 @@ import { CommonModule } from '@angular/common';
     :host(.hoverable:hover) .spotlight {
       opacity: 1;
     }
+    @media (max-width: 640px) {
+      .card-content {
+        padding: 16px;
+        border-radius: 16px;
+      }
+    }
   `]
 })
 export class GlassCardComponent {

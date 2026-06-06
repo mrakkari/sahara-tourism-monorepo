@@ -365,3 +365,21 @@
     font-size: 0.875rem;
     margin: 8px 0;
 }
+@media (max-width: 480px) {
+  .notification-dropdown {
+    width: calc(100vw - 32px);
+    right: 16px;
+    left: 16px;
+  }
+
+  .top-bar-right {
+    gap: 10px;
+  }
+
+  .btn-deconnexion {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+
+    span { display: none; }
+  }
+}

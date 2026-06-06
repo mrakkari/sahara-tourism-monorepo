@@ -15,16 +15,10 @@ body {
     color: #1E293B;
     overflow-x: hidden;
     min-height: 100vh;
-    // Pure white background for clean, modern look
     background-color: #FFFFFF;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
     font-family: $font-heading;
     letter-spacing: -0.02em;
 }
@@ -37,26 +31,15 @@ h1 {
     -webkit-text-fill-color: transparent;
 }
 
-// Premium Scrollbar
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
     background: rgba(139, 92, 246, 0.3);
     border-radius: 4px;
     backdrop-filter: blur(4px);
-
-    &:hover {
-        background: rgba(139, 92, 246, 0.5);
-    }
+    &:hover { background: rgba(139, 92, 246, 0.5); }
 }
 
-// Utility Classes for "Floating" Design
 .main-layout {
     display: flex;
     padding: 20px;
@@ -75,7 +58,6 @@ h1 {
     position: relative;
 }
 
-// Floating Glass Buttons
 .btn-glass-primary {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(139, 92, 246, 0.9));
     color: white;
@@ -92,32 +74,46 @@ h1 {
         box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.5);
         border-color: rgba(255, 255, 255, 0.5);
     }
-
-    &:active {
-        transform: translateY(0) scale(0.98);
-    }
+    &:active { transform: translateY(0) scale(0.98); }
 }
 
-// Animated Card Entrance
-.stagger-in>* {
+.stagger-in > * {
     opacity: 0;
     animation: slideUpFade 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @for $i from 1 through 20 {
-    .stagger-in>*:nth-child(#{$i}) {
+    .stagger-in > *:nth-child(#{$i}) {
         animation-delay: #{$i * 0.05}s;
     }
 }
 
 @keyframes slideUpFade {
-    from {
-        opacity: 0;
-        transform: translateY(40px) scale(0.95);
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .main-layout {
+        padding: 0;
+        gap: 0;
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+    .content-area {
+        border-radius: 0;
+        padding: 16px;
+        height: auto;
+        min-height: calc(100vh - 64px);
+        overflow-y: visible;
+    }
+}
+
+@media (max-width: 640px) {
+    .content-area {
+        padding: 12px;
     }
 }

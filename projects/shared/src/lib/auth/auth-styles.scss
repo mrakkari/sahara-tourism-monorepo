@@ -378,3 +378,19 @@
   color: rgba(255, 255, 255, 0.4);
   margin: 0.5rem 0 0;
 }
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-radius: 16px;
+  }
+
+  .brand-name {
+    font-size: 1.25rem;
+  }
+
+  .btn-submit {
+    font-size: 0.875rem;
+  }
+}

@@ -953,3 +953,85 @@ h1 { margin: 0; font-size: 2rem; }
     &:hover { background: #334155; }
   }
 }
+
+/* ─── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-wrapper {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .filter-group {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 { font-size: 1.4rem; }
+
+  .day-block-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px 14px;
+  }
+
+  .premium-table th,
+  .premium-table td {
+    padding: 8px 8px;
+    font-size: 0.78rem;
+  }
+
+  .partner-info { gap: 4px; }
+  .partner-avatar { display: none; }
+
+  .tour-types-cell { gap: 2px; }
+  .res-type-chip { font-size: 0.62rem; }
+  .tour-type-badge { font-size: 0.65rem; padding: 1px 6px; }
+
+  .payment-indicator { max-width: 60px; }
+  .payment-text { font-size: 0.65rem; }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .btn-print-pdf { margin-left: 0; }
+  }
+
+  .date-toggles { display: none; }
+
+  .calendar-dropdown {
+    right: auto;
+    left: 0;
+    width: 280px;
+  }
+}
+
+@media (max-width: 540px) {
+  /* Hide less critical columns on very small screens */
+  .premium-table th:nth-child(4),
+  .premium-table td:nth-child(4),
+  .premium-table th:nth-child(5),
+  .premium-table td:nth-child(5),
+  .premium-table th:nth-child(6),
+  .premium-table td:nth-child(6) {
+    display: none;
+  }
+
+  .glass-input { font-size: 0.9rem; }
+  .btn-search  { padding: 0.5rem 0.8rem; font-size: 0.8rem; }
+  .glass-select { font-size: 0.85rem; padding: 10px 28px 10px 10px; }
+}

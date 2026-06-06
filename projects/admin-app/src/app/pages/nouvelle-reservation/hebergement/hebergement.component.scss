@@ -768,3 +768,16 @@ select.input   { cursor: pointer; }
   background: #0369a1; // ← blue submit instead of dark
   &:hover:not(:disabled) { background: #0284c7; }
 }
+/* ─── Responsive participant rows ─────────────────────────── */
+@media (max-width: 480px) {
+  .participant-row {
+    flex-wrap: wrap;
+  }
+
+  .participant-name { width: 100%; flex: unset; }
+  .participant-age  { width: 80px; flex-shrink: 0; }
+
+  .participant-badge {
+    margin-left: auto;
+  }
+}

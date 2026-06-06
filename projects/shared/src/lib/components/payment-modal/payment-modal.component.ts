@@ -188,6 +188,20 @@ import {
     }
     .btn-secondary:hover:not(:disabled) { background: #f8fafc; }
     .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+    @media (max-width: 400px) {
+      .modal-footer {
+        flex-direction: column-reverse;
+      }
+      .btn-primary,
+      .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+      .modal-box {
+        border-radius: 8px;
+      }
+    }
+
   `]
 })
 export class PaymentModalComponent implements OnInit {
