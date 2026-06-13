@@ -1,170 +1,247 @@
-@import '../../../styles/variables';
-@import '../../../styles/animations';
+// === Admin Header — Professional Navy Edition ===
+// Colors: Deep Navy #1A3A5C | Sahara Gold #C59B3D | White
 
+$nav-bg:        #1A3A5C;
+$nav-bg-hover:  #1E4571;
+$gold:          #C59B3D;
+$gold-light:    rgba(197, 155, 61, 0.18);
+$white:         #FFFFFF;
+$white-75:      rgba(255, 255, 255, 0.75);
+$white-20:      rgba(255, 255, 255, 0.12);
+$height:        64px;
+
+// ── Shell ─────────────────────────────────────────
 .admin-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  background: white;
-  box-shadow: $shadow-md;
+  height: $height;
+  background: $nav-bg;
+  border-bottom: 1px solid rgba(197, 155, 61, 0.22);
+  box-shadow: 0 2px 16px rgba(15, 30, 46, 0.30);
 }
 
 .navbar {
-  padding: 0;
+  height: 100%;
 }
 
 .nav-container {
-  max-width: $wide;
+  height: 100%;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 1rem 2rem;
+  padding: 0 1.75rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0;
 }
 
+// ── Brand ─────────────────────────────────────────
 .logo {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   text-decoration: none;
-  transition: transform $transition-normal;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
 
   &:hover {
-    transform: scale(1.05);
+    opacity: 0.88;
   }
 }
 
-.logo-icon {
-  font-size: 2.5rem;
+.logo-mark {
+  width: 38px;
+  height: 38px;
+  background: $gold-light;
+  border: 1px solid rgba(197, 155, 61, 0.35);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $gold;
+  flex-shrink: 0;
 }
 
 .logo-text {
   display: flex;
   flex-direction: column;
+  line-height: 1;
+  gap: 3px;
 }
 
 .logo-title {
-  font-family: $font-heading;
-  font-size: 1.2rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: $admin-primary;
+  color: $white;
+  letter-spacing: -0.01em;
 }
 
-.logo-subtitle {
-  font-size: 0.75rem;
-  color: #666;
+.logo-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: $gold;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.12em;
 }
 
+// ── Vertical Divider ──────────────────────────────
+.nav-divider {
+  width: 1px;
+  height: 28px;
+  background: $white-20;
+  margin: 0 1.5rem;
+  flex-shrink: 0;
+}
+
+// ── Nav Links ─────────────────────────────────────
 .nav-menu {
   display: none;
   list-style: none;
   margin: 0;
   padding: 0;
-  gap: 2rem;
+  gap: 0.25rem;
+  flex: 1;
 
-  @media (min-width: $desktop) {
+  @media (min-width: 1024px) {
     display: flex;
   }
 
+  // ── Mobile dropdown ─────────────────────────────
   &.active {
     display: flex;
     flex-direction: column;
     position: fixed;
-    top: 80px;
+    top: $height;
     left: 0;
     right: 0;
-    background: white;
-    padding: 2rem;
-    box-shadow: $shadow-lg;
+    background: #162f4a;
+    padding: 0.75rem 1rem;
+    gap: 0.25rem;
+    border-bottom: 1px solid rgba(197, 155, 61, 0.18);
+    box-shadow: 0 8px 24px rgba(15, 30, 46, 0.35);
 
-    @media (min-width: $desktop) {
+    @media (min-width: 1024px) {
       position: static;
       flex-direction: row;
       background: transparent;
       padding: 0;
+      gap: 0.25rem;
+      border: none;
       box-shadow: none;
     }
   }
 }
 
 .nav-link {
-  color: $admin-primary;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: $white-75;
   text-decoration: none;
+  font-size: 0.875rem;
   font-weight: 500;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
   border-bottom: 2px solid transparent;
-  transition: all $transition-fast;
+  transition: color 0.18s ease, background 0.18s ease;
+
+  svg {
+    opacity: 0.7;
+    transition: opacity 0.18s ease;
+    flex-shrink: 0;
+  }
 
   &:hover {
-    color: $admin-secondary;
-    border-bottom-color: $admin-secondary;
+    color: $white;
+    background: $white-20;
+
+    svg {
+      opacity: 1;
+    }
   }
 
   &.active {
-    color: $sahara-orange;
-    border-bottom-color: $sahara-orange;
+    color: $gold;
+    background: $gold-light;
+
+    svg {
+      opacity: 1;
+      color: $gold;
+    }
   }
 }
 
+// ── Actions (right side) ──────────────────────────
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+  margin-left: auto;
 }
 
-.btn-public-site {
+.btn-view-site {
   display: none;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, $sahara-orange, $sahara-terracotta);
-  color: white;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 1.1rem;
+  border: 1.5px solid rgba(197, 155, 61, 0.55);
+  border-radius: 8px;
+  color: $gold;
+  background: transparent;
   text-decoration: none;
-  border-radius: 25px;
+  font-size: 0.8125rem;
   font-weight: 600;
-  transition: all $transition-normal;
+  letter-spacing: 0.01em;
+  transition: all 0.2s ease;
 
-  @media (min-width: $tablet) {
-    display: block;
+  @media (min-width: 768px) {
+    display: flex;
   }
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: $shadow-md;
+    background: $gold;
+    border-color: $gold;
+    color: $nav-bg;
   }
 }
 
+// ── Hamburger ─────────────────────────────────────
 .hamburger {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  gap: 5px;
   background: none;
   border: none;
-  padding: 0.5rem;
+  padding: 0.4rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.18s ease;
 
-  @media (min-width: $desktop) {
+  @media (min-width: 1024px) {
     display: none;
   }
 
+  &:hover {
+    background: $white-20;
+  }
+
   span {
-    width: 25px;
-    height: 3px;
-    background: $admin-primary;
-    transition: all $transition-normal;
-    border-radius: 3px;
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: $white-75;
+    border-radius: 2px;
+    transition: all 0.25s ease;
+    transform-origin: center;
   }
 
   &.active {
-    span:nth-child(1) {
-      transform: rotate(45deg) translate(6px, 6px);
-    }
-    span:nth-child(2) {
-      opacity: 0;
-    }
-    span:nth-child(3) {
-      transform: rotate(-45deg) translate(6px, -6px);
-    }
+    span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); background: $gold; }
+    span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); background: $gold; }
   }
 }

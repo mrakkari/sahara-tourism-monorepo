@@ -155,7 +155,7 @@
 }
 
 // ── Action buttons ────────────────────────────────────────────────
-.action-buttons { display: flex; gap: 8px; }
+.action-buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .btn-voir, .btn-resa {
   padding: 5px 12px;
@@ -181,6 +181,21 @@
   display: flex;
   align-items: center;
   &:hover { background: #8b5cf6; color: white; }
+}
+
+.btn-send {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  color: #0ea5e9;
+  border: 1px solid #0ea5e9;
+  &:hover:not(:disabled) { background: #0ea5e9; color: white; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &.sent { border-color: #10b981; color: #10b981; }
 }
 
 // ── Empty / Pagination ────────────────────────────────────────────
@@ -252,11 +267,17 @@
 .invoice-preview { padding: 48px; }  // ← more padding than before
 
 .invoice-header {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 24px;
   margin-bottom: 28px;
-  align-items: start;
+}
+
+.company-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .logo-img {
@@ -276,7 +297,7 @@
 }
 
 .company-details {
-  text-align: center;
+  text-align: left;
 
   h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 700; }
   p  { margin: 3px 0; font-size: 0.8rem; color: #475569; }
@@ -333,6 +354,13 @@
 
   thead { background: #fef3c7; }
   th    { font-weight: 600; }
+
+  // Compact mode when > 5 lines
+  &.compact-table th,
+  &.compact-table td {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
 }
 
 // ── Totals ────────────────────────────────────────────────────────
@@ -414,14 +442,7 @@
   &:hover { background: #7c3aed; }
 }
 
-// ── Print styles ──────────────────────────────────────────────────
-@media print {
-  .modal-overlay  { position: static; background: none; padding: 0; }
-  .modal-content  { box-shadow: none; max-height: none; border-radius: 0; }
-  .modal-actions  { display: none; }
-  .close-btn      { display: none; }
-  .invoice-preview { padding: 0; }
-}
+// Print styles handled globally in styles.scss via body.printing-proforma
 
 /* ─── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -467,10 +488,17 @@
   .invoice-preview { padding: 20px 16px; }
 
   .invoice-header {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 12px;
+  }
+
+  .company-left {
+    flex-direction: column;
+    align-items: center;
     text-align: center;
   }
+
+  .company-details { text-align: center; }
 
   .invoice-date   { text-align: center; }
   .client-section { justify-content: stretch; }

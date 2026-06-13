@@ -52,6 +52,8 @@ export class GroupDetailComponent implements OnInit {
   prevId?: string;
   nextId?: string;
 
+  showCompanyPopup = false;
+
   constructor(
     private route:               ActivatedRoute,
     private router:              Router,
@@ -130,7 +132,26 @@ export class GroupDetailComponent implements OnInit {
   }
 
   checkOut(): void {
-    if (!this.reservation || !confirm('Confirmer le départ du groupe et archiver ?')) return;
+    if (!this.reservation) return;
+    this.showCompanyPopup = true;
+  }
+
+  closeCompanyPopup(): void {
+    this.showCompanyPopup = false;
+  }
+
+  onCompanySelected(companyType: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): void {
+    this.showCompanyPopup = false;
+    if (!this.reservation) return;
+    this.resCampingService.checkOutReservation(this.reservation.id, companyType).subscribe({
+      next: () => { this.toastService.showSuccess('👋 Départ enregistré.'); this.router.navigate(['/']); },
+      error: err => console.error('Checkout failed:', err)
+    });
+  }
+
+  ignoreCheckout(): void {
+    this.showCompanyPopup = false;
+    if (!this.reservation) return;
     this.resCampingService.checkOutReservation(this.reservation.id).subscribe({
       next: () => { this.toastService.showSuccess('👋 Départ enregistré.'); this.router.navigate(['/']); },
       error: err => console.error('Checkout failed:', err)

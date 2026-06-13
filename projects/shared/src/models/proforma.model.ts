@@ -33,4 +33,5 @@ export interface ProformaResponse {
   userPhone?: string;
   userMatriculeFiscal?: string;
   userAgencyAddress?: string;
+  companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE' | null;
 }

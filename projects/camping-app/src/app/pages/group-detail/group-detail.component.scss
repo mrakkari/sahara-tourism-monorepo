@@ -11,9 +11,9 @@
   --sand:       #F5EFE0;
   --sand-mid:   #EDE3CE;
   --sand-dark:  #D6C9A8;
-  --terra:      #C1611F;
-  --terra-lt:   #E07A3A;
-  --terra-xlt:  #F4E0D0;
+  --terra:      #1A3A5C;
+  --terra-lt:   #2D5F8A;
+  --terra-xlt:  #EEF2F7;
   --slate:      #1E2B3A;
   --slate-mid:  #364558;
   --slate-lt:   #6B7E94;
@@ -209,7 +209,7 @@ app-glass-card {
         align-items: center;
         background: var(--terra-xlt);
         color: var(--terra);
-        border: 1px solid rgba(193, 97, 31, 0.25);
+        border: 1px solid rgba(26, 58, 92, 0.25);
         padding: 3px 12px;
         border-radius: 50px;
         font-size: 0.85rem;
@@ -321,9 +321,9 @@ app-glass-card {
   &.primary {
     background: var(--terra);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(193,97,31,0.3);
+    box-shadow: 0 4px 14px rgba(26,58,92,0.3);
 
-    &:hover { background: var(--terra-lt); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(193,97,31,0.35); }
+    &:hover { background: var(--terra-lt); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,58,92,0.35); }
     &:active { transform: translateY(0); }
     &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
   }
@@ -537,7 +537,7 @@ app-glass-card {
   &.selected {
     border-color: var(--terra);
     background: var(--terra-xlt);
-    box-shadow: 0 0 0 3px rgba(193,97,31,0.12);
+    box-shadow: 0 0 0 3px rgba(26,58,92,0.12);
   }
 
   &.in-cart {
@@ -698,7 +698,7 @@ app-glass-card {
   &:focus {
     outline: none;
     border-color: var(--terra);
-    box-shadow: 0 0 0 3px rgba(193,97,31,0.10);
+    box-shadow: 0 0 0 3px rgba(26,58,92,0.10);
   }
 }
 
@@ -1186,7 +1186,7 @@ app-glass-card {
     font-weight: 700;
     color: var(--terra);
     background: var(--terra-xlt);
-    border: 1px solid rgba(193,97,31,0.2);
+    border: 1px solid rgba(26,58,92,0.2);
     padding: 3px 10px;
     border-radius: 50px;
     white-space: nowrap;
@@ -1205,4 +1205,100 @@ app-glass-card {
 
     strong { color: var(--slate); font-weight: 700; }
   }
+}
+
+// ── Company Selection Popup ───────────────────────────────────────
+.company-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.company-popup {
+  background: white;
+  border-radius: 16px;
+  padding: 36px 32px;
+  max-width: 460px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 28px;
+    color: var(--slate, #1e293b);
+  }
+}
+
+.company-choices {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.company-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--slate, #1e293b);
+  min-width: 150px;
+
+  img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: contain;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+
+  &:hover {
+    border-color: var(--terra-lt, #2D5F8A);
+    background: var(--terra-xlt, #EEF2F7);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(45,95,138,0.2);
+  }
+}
+
+.popup-ignore {
+  padding: 8px 20px;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  background: white;
+  color: #d97706;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+
+  &:hover { background: #fffbeb; }
+}
+
+.popup-cancel {
+  padding: 8px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+
+  &:hover { background: #f1f5f9; }
 }

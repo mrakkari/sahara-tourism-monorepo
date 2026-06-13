@@ -6,6 +6,18 @@
         <!-- Top Bar -->
         <header class="top-bar">
             <div class="top-bar-left">
+                <div class="brand-logo">
+                    <div class="brand-icon">
+                        <img src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/cropped-Campement-Dunes-insolites-logo.png"
+                             alt="Dunes Insolites"
+                             class="brand-img">
+                    </div>
+                    <div class="brand-text">
+                        <span class="brand-name">Dunes Insolites</span>
+                        <span class="brand-sub">camping</span>
+                    </div>
+                </div>
+                <div class="brand-sep"></div>
                 <h1 class="page-title">{{ pageTitle }}</h1>
             </div>
             <div class="top-bar-right">
@@ -46,11 +58,6 @@
                             Toutes les notifications sont affichées
                         </p>
                     </div>
-                </div>
-
-                <div class="user-chip">
-                    <span class="user-avatar">🏕️</span>
-                    <span class="user-name">{{ userName }}</span>
                 </div>
 
                 <button class="btn-deconnexion" (click)="handleLogout()" title="Déconnexion">

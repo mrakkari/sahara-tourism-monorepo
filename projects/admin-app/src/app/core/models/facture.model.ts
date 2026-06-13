@@ -51,4 +51,5 @@ export interface FactureResponse {
   userAgencyAddress?:  string;
 
   items: FactureItemResponse[];
+  companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE' | null;
 }

@@ -15,12 +15,11 @@ body {
   color: #1E293B;
   overflow-x: hidden;
   min-height: 100vh;
-  // Partner Aurora Background (More airy)
-  background-color: #F8FAFC;
+  // Professional clean background — soft warm white
+  background-color: #F5F7FA;
   background-image:
-    radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 100%);
+    radial-gradient(circle at 10% 20%, rgba(26, 58, 92, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(197, 155, 61, 0.07) 0%, transparent 45%);
   background-attachment: fixed;
 }
 
@@ -37,29 +36,28 @@ h6 {
 // Global Glass Utilities
 .glass-panel {
   background: $glass-surface-light;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid $glass-border;
-  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid $glass-border-light;
+  border-radius: 20px;
   box-shadow: $shadow-glass;
 }
 
 // "Floating" Form Inputs
 input.premium-input {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(14, 165, 233, 0.2);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(26, 58, 92, 0.18);
+  border-radius: 10px;
   padding: 16px;
   font-size: 1rem;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
 
   &:focus {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     border-color: $primary-blue;
-    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+    box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.10);
     outline: none;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 }
 

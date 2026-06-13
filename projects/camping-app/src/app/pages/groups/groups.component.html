@@ -1,35 +1,4 @@
 <div class="groups-dashboard">
-  <!-- Dashboard Header -->
-  <header class="dashboard-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1>📋 Camp Dune — Accueil & Séjours</h1>
-        <p class="subtitle">Suivi en temps réel des arrivées et réservations</p>
-      </div>
-      <div class="stats-cards">
-        <div class="stat-card in-camp">
-          <div class="stat-icon">🏕️</div>
-          <div class="stat-info">
-            <span class="stat-value">{{ campingStats.inCampTotal }}</span>
-            <span class="stat-label">Au Camp</span>
-            <span class="stat-breakdown" *ngIf="campingStats.inCampTotal > 0">
-              {{ campingStats.inCampAdults }} ad. · {{ campingStats.inCampChildren }} enf.
-            </span>
-          </div>
-        </div>
-        <div class="stat-card arriving">
-          <div class="stat-icon">🚌</div>
-          <div class="stat-info">
-            <span class="stat-value">{{ campingStats.arrivingTodayTotal }}</span>
-            <span class="stat-label">Arrivent aujourd'hui</span>
-            <span class="stat-breakdown" *ngIf="campingStats.arrivingTodayTotal > 0">
-              {{ campingStats.arrivingTodayAdults }} ad. · {{ campingStats.arrivingTodayChildren }} enf.
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
 
   <!-- Loading -->
   <div *ngIf="loading" class="loading-state">
@@ -92,11 +61,27 @@
         <span class="section-icon">🌅</span>
         <h2 class="section-title">Aujourd'hui</h2>
         <span class="section-count">{{ todayReservations.length }} groupe(s)</span>
-        <button class="btn-print"
-                *ngIf="todayReservations.length > 0"
-                (click)="printTodayReservations()">
-          🖨️ Imprimer
-        </button>
+        <div class="section-right">
+          <div class="mini-stats">
+            <div class="mini-stat in-camp">
+              <span class="ms-icon">🏕️</span>
+              <strong class="ms-val">{{ campingStats.inCampTotal }}</strong>
+              <span class="ms-label">Au Camp</span>
+              <span class="ms-sub" *ngIf="campingStats.inCampTotal > 0">{{ campingStats.inCampAdults }}ad · {{ campingStats.inCampChildren }}enf</span>
+            </div>
+            <div class="mini-stat arriving">
+              <span class="ms-icon">🚌</span>
+              <strong class="ms-val">{{ campingStats.arrivingTodayTotal }}</strong>
+              <span class="ms-label">Arrivent aujourd'hui</span>
+              <span class="ms-sub" *ngIf="campingStats.arrivingTodayTotal > 0">{{ campingStats.arrivingTodayAdults }}ad · {{ campingStats.arrivingTodayChildren }}enf</span>
+            </div>
+          </div>
+          <button class="btn-print"
+                  *ngIf="todayReservations.length > 0"
+                  (click)="printTodayReservations()">
+            🖨️ Imprimer
+          </button>
+        </div>
       </div>
 
       <div *ngIf="todayReservations.length === 0" class="block-empty">

@@ -1,0 +1,144 @@
+// ═══════════════════════════════════════════════════════
+// DUNE INSOLITE — Design Tokens
+// admin-app · resa-shared compatible
+// ═══════════════════════════════════════════════════════
+
+// ── Spacing scale (4-pt grid) ────────────────────────
+$sp-1:  4px;
+$sp-2:  8px;
+$sp-3:  12px;
+$sp-4:  16px;
+$sp-5:  20px;
+$sp-6:  24px;
+$sp-8:  32px;
+$sp-10: 40px;
+$sp-12: 48px;
+
+// ── Border radius ─────────────────────────────────────
+$radius-s: 6px;
+$radius-m: 10px;
+$radius-l: 14px;
+$radius-xl: 20px;
+$radius-full: 9999px;
+
+// ── Layout ────────────────────────────────────────────
+$sidebar-w:  240px;
+$sidebar-collapsed: 64px;
+$topbar-h:   56px;
+$page-max-w: 1440px;
+
+// ── Shadows (minimal — no elevation theater) ─────────
+$shadow-s: 0 1px 3px rgba(0,0,0,0.06);
+$shadow-m: 0 2px 8px rgba(0,0,0,0.07);
+
+// ── Typography ────────────────────────────────────────
+$font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+$fw-normal: 400;
+$fw-medium: 500;
+$fw-semi:   600;
+$fw-bold:   700;
+
+// ── CSS Custom Properties (light + dark) ──────────────
+:root {
+  // Backgrounds
+  --bg:        #F9F7F4;   // warm off-white — the "sand" base
+  --surface:   #FFFFFF;
+  --surface-2: #F4F2EF;
+  --surface-3: #EDEAE6;
+
+  // Borders
+  --border:    rgba(0,0,0,0.08);
+  --border-md: rgba(0,0,0,0.13);
+
+  // Sidebar (always dark regardless of theme)
+  --sb-bg:     #1A1A1A;
+  --sb-txt:    rgba(255,255,255,0.55);
+  --sb-act:    rgba(255,255,255,0.10);
+  --sb-hov:    rgba(255,255,255,0.05);
+
+  // Text hierarchy
+  --tx-1: #111827;   // primary — headings, values
+  --tx-2: #6B7280;   // secondary — labels, metadata
+  --tx-3: #9CA3AF;   // tertiary — placeholders, disabled
+
+  // ── 3-color reservation identity ──────────────────
+  // HÉBERGEMENT
+  --blue:      #3B82F6;
+  --blue-bg:   rgba(59,130,246,0.09);
+  --blue-text: #1D4ED8;
+
+  // TOURS
+  --amber:      #F59E0B;
+  --amber-bg:   rgba(245,158,11,0.09);
+  --amber-text: #92400E;
+
+  // EXTRAS
+  --purple:      #8B5CF6;
+  --purple-bg:   rgba(139,92,246,0.09);
+  --purple-text: #5B21B6;
+
+  // Status / semantic
+  --green:    #10B981;
+  --green-bg: rgba(16,185,129,0.09);
+  --red:      #EF4444;
+  --red-bg:   rgba(239,68,68,0.09);
+
+  // Brand accent (Sahara Gold — used for logo, sidebar active icon)
+  --gold: #C59B3D;
+}
+
+// ── Dark theme override ───────────────────────────────
+[data-theme="dark"],
+.dark-theme {
+  --bg:        #0F0F0F;
+  --surface:   #1A1A1A;
+  --surface-2: #222222;
+  --surface-3: #2A2A2A;
+  --border:    rgba(255,255,255,0.08);
+  --border-md: rgba(255,255,255,0.13);
+  --tx-1: #F9FAFB;
+  --tx-2: #9CA3AF;
+  --tx-3: #6B7280;
+}
+
+// ── SCSS token maps (for use in component mixins) ─────
+$reservation-types: (
+  'HEBERGEMENT': (color: #3B82F6, bg: rgba(59,130,246,0.09),  text: #1D4ED8),
+  'TOURS':       (color: #F59E0B, bg: rgba(245,158,11,0.09),  text: #92400E),
+  'EXTRAS':      (color: #8B5CF6, bg: rgba(139,92,246,0.09),  text: #5B21B6),
+);
+
+$statuses: (
+  'CONFIRMED':   (dot: #10B981, text-light: #065F46, text-dark: #6EE7B7),
+  'PENDING':     (dot: #F59E0B, text-light: #92400E, text-dark: #FCD34D),
+  'IN_PROGRESS': (dot: #3B82F6, text-light: #1E40AF, text-dark: #93C5FD),
+  'CANCELLED':   (dot: #EF4444, text-light: #991B1B, text-dark: #FCA5A5),
+);
+
+// ── Mixins ────────────────────────────────────────────
+@mixin type-badge($type) {
+  $props: map-get($reservation-types, $type);
+  background: map-get($props, bg);
+  color:      map-get($props, text);
+}
+
+@mixin card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: #{$radius-m};
+}
+
+@mixin btn-ghost {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: #{$radius-s};
+  font-size: 12px; font-weight: $fw-medium;
+  color: var(--tx-2);
+  transition: all 0.14s;
+  font-family: $font-sans;
+  cursor: pointer;
+
+  &:hover { background: var(--surface-2); color: var(--tx-1); }
+}

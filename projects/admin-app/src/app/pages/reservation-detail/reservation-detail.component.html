@@ -544,3 +544,26 @@
   (closed)="closePaymentModal()"
   (paymentConfirmed)="onPaymentConfirmed($event)"
 />
+
+<!-- ── Company Selection Popup ─────────────────────────────────── -->
+<div *ngIf="showCompanyPopup" class="company-popup-overlay" (click)="closeCompanyPopup()">
+  <div class="company-popup" (click)="$event.stopPropagation()">
+    <h3>
+      {{ pendingAction === 'confirm' ? 'Générer le proforma pour :' : 'Générer la facture pour :' }}
+    </h3>
+    <div class="company-choices">
+      <button class="company-btn" (click)="onCompanySelected('DUNES_INSOLITES')">
+        <img src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png" alt="Dunes Insolites">
+        <span>Dunes Insolites</span>
+      </button>
+      <button class="company-btn" (click)="onCompanySelected('ROUTE_INSOLITE')">
+        <img src="https://route-insolite.com/wp-content/uploads/2023/09/Route_insolite_Djerba__1_-removebg-preview.png" alt="Route Insolite">
+        <span>Route Insolite</span>
+      </button>
+    </div>
+    <button *ngIf="pendingAction === 'complete'" class="popup-ignore" (click)="ignoreCompletion()">
+      Ignorer (sans facture)
+    </button>
+    <button class="popup-cancel" (click)="closeCompanyPopup()">Annuler</button>
+  </div>
+</div>

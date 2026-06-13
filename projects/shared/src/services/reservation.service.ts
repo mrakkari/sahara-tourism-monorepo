@@ -76,8 +76,8 @@ export class ReservationService {
   }
 
   // ─── Status actions ───────────────────────────────────────────
-  confirmReservation(reservationId: string): Observable<ReservationResponse> {
-    return this.updateStatus(reservationId, 'CONFIRMED');
+  confirmReservation(reservationId: string, companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): Observable<ReservationResponse> {
+    return this.updateStatus(reservationId, 'CONFIRMED', companyType);
   }
 
   rejectReservation(reservationId: string, reason?: string): Observable<ReservationResponse> {
@@ -90,14 +90,14 @@ export class ReservationService {
     return this.updateStatus(reservationId, 'CHECKED_IN');
   }
 
-  completeReservation(reservationId: string): Observable<ReservationResponse> {
-    return this.updateStatus(reservationId, 'COMPLETED');
+  completeReservation(reservationId: string, companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): Observable<ReservationResponse> {
+    return this.updateStatus(reservationId, 'COMPLETED', companyType);
   }
 
-  private updateStatus(reservationId: string, status: BackendReservationStatus): Observable<ReservationResponse> {
-    return this.http.patch<ReservationResponse>(
-      `${this.apiUrl}/reservations/${reservationId}/status?status=${status}`, {}
-    );
+  private updateStatus(reservationId: string, status: BackendReservationStatus, companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): Observable<ReservationResponse> {
+    let url = `${this.apiUrl}/reservations/${reservationId}/status?status=${status}`;
+    if (companyType) url += `&companyType=${companyType}`;
+    return this.http.patch<ReservationResponse>(url, {});
   }
 
   // ─── NEW — Payments ───────────────────────────────────────────

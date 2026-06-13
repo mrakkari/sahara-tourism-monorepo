@@ -51,8 +51,8 @@
 }
 
 .btn-period {
-  &:hover    { border-color: #667eea; color: #667eea; }
-  &.active   { background: #667eea; color: white; border-color: #667eea; }
+  &:hover    { border-color: #1A3A5C; color: #1A3A5C; }
+  &.active   { background: #1A3A5C; color: white; border-color: #1A3A5C; }
 }
 
 .btn-export {
@@ -91,7 +91,7 @@
     height: 4px;
   }
 
-  &.primary::before { background: linear-gradient(90deg, #667eea, #764ba2); }
+  &.primary::before { background: linear-gradient(90deg, #1A3A5C, #2D5F8A); }
   &.success::before { background: linear-gradient(90deg, #10b981, #059669); }
   &.warning::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
   &.info::before    { background: linear-gradient(90deg, #3b82f6, #2563eb); }
@@ -188,7 +188,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
   &.featured {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1A3A5C 0%, #2D5F8A 100%);
     color: white;
 
     .card-title    { color: white; }
@@ -198,7 +198,7 @@
   &.compact  { padding: 20px; }
 
   &.highlight {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1A3A5C 0%, #2D5F8A 100%);
     color: white;
     padding: 20px;
   }
@@ -296,7 +296,7 @@
 
 .rank-badge {
   width: 28px; height: 28px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #1A3A5C, #2D5F8A);
   color: white;
   border-radius: 8px;
   display: flex;
@@ -311,8 +311,8 @@
 .partner-revenue { font-weight: 700; color: #1e293b; font-size: 1rem; }
 
 .partner-percentage {
-  background: rgba(102,126,234,0.1);
-  color: #667eea;
+  background: rgba(26,58,92,0.1);
+  color: #1A3A5C;
   padding: 4px 10px;
   border-radius: 12px;
   font-weight: 600;
@@ -343,7 +343,7 @@
 }
 
 .source-name  { flex: 1; font-weight: 500; color: #1e293b; font-size: 0.9rem; }
-.source-value { font-weight: 700; color: #667eea; font-size: 0.9rem; }
+.source-value { font-weight: 700; color: #1A3A5C; font-size: 0.9rem; }
 
 // ─── Revenue distribution summary ────────────────────────────────────────────
 .distribution-summary {
@@ -564,7 +564,7 @@
   width: 50px; height: 50px;
   margin: 0 auto 20px;
   border: 4px solid #f3f4f6;
-  border-top-color: #667eea;
+  border-top-color: #1A3A5C;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -585,24 +585,146 @@
   .kpi-grid     { grid-template-columns: repeat(2, 1fr); }
 }
 
+// ── Tablet / Large Mobile ──────────────────────────────────────────────────
 @media (max-width: 768px) {
-  .statistics-page { padding: 16px; }
+  .statistics-page { padding: 14px; }
 
+  // Header: compact, stacked
   .page-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .page-header .header-content h1 { font-size: 1.3rem; }
+  .page-header .header-content p  { font-size: 0.82rem; }
+
+  .header-actions {
+    display: flex; flex-wrap: wrap; gap: 8px; width: 100%;
+  }
+  .btn-period, .btn-export {
+    flex: 1; text-align: center; padding: 8px 10px; font-size: 0.82rem;
   }
 
-  .kpi-grid { grid-template-columns: 1fr; }
+  // KPI: 2×2 grid — show all 4 cards
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kpi-card { padding: 14px; border-radius: 12px; }
+  .kpi-card:hover { transform: none; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .kpi-icon { font-size: 1.5rem; }
+  .kpi-header { margin-bottom: 10px; }
+  .kpi-body .kpi-value { font-size: 1.45rem; margin-bottom: 2px; }
+  .kpi-body .kpi-label { font-size: 0.75rem; }
+  .kpi-trend { font-size: 0.7rem; padding: 3px 7px; }
+  .kpi-badge { font-size: 0.72rem; padding: 3px 7px; }
+  .kpi-footer .kpi-subtext { font-size: 0.7rem; }
+
+  // Content grid & columns
+  .content-grid { gap: 12px; margin-bottom: 14px; }
+  .left-column, .right-column { gap: 12px; }
+
+  // Chart cards
+  .chart-card { padding: 16px; border-radius: 12px; }
+  .card-title    { font-size: 0.95rem; }
+  .card-subtitle { font-size: 0.76rem; }
+  .card-header   { margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .card-actions  { width: 100%; justify-content: flex-end; }
+  .btn-filter    { padding: 5px 10px; font-size: 0.75rem; }
+
+  // Chart heights — shorter on mobile
+  .chart-container.large  { height: 210px; }
+  .chart-container.medium { height: 185px; }
+  .chart-container.small  { height: 155px; }
+
+  // Stats pills below chart
+  .chart-stats { flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .stat-pill {
+    flex: 1; min-width: calc(50% - 4px);
+    padding: 10px; border-radius: 8px;
+    .stat-label { font-size: 0.68rem; }
+    .stat-value { font-size: 0.95rem; }
+  }
+
+  // Partner list
+  .partner-list { gap: 8px; margin-top: 12px; }
+  .partner-item { padding: 10px 12px; border-radius: 8px; }
+  .partner-item:hover { transform: none; }
+  .partner-name    { font-size: 0.85rem; }
+  .partner-revenue { font-size: 0.88rem; }
+  .partner-percentage { font-size: 0.72rem; padding: 3px 8px; }
+  .rank-badge { width: 24px; height: 24px; font-size: 0.78rem; border-radius: 6px; }
+
+  // Source & distribution lists
+  .source-list { gap: 7px; margin-top: 12px; }
+  .source-item-compact { padding: 9px 10px; border-radius: 8px; }
+  .source-name  { font-size: 0.82rem; }
+  .source-value { font-size: 0.82rem; }
+  .distribution-summary { gap: 7px; margin-top: 12px; }
+  .summary-row { padding: 9px 10px; border-radius: 8px; }
+  .summary-label, .summary-value { font-size: 0.82rem; }
+
+  // Highlight card
+  .highlight-content { gap: 12px; margin-bottom: 12px; }
+  .highlight-icon { font-size: 2rem; }
+  .highlight-data .highlight-title { font-size: 0.82rem; margin-bottom: 4px; }
+  .highlight-data .highlight-value { font-size: 1.4rem; margin-bottom: 6px; }
+  .highlight-count { font-size: 0.78rem; }
+  .highlight-badge { font-size: 0.72rem; padding: 3px 8px; }
+  .mini-trend { height: 60px; }
+
+  // Bottom table section
+  .bottom-section { margin-top: 14px; }
+  .table-card { padding: 16px; border-radius: 12px; }
 
   .table-header,
   .table-row {
-    grid-template-columns: 40px 1fr 80px;
+    grid-template-columns: 28px 1fr 54px 1fr;
     gap: 8px;
-    font-size: 0.85rem;
+    padding: 10px 12px;
+    font-size: 0.78rem;
   }
+  .th.trend, .td.trend { display: none; }
+  .progress-bar-wrapper { height: 20px; border-radius: 6px; }
+  .progress-text { font-size: 0.72rem; }
+  .source-text { font-size: 0.8rem; }
+  .source-badge { width: 7px; height: 7px; margin-right: 7px; }
+}
 
-  .th.percentage, .th.trend,
-  .td.percentage, .td.trend { display: none; }
+// ── Small Mobile (≤ 480px) ────────────────────────────────────────────────
+@media (max-width: 480px) {
+  .statistics-page { padding: 10px; }
+
+  .page-header { padding: 14px; margin-bottom: 12px; }
+  .page-header .header-content h1 { font-size: 1.1rem; }
+
+  // KPI: still 2×2 but even more compact
+  .kpi-grid { gap: 8px; }
+  .kpi-card { padding: 12px; }
+  .kpi-body .kpi-value { font-size: 1.25rem; }
+  .kpi-body .kpi-label { font-size: 0.7rem; }
+  .kpi-footer { display: none; }
+
+  // Chart: smaller
+  .chart-container.large  { height: 180px; }
+  .chart-container.medium { height: 160px; }
+  .chart-container.small  { height: 130px; }
+
+  .chart-card { padding: 12px; border-radius: 10px; }
+  .card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .card-actions { display: flex; width: 100%; }
+  .btn-filter { flex: 1; text-align: center; }
+
+  // Bottom table: 3 columns (hide percentage bar, keep rank+source+count)
+  .table-header,
+  .table-row {
+    grid-template-columns: 22px 1fr 46px;
+    font-size: 0.72rem;
+    padding: 9px 10px;
+  }
+  .th.percentage, .td.percentage { display: none; }
+
+  .partner-item { padding: 8px 10px; }
+  .partner-metrics { gap: 6px; }
+  .partner-revenue { font-size: 0.82rem; }
 }

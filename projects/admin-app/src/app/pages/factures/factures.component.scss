@@ -133,7 +133,7 @@
 }
 
 // ── Action buttons ────────────────────────────────────────────────
-.action-buttons { display: flex; gap: 8px; }
+.action-buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .btn-voir, .btn-resa {
   padding: 5px 12px;
@@ -154,6 +154,21 @@
   background: white; color: #8b5cf6; border: 1px solid #8b5cf6;
   display: flex; align-items: center;
   &:hover { background: #8b5cf6; color: white; }
+}
+
+.btn-send {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  color: #0ea5e9;
+  border: 1px solid #0ea5e9;
+  &:hover:not(:disabled) { background: #0ea5e9; color: white; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &.sent { border-color: #10b981; color: #10b981; }
 }
 
 // ── Empty / Pagination ────────────────────────────────────────────
@@ -217,11 +232,17 @@
 .invoice-preview { padding: 48px; }
 
 .invoice-header {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 24px;
   margin-bottom: 28px;
-  align-items: start;
+}
+
+.company-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .logo-img {
@@ -230,17 +251,11 @@
   object-fit: contain;
   background: #fff;
   border: 1px solid #e5e7eb;
-}
-
-.logo-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-top: 8px;
+  flex-shrink: 0;
 }
 
 .company-details {
-  text-align: center;
+  text-align: left;
   h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 700; }
   p  { margin: 3px 0; font-size: 0.8rem; color: #475569; }
 }
@@ -309,23 +324,25 @@
     font-size: 0.875rem;
   }
 
-  td:first-child { font-weight: 600; color: #1e293b; }
+  td:first-child { font-weight: 500; color: #1e293b; }
 
   .amount-cell {
     text-align: right;
-    font-weight: 600;
+    font-weight: 500;
 
     .dt-label { margin-left: 4px; }
   }
 
   .total-ttc-row {
     background: #f9fafb;
+    td { font-size: 1rem; font-weight: 600; color: #1e293b; }
+  }
 
-    td {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #1e293b;
-    }
+  .paid-cell { color: #10b981; font-weight: 500; }
+
+  .remaining-row {
+    background: #f0fdf4;
+    td { font-weight: 600; color: #1e293b; }
   }
 }
 
@@ -333,7 +350,7 @@
 .arrete-section {
   padding: 14px 0;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 400;
   color: #1e293b;
   margin-bottom: 16px;
 }
@@ -354,8 +371,9 @@
 // ── Signature ─────────────────────────────────────────────────────
 .signature-section {
   text-align: right;
-  font-size: 0.875rem;
-  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #64748b;
   margin-bottom: 40px;
   padding-top: 10px;
 }
@@ -457,11 +475,17 @@
   .invoice-preview { padding: 20px 16px; }
 
   .invoice-header {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .company-left {
+    flex-direction: column;
+    align-items: center;
     text-align: center;
   }
 
+  .company-details { text-align: center; }
   .invoice-date { text-align: center; }
 
   .totals-section { justify-content: stretch; }

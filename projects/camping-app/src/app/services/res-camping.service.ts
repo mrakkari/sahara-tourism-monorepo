@@ -303,10 +303,12 @@ export class ResCampingService {
   updateStatus(
     id: string,
     status: BackendReservationStatus,
-    rejectionReason?: string
+    rejectionReason?: string,
+    companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'
   ): Observable<Reservation> {
     let params = `?status=${status}`;
     if (rejectionReason) params += `&rejectionReason=${encodeURIComponent(rejectionReason)}`;
+    if (companyType) params += `&companyType=${companyType}`;
 
     return this.http.patch<ReservationResponse>(
       `${this.API_URL}/${id}/status${params}`, {}
@@ -323,7 +325,7 @@ export class ResCampingService {
   confirmReservation(id: string):                    Observable<Reservation> { return this.updateStatus(id, 'CONFIRMED');         }
   rejectReservation(id: string, reason?: string):    Observable<Reservation> { return this.updateStatus(id, 'REJECTED', reason);  }
   markAsArrived(id: string):                         Observable<Reservation> { return this.updateStatus(id, 'CHECKED_IN');        }
-  checkOutReservation(id: string):                   Observable<Reservation> { return this.updateStatus(id, 'COMPLETED');         }
+  checkOutReservation(id: string, companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): Observable<Reservation> { return this.updateStatus(id, 'COMPLETED', undefined, companyType); }
   cancelReservation(id: string):                     Observable<Reservation> { return this.updateStatus(id, 'CANCELLED');         }
 
   // ── Payments ──────────────────────────────────────────────────

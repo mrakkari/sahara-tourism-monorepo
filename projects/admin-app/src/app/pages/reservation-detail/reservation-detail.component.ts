@@ -35,6 +35,10 @@ export class ReservationDetailComponent implements OnInit {
   isLoading = true;
   error: string | null = null;
 
+  // ── Company selection popup ───────────────────────────────────
+  showCompanyPopup = false;
+  pendingAction: 'confirm' | 'complete' | null = null;
+
   // ── Rejection modal ───────────────────────────────────────────
   showRejectModal = false;
   rejectionReason = '';
@@ -350,13 +354,43 @@ export class ReservationDetailComponent implements OnInit {
     });
   }
 
+  // ── Company popup ─────────────────────────────────────────────
+  closeCompanyPopup(): void {
+    this.showCompanyPopup = false;
+    this.pendingAction = null;
+  }
+
+  onCompanySelected(companyType: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): void {
+    this.showCompanyPopup = false;
+    if (!this.reservation) return;
+    const id = this.reservation.reservationId;
+    if (this.pendingAction === 'confirm') {
+      this.reservationService.confirmReservation(id, companyType).subscribe({
+        next: res => { this.reservation = res; this.pendingAction = null; },
+        error: err => console.error('Erreur confirmation:', err)
+      });
+    } else if (this.pendingAction === 'complete') {
+      this.reservationService.completeReservation(id, companyType).subscribe({
+        next: res => { this.reservation = res; this.pendingAction = null; },
+        error: err => console.error('Erreur completion:', err)
+      });
+    }
+  }
+
+  ignoreCompletion(): void {
+    this.showCompanyPopup = false;
+    if (!this.reservation) return;
+    this.reservationService.completeReservation(this.reservation.reservationId).subscribe({
+      next: res => { this.reservation = res; this.pendingAction = null; },
+      error: err => console.error('Erreur completion sans facture:', err)
+    });
+  }
+
   // ── Status actions ────────────────────────────────────────────
   confirm(): void {
     if (!this.reservation) return;
-    this.reservationService.confirmReservation(this.reservation.reservationId).subscribe({
-      next: res => this.reservation = res,
-      error: err => console.error('Erreur confirmation:', err)
-    });
+    this.pendingAction = 'confirm';
+    this.showCompanyPopup = true;
   }
 
   openRejectModal(): void  { this.showRejectModal = true; this.rejectionReason = ''; }
@@ -383,10 +417,8 @@ export class ReservationDetailComponent implements OnInit {
 
   complete(): void {
     if (!this.reservation) return;
-    this.reservationService.completeReservation(this.reservation.reservationId).subscribe({
-      next: res => this.reservation = res,
-      error: err => console.error('Erreur completion:', err)
-    });
+    this.pendingAction = 'complete';
+    this.showCompanyPopup = true;
   }
 
   cancel(): void {

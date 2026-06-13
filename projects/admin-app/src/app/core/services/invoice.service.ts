@@ -41,4 +41,13 @@ export class InvoiceService {
       map(list => list.filter(i => i.invoiceType === 'PROFORMA'))
     );
   }
+
+  // ── Email sending ─────────────────────────────────────────────
+  sendProforma(invoiceId: string): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/${invoiceId}/send-proforma`, {});
+  }
+
+  sendFacture(invoiceId: string): Observable<void> {
+    return this.http.post<void>(`${this.API_URL}/${invoiceId}/send-facture`, {});
+  }
 }

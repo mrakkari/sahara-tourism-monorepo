@@ -14,7 +14,6 @@
           <app-status-badge [status]="reservation.status"></app-status-badge>
         </div>
       </div>
-
       <div class="header-actions">
         <button *ngIf="reservation.status === 'confirmed'"
                 class="btn-action primary"
@@ -388,5 +387,24 @@
   <div class="glass-panel">
     <h2>Groupe Introuvable</h2>
     <button class="btn-action primary" routerLink="/">Retour à l'accueil</button>
+  </div>
+</div>
+
+<!-- ── Company Selection Popup ─────────────────────────────────── -->
+<div *ngIf="showCompanyPopup" class="company-popup-overlay" (click)="closeCompanyPopup()">
+  <div class="company-popup" (click)="$event.stopPropagation()">
+    <h3>Générer la facture pour :</h3>
+    <div class="company-choices">
+      <button class="company-btn" (click)="onCompanySelected('DUNES_INSOLITES')">
+        <img src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png" alt="Dunes Insolites">
+        <span>Dunes Insolites</span>
+      </button>
+      <button class="company-btn" (click)="onCompanySelected('ROUTE_INSOLITE')">
+        <img src="https://route-insolite.com/wp-content/uploads/2023/09/Route_insolite_Djerba__1_-removebg-preview.png" alt="Route Insolite">
+        <span>Route Insolite</span>
+      </button>
+    </div>
+    <button class="popup-ignore" (click)="ignoreCheckout()">Ignorer (sans facture)</button>
+    <button class="popup-cancel" (click)="closeCompanyPopup()">Annuler</button>
   </div>
 </div>

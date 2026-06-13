@@ -79,6 +79,14 @@
                 <a class="btn-resa" [routerLink]="['/reservation', f.reservationId]">
                   Réservation
                 </a>
+                <button class="btn-send"
+                        [class.sent]="sendSuccess.has(f.invoiceId)"
+                        [disabled]="sendingIds.has(f.invoiceId)"
+                        (click)="sendFacture(f)">
+                  <span *ngIf="!sendingIds.has(f.invoiceId) && !sendSuccess.has(f.invoiceId)">✉ Envoyer</span>
+                  <span *ngIf="sendingIds.has(f.invoiceId)">⏳</span>
+                  <span *ngIf="sendSuccess.has(f.invoiceId)">✅ Envoyé</span>
+                </button>
               </div>
             </td>
           </tr>
@@ -117,19 +125,29 @@
 
       <!-- Company Header -->
       <div class="invoice-header">
-        <div class="company-info">
-          <img
-            src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png"
-            alt="Dunes Insolites"
-            class="logo-img">
-          <div class="logo-text">Les Dunes Insolites</div>
-        </div>
-        <div class="company-details">
-          <h3>Campement Dunes Insolites</h3>
-          <p>Sabria, El Faouar – Kébili</p>
-          <p>M.F : 1710104/R – RIB : TN59 25081000000896143 70</p>
-          <p>Tél : 75 461 016 – GSM : 27 391 501</p>
-          <p>✉ dunesinsolites&#64;gmail.com</p>
+        <div class="company-left">
+          <!-- Dunes Insolites (default) -->
+          <ng-container *ngIf="!selectedFacture.companyType || selectedFacture.companyType === 'DUNES_INSOLITES'">
+            <img src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png" alt="Dunes Insolites" class="logo-img">
+            <div class="company-details">
+              <h3>Campement Dunes Insolites</h3>
+              <p>Sabria, El Faouar – Kébili</p>
+              <p>M.F : 1710104/R – RIB : TN59 25081000000896143 70</p>
+              <p>Tél : 75 461 016 – GSM : 27 391 501</p>
+              <p>✉ dunesinsolites&#64;gmail.com</p>
+            </div>
+          </ng-container>
+          <!-- Route Insolite -->
+          <ng-container *ngIf="selectedFacture.companyType === 'ROUTE_INSOLITE'">
+            <img src="https://route-insolite.com/wp-content/uploads/2023/09/Route_insolite_Djerba__1_-removebg-preview.png" alt="Route Insolite" class="logo-img">
+            <div class="company-details">
+              <h3>Route Insolite</h3>
+              <p>Boulevard 11 janvier, Rond-Point Fatou, Houmet Souk Djerba, 4180</p>
+              <p>RIB : TN59 25081000000896143 70</p>
+              <p>Tél : +216 50 655 844</p>
+              <p>✉ contact&#64;route-insolite.com</p>
+            </div>
+          </ng-container>
         </div>
         <div class="invoice-date">
           <strong>Date :</strong> {{ formatDate(selectedFacture.invoiceDate) }}
@@ -148,7 +166,9 @@
           </p>
           <p *ngIf="selectedFacture.userMatriculeFiscal">
             <strong>M.F :</strong> {{ selectedFacture.userMatriculeFiscal }}
-            <span *ngIf="selectedFacture.userPhone"> | Tél : {{ selectedFacture.userPhone }}</span>
+          </p>
+          <p>
+            <strong>Tél :</strong> {{ selectedFacture.userPhone || '—' }}
           </p>
           <p *ngIf="selectedFacture.userEmail">
             <strong>Email :</strong> {{ selectedFacture.userEmail }}
@@ -160,16 +180,14 @@
       <table class="invoice-table">
         <thead>
           <tr>
-            <th>DATE</th>
             <th>DÉSIGNATION</th>
             <th>QTÉ</th>
-            <th>PRIX PAX TTC</th>
+            <th>PRIX UNITAIRE</th>
             <th>MONTANT TTC</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let item of selectedFacture.items">
-            <td>{{ formatDate(selectedFacture.invoiceDate) }}</td>
             <td>{{ item.description }}</td>
             <td>{{ item.quantity }}</td>
             <td>{{ item.unitPrice | number:'1.3-3' }} {{ getCurrencyLabel(selectedFacture.currency) }}</td>
@@ -211,20 +229,24 @@
               </strong>
             </td>
           </tr>
+          <tr>
+            <td>Payé</td>
+            <td class="amount-cell paid-cell">
+              {{ selectedFacture.paidAmount | number:'1.3-3' }} {{ getCurrencyLabel(selectedFacture.currency) }}
+            </td>
+          </tr>
+          <tr class="remaining-row">
+            <td><strong>Reste à payer</strong></td>
+            <td class="amount-cell">
+              <strong>{{ selectedFacture.remainingAmount | number:'1.3-3' }} {{ getCurrencyLabel(selectedFacture.currency) }}</strong>
+            </td>
+          </tr>
         </table>
       </div>
 
       <!-- Arrêté -->
       <div class="arrete-section" *ngIf="selectedFacture.arreteLaPresente">
-        <strong>ARRÊTÉ LA PRÉSENTE FACTURE À LA SOMME DE : {{ selectedFacture.arreteLaPresente }}</strong>
-      </div>
-
-      <!-- Payment Status -->
-      <div class="proforma-status-row">
-        <span>Statut paiement :</span>
-        <span class="pay-badge" [ngClass]="selectedFacture.paymentStatus.toLowerCase()">
-          {{ paymentStatusLabel(selectedFacture.paymentStatus) }}
-        </span>
+        ARRÊTÉ LA PRÉSENTE FACTURE À LA SOMME DE : {{ selectedFacture.arreteLaPresente }}
       </div>
 
       <!-- Signature -->
@@ -233,8 +255,11 @@
       </div>
 
       <!-- Footer -->
-      <div class="invoice-footer">
+      <div class="invoice-footer" *ngIf="!selectedFacture.companyType || selectedFacture.companyType === 'DUNES_INSOLITES'">
         DUNES INSOLITES - EL FAOUAR 4264 KEBILI TUNISIE - TEL/FAX : 75 461 016 - GSM: 27 391 501 - EMAIL : dunesinsolites&#64;gmail.com
+      </div>
+      <div class="invoice-footer" *ngIf="selectedFacture.companyType === 'ROUTE_INSOLITE'">
+        ROUTE INSOLITE - BOULEVARD 11 JANVIER, ROND-POINT FATOU, HOUMET SOUK DJERBA, 4180 - TÉL : +216 50 655 844 - EMAIL : contact&#64;route-insolite.com
       </div>
     </div>
 

@@ -26,8 +26,15 @@ interface NavItem {
       <div class="drawer-header">
         <img src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png"
              alt="Logo" class="drawer-logo">
-        <span class="drawer-title">Dunes Insolites</span>
-        <button class="drawer-close" (click)="mobileDrawerOpen = false">✕</button>
+        <div class="drawer-brand">
+          <span class="drawer-title">Dunes Insolites</span>
+          <span class="drawer-badge">Administration</span>
+        </div>
+        <button class="drawer-close" (click)="mobileDrawerOpen = false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <ul class="drawer-nav">
         <li *ngFor="let item of navItems">
@@ -48,7 +55,10 @@ interface NavItem {
                     (click)="toggleDrawerGroup(item.label)">
               <span class="item-icon">{{ item.icon }}</span>
               <span>{{ item.label }}</span>
-              <span class="chevron">{{ drawerExpanded === item.label ? '▲' : '▼' }}</span>
+              <svg class="chevron-icon" [class.rotated]="drawerExpanded === item.label"
+                   width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
             </button>
             <div class="drawer-children" *ngIf="drawerExpanded === item.label">
               <a *ngFor="let c of item.children"
@@ -62,28 +72,40 @@ interface NavItem {
           </ng-container>
         </li>
       </ul>
-      <button class="drawer-logout" (click)="handleLogout()">🚪 Se déconnecter</button>
+      <button class="drawer-logout" (click)="handleLogout()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Se déconnecter
+      </button>
     </nav>
 
-    <!-- TOP HEADER -->
+    <!-- ── TOP HEADER ────────────────────────────────────────────── -->
     <header class="top-header">
       <div class="header-inner">
 
+        <!-- Left: Hamburger + Brand -->
         <div class="header-left">
           <button class="hamburger-btn" (click)="mobileDrawerOpen = true" aria-label="Menu">
             <span class="bar"></span><span class="bar"></span><span class="bar"></span>
           </button>
-          <a routerLink="/dashboard" class="brand">
+          <a routerLink="/admin-app" class="brand">
             <img src="https://www.dunes-insolites.com/wp-content/uploads/2024/05/Campement-Dunes-insolites-logo.png"
                  alt="Dunes Insolites" class="brand-logo">
-            <span class="brand-name">Dunes Insolites</span>
+            <div class="brand-text">
+              <span class="brand-name">Dunes Insolites</span>
+              <span class="brand-sub">Administration</span>
+            </div>
           </a>
+          <div class="header-divider"></div>
         </div>
 
+        <!-- Center: Desktop navigation -->
         <nav class="desktop-nav">
           <ng-container *ngFor="let item of navItems">
 
-            <!-- Simple route item (no children) -->
+            <!-- Simple route link -->
             <a *ngIf="!item.children"
                [routerLink]="item.route"
                routerLinkActive="nav-active"
@@ -94,7 +116,7 @@ interface NavItem {
               <span class="nav-badge" *ngIf="item.badge">{{ item.badge }}</span>
             </a>
 
-            <!-- Items WITH children (Nouvelle Réservation + Catalogue) -->
+            <!-- Dropdown link -->
             <div *ngIf="item.children" class="nav-dropdown-host">
               <button
                 [class.nav-cta]="item.highlight"
@@ -103,10 +125,12 @@ interface NavItem {
                 (click)="$event.stopPropagation(); toggleDropdown(item.label)">
                 <span class="nav-icon">{{ item.icon }}</span>
                 {{ item.label }}
-                <span class="cta-chevron">▾</span>
+                <svg class="cta-chevron" [class.rotated]="activeDropdown === item.label"
+                     width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
               </button>
 
-              <!-- Dropdown panel -->
               <div class="dropdown-panel" *ngIf="activeDropdown === item.label">
                 <a *ngFor="let c of item.children"
                    [routerLink]="c.route"
@@ -124,10 +148,14 @@ interface NavItem {
           </ng-container>
         </nav>
 
+        <!-- Right: Notifications + Logout -->
         <div class="header-right">
           <app-notification-panel></app-notification-panel>
           <button class="logout-btn" (click)="handleLogout()" title="Se déconnecter">
-            <span>🚪</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
             <span class="logout-label">Déconnexion</span>
           </button>
         </div>
@@ -142,81 +170,122 @@ interface NavItem {
   `,
   styles: [`
     :host { display: block; }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Variables ────────────────────────────────────────────── */
+    /* Navy: #1A3A5C  |  Gold: #C59B3D  |  Navy-dark: #0F1E2E    */
 
     /* ── Top header ───────────────────────────────────────────── */
     .top-header {
       position: sticky; top: 0; z-index: 200;
-      background: #000;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 1px 8px rgba(0,0,0,0.4);
+      background: #1A3A5C;
+      border-bottom: 1px solid rgba(197,155,61,0.22);
+      box-shadow: 0 2px 16px rgba(15,30,46,0.28);
     }
 
     .header-inner {
       display: flex; align-items: center;
-      height: 64px; padding: 0 24px; gap: 24px;
+      height: 64px; padding: 0 24px; gap: 0;
       max-width: 1600px; margin: 0 auto;
     }
 
     /* ── Brand ────────────────────────────────────────────────── */
-    .header-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-
-    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-    .brand-logo {
-      width: 36px; height: 36px; border-radius: 50%;
-      object-fit: contain; background: #fff;
-      padding: 3px; border: 2px solid rgba(255,255,255,0.15);
+    .header-left {
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
     }
-    .brand-name { font-weight: 700; font-size: 0.95rem; color: #fff; white-space: nowrap; }
+
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; flex-shrink: 0;
+      transition: opacity 0.18s;
+    }
+    .brand:hover { opacity: 0.88; }
+
+    .brand-logo {
+      width: 34px; height: 34px; border-radius: 8px;
+      object-fit: contain; background: rgba(255,255,255,0.12);
+      padding: 3px; border: 1.5px solid rgba(197,155,61,0.35);
+    }
+
+    .brand-text {
+      display: flex; flex-direction: column; gap: 1px; line-height: 1;
+    }
+    .brand-name {
+      font-weight: 700; font-size: 0.9rem; color: #fff;
+      font-family: 'Montserrat', sans-serif; letter-spacing: -0.01em;
+    }
+    .brand-sub {
+      font-size: 0.58rem; font-weight: 600;
+      color: #C59B3D; text-transform: uppercase; letter-spacing: 0.12em;
+    }
+
+    .header-divider {
+      width: 1px; height: 26px;
+      background: rgba(255,255,255,0.12);
+      margin: 0 16px; flex-shrink: 0;
+    }
 
     /* ── Hamburger (mobile only) ─────────────────────────────── */
     .hamburger-btn {
       display: none; flex-direction: column; justify-content: center;
       gap: 5px; background: none; border: none; cursor: pointer;
-      padding: 6px; border-radius: 8px;
+      padding: 7px; border-radius: 8px; transition: background 0.18s;
     }
     .hamburger-btn:hover { background: rgba(255,255,255,0.08); }
-    .bar { display: block; width: 22px; height: 2px; background: #fff; border-radius: 2px; }
+    .bar {
+      display: block; width: 21px; height: 2px;
+      background: rgba(255,255,255,0.82); border-radius: 2px;
+    }
 
     /* ── Desktop nav ──────────────────────────────────────────── */
     .desktop-nav {
       flex: 1; display: flex; align-items: center;
-      gap: 4px; overflow: visible;
+      gap: 2px; overflow: visible;
     }
 
-    /* shared base for all nav buttons/links */
     .nav-link {
       display: flex; align-items: center; gap: 6px;
-      padding: 8px 12px; border-radius: 8px;
-      color: #94a3b8; text-decoration: none;
-      font-size: 0.875rem; font-weight: 500;
+      padding: 7px 11px; border-radius: 8px;
+      color: rgba(255,255,255,0.70); text-decoration: none;
+      font-size: 0.85rem; font-weight: 500;
       white-space: nowrap; transition: all 0.18s;
       border: none; background: none; cursor: pointer;
+      font-family: 'Inter', sans-serif;
     }
-    .nav-link:hover { color: #fff; background: rgba(255,255,255,0.07); }
-    .nav-link.nav-active { color: #fff; background: #1f2937; }
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .nav-link.nav-active {
+      color: #C59B3D;
+      background: rgba(197,155,61,0.14);
+    }
 
-    .nav-icon { font-size: 1rem; flex-shrink: 0; }
-    .cta-chevron { font-size: 0.6rem; margin-left: 2px; flex-shrink: 0; }
+    .nav-icon { font-size: 0.95rem; flex-shrink: 0; }
+
+    .cta-chevron {
+      margin-left: 2px; flex-shrink: 0;
+      transition: transform 0.2s ease;
+      color: currentColor;
+    }
+    .cta-chevron.rotated { transform: rotate(180deg); }
 
     .nav-badge {
-      background: #dc2626; color: #fff;
-      font-size: 0.68rem; font-weight: 700;
+      background: #C59B3D; color: #0F1E2E;
+      font-size: 0.65rem; font-weight: 800;
       padding: 1px 6px; border-radius: 10px;
     }
 
-    /* CTA style (Nouvelle Réservation) */
+    /* CTA — Nouvelle Réservation */
     .nav-cta {
       display: flex; align-items: center; gap: 7px;
-      padding: 8px 14px; border-radius: 8px;
-      background: linear-gradient(135deg, rgba(245,158,11,.18), rgba(251,191,36,.12));
-      color: #fbbf24; font-size: 0.875rem; font-weight: 600;
-      border: 1px solid rgba(245,158,11,.3);
+      padding: 7px 14px; border-radius: 8px;
+      background: rgba(197,155,61,0.15);
+      color: #C59B3D; font-size: 0.85rem; font-weight: 600;
+      border: 1px solid rgba(197,155,61,0.35);
       cursor: pointer; white-space: nowrap; transition: all 0.18s;
+      font-family: 'Inter', sans-serif;
     }
     .nav-cta:hover, .nav-cta.open {
-      background: linear-gradient(135deg, rgba(245,158,11,.28), rgba(251,191,36,.22));
-      color: #fcd34d; border-color: #f59e0b;
+      background: #C59B3D; color: #0F1E2E;
+      border-color: #C59B3D;
     }
 
     /* ── Dropdowns ────────────────────────────────────────────── */
@@ -224,12 +293,11 @@ interface NavItem {
 
     .dropdown-panel {
       position: absolute; top: calc(100% + 8px); left: 0;
-      min-width: 240px; background: #0f172a;
-      border: 1px solid rgba(245,158,11,.25);
-      border-radius: 10px; overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,.5);
-      animation: dropIn .18s ease;
-      z-index: 300;
+      min-width: 248px; background: #1A3A5C;
+      border: 1px solid rgba(197,155,61,0.28);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 12px 32px rgba(15,30,46,0.45);
+      animation: dropIn .16s ease; z-index: 300;
     }
 
     @keyframes dropIn {
@@ -239,119 +307,166 @@ interface NavItem {
 
     .dropdown-item {
       display: flex; align-items: center; gap: 12px;
-      padding: 12px 16px;
-      color: #94a3b8; text-decoration: none;
-      transition: all .16s;
-      border-bottom: 1px solid rgba(255,255,255,.04);
+      padding: 11px 16px;
+      color: rgba(255,255,255,0.65); text-decoration: none;
+      transition: all .15s;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
     }
     .dropdown-item:last-child { border-bottom: none; }
-    .dropdown-item:hover { background: rgba(245,158,11,.1); color: #fbbf24; }
-    .dropdown-item:hover strong { color: #fcd34d; }
+    .dropdown-item:hover {
+      background: rgba(197,155,61,0.12); color: #C59B3D;
+    }
+    .dropdown-item:hover strong { color: #d4aa56; }
 
-    .d-icon { font-size: 1.2rem; min-width: 24px; text-align: center; flex-shrink: 0; }
-    .dropdown-item strong { display: block; font-size: 0.875rem; font-weight: 600; color: #cbd5e1; }
-    .dropdown-item small { display: block; font-size: 0.72rem; color: #475569; margin-top: 2px; }
+    .d-icon { font-size: 1.1rem; min-width: 22px; text-align: center; flex-shrink: 0; }
+    .dropdown-item strong {
+      display: block; font-size: 0.875rem; font-weight: 600;
+      color: rgba(255,255,255,0.88);
+    }
+    .dropdown-item small {
+      display: block; font-size: 0.7rem;
+      color: rgba(255,255,255,0.38); margin-top: 2px;
+    }
 
     /* ── Header right ─────────────────────────────────────────── */
     .header-right {
       display: flex; align-items: center;
-      gap: 12px; flex-shrink: 0; margin-left: auto;
+      gap: 10px; flex-shrink: 0; margin-left: auto;
     }
 
     .logout-btn {
       display: flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: 8px;
-      background: rgba(220,38,38,.15); color: #f87171;
-      border: 1px solid rgba(220,38,38,.3);
-      font-size: 0.875rem; font-weight: 600;
-      cursor: pointer; white-space: nowrap; transition: all .18s;
+      padding: 7px 13px; border-radius: 8px;
+      background: transparent; color: rgba(255,255,255,0.60);
+      border: 1px solid rgba(255,255,255,0.14);
+      font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: all .18s; font-family: 'Inter', sans-serif;
     }
-    .logout-btn:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+    .logout-btn:hover {
+      background: rgba(192,57,43,0.18);
+      border-color: rgba(192,57,43,0.45);
+      color: #e57373;
+    }
 
     /* ── Page content ─────────────────────────────────────────── */
     .page-main {
       min-height: calc(100vh - 64px);
-      background: #f8fafc;
+      background: #F5F7FA;
     }
 
     /* ── Mobile drawer ────────────────────────────────────────── */
     .drawer-backdrop {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.55); z-index: 400;
+      background: rgba(15,30,46,0.60); z-index: 400;
     }
 
     .mobile-drawer {
       position: fixed; top: 0; left: 0; bottom: 0;
-      width: 280px; background: #000;
-      border-right: 1px solid rgba(255,255,255,.08);
+      width: 272px; background: #0F1E2E;
+      border-right: 1px solid rgba(197,155,61,0.16);
       z-index: 500; display: flex; flex-direction: column;
-      transform: translateX(-100%); transition: transform .28s ease;
+      transform: translateX(-100%); transition: transform .26s ease;
     }
     .mobile-drawer.open { transform: translateX(0); }
 
     .drawer-header {
       display: flex; align-items: center; gap: 10px;
-      padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
+      padding: 18px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
     }
-    .drawer-logo { width: 36px; height: 36px; border-radius: 50%; background: #fff; padding: 3px; }
-    .drawer-title { font-weight: 700; color: #fff; font-size: 0.95rem; flex: 1; }
+    .drawer-logo {
+      width: 34px; height: 34px; border-radius: 8px;
+      object-fit: contain; background: rgba(255,255,255,0.08);
+      padding: 3px; border: 1.5px solid rgba(197,155,61,0.30);
+      flex-shrink: 0;
+    }
+    .drawer-brand { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .drawer-title { font-weight: 700; color: #fff; font-size: 0.9rem; }
+    .drawer-badge {
+      font-size: 0.58rem; font-weight: 600; color: #C59B3D;
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
     .drawer-close {
-      background: none; border: none; color: #94a3b8;
-      font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+      background: none; border: none; color: rgba(255,255,255,0.45);
+      cursor: pointer; padding: 6px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
     }
-    .drawer-close:hover { background: rgba(255,255,255,.08); color: #fff; }
+    .drawer-close:hover {
+      background: rgba(255,255,255,0.08); color: #fff;
+    }
 
-    .drawer-nav { list-style: none; padding: 12px 10px; margin: 0; flex: 1; overflow-y: auto; }
-    .drawer-nav li { margin-bottom: 2px; }
+    .drawer-nav {
+      list-style: none; padding: 10px 8px;
+      margin: 0; flex: 1; overflow-y: auto;
+    }
+    .drawer-nav li { margin-bottom: 1px; }
 
     .drawer-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 12px 14px; border-radius: 8px;
-      color: #94a3b8; text-decoration: none;
-      font-size: 0.9rem; font-weight: 500;
+      padding: 11px 12px; border-radius: 8px;
+      color: rgba(255,255,255,0.60); text-decoration: none;
+      font-size: 0.875rem; font-weight: 500;
       width: 100%; border: none; background: none; cursor: pointer;
       transition: all .16s; text-align: left;
+      font-family: 'Inter', sans-serif;
     }
-    .drawer-item:hover { background: rgba(255,255,255,.06); color: #fff; }
-    .drawer-item.active { background: #1f2937; color: #fff; }
-    .drawer-item.highlight { color: #fbbf24; }
+    .drawer-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .drawer-item.active {
+      background: rgba(197,155,61,0.14); color: #C59B3D;
+    }
+    .drawer-item.highlight { color: #C59B3D; }
 
-    .chevron { font-size: 0.55rem; margin-left: auto; color: #64748b; }
+    .chevron-icon {
+      margin-left: auto; color: rgba(255,255,255,0.35);
+      transition: transform 0.2s ease; flex-shrink: 0;
+    }
+    .chevron-icon.rotated { transform: rotate(180deg); }
 
-    .drawer-children { padding-left: 12px; margin-bottom: 4px; }
+    .drawer-children { padding-left: 10px; margin-bottom: 2px; }
     .drawer-child {
       display: flex; align-items: center; gap: 8px;
       padding: 9px 12px; border-radius: 8px;
-      color: #64748b; text-decoration: none; font-size: 0.85rem;
-      transition: all .16s;
+      color: rgba(255,255,255,0.45); text-decoration: none;
+      font-size: 0.83rem; transition: all .15s;
     }
-    .drawer-child:hover { background: rgba(245,158,11,.1); color: #fbbf24; }
+    .drawer-child:hover {
+      background: rgba(197,155,61,0.10); color: #C59B3D;
+    }
 
-    .item-icon { font-size: 1rem; min-width: 20px; text-align: center; }
+    .item-icon { font-size: 0.95rem; min-width: 20px; text-align: center; }
     .nav-badge {
-      background: #dc2626; color: #fff;
-      font-size: 0.68rem; font-weight: 700;
+      background: #C59B3D; color: #0F1E2E;
+      font-size: 0.65rem; font-weight: 800;
       padding: 1px 6px; border-radius: 10px; margin-left: auto;
     }
 
     .drawer-logout {
-      margin: 12px 10px; padding: 12px 14px;
-      background: #dc2626; color: #fff;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-size: 0.9rem; font-weight: 600; text-align: left;
-      transition: background .18s;
+      margin: 10px 8px 16px; padding: 11px 14px;
+      background: rgba(192,57,43,0.18); color: #e57373;
+      border: 1px solid rgba(192,57,43,0.30);
+      border-radius: 8px; cursor: pointer;
+      font-size: 0.875rem; font-weight: 600;
+      text-align: left; display: flex; align-items: center; gap: 8px;
+      transition: all .18s; font-family: 'Inter', sans-serif;
     }
-    .drawer-logout:hover { background: #b91c1c; }
+    .drawer-logout:hover {
+      background: rgba(192,57,43,0.32);
+      border-color: rgba(192,57,43,0.55);
+    }
 
     /* ── Responsive ───────────────────────────────────────────── */
     @media (max-width: 1024px) {
       .desktop-nav { display: none; }
       .hamburger-btn { display: flex; }
       .logout-label { display: none; }
-      .brand-name { display: none; }
+      .brand-sub { display: none; }
     }
     @media (max-width: 640px) {
       .header-inner { padding: 0 16px; }
+      .brand-name { display: none; }
+      .header-divider { display: none; }
     }
   `]
 })
@@ -362,14 +477,14 @@ export class MainLayoutComponent {
 
   navItems: NavItem[] = [
     {
-      label: 'Nouvelle Réservation', icon: '', highlight: true,
+      label: 'Nouvelle Réservation', icon: '✦', highlight: true,
       children: [
         { label: 'Hébergement', icon: '🏕️', route: '/nouvelle-reservation/hebergement', description: 'Séjour au camping avec activités' },
         { label: 'Tours',       icon: '🗺️', route: '/nouvelle-reservation/tours',        description: 'Excursions packagées multi-jours' },
         { label: 'Extras',      icon: '✨', route: '/nouvelle-reservation/extras',       description: 'Services additionnels sans séjour' },
       ]
     },
-    { label: 'Réservations', icon: '📅', route: '/reservations', badge: 5 },
+    { label: 'Réservations', icon: '📅', route: '/reservations' },
     { label: 'Factures',     icon: '📄', route: '/factures' },
     { label: 'Proformas',    icon: '📋', route: '/proformas' },
     { label: 'Clients',      icon: '👥', route: '/clients' },
@@ -395,7 +510,6 @@ export class MainLayoutComponent {
     this.drawerExpanded = this.drawerExpanded === label ? null : label;
   }
 
-  // Close dropdown when clicking anywhere outside
   @HostListener('document:click', ['$event'])
   onDocumentClick(e: MouseEvent): void {
     if (!(e.target as HTMLElement).closest('.nav-dropdown-host')) {

@@ -66,6 +66,10 @@ export class DashboardComponent implements OnInit {
   private lastNotifCount = 0;
 
   private currentStatusLoaded = 'all';
+
+  // ── Company popup (confirm from list) ────────────────────────
+  showCompanyPopup = false;
+  pendingConfirmId: string | null = null;
   
   constructor(
       private adminReservationService: AdminReservationService,
@@ -300,12 +304,24 @@ export class DashboardComponent implements OnInit {
 
 
   confirmReservation(id: string): void {
-      if (confirm('Confirmer cette réservation ?')) {
-          this.adminReservationService.confirmReservation(id).subscribe({
-              next: () => this.loadReservations(),
-              error: (err) => console.error('Erreur confirmation:', err)
-          });
-      }
+    this.pendingConfirmId = id;
+    this.showCompanyPopup = true;
+  }
+
+  closeCompanyPopup(): void {
+    this.showCompanyPopup = false;
+    this.pendingConfirmId = null;
+  }
+
+  onCompanySelected(companyType: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): void {
+    this.showCompanyPopup = false;
+    if (!this.pendingConfirmId) return;
+    const id = this.pendingConfirmId;
+    this.pendingConfirmId = null;
+    this.adminReservationService.confirmReservation(id, companyType).subscribe({
+      next: () => this.loadReservations(),
+      error: (err) => console.error('Erreur confirmation:', err)
+    });
   }
 
  printUpcomingReservations(): void {

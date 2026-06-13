@@ -258,9 +258,10 @@ export class AdminReservationService {
 
   // ── Status (admin-only actions stay here) ───────────────────────────────
 
-  updateStatus(id: string, status: BackendReservationStatus, rejectionReason?: string): Observable<Reservation> {
+  updateStatus(id: string, status: BackendReservationStatus, rejectionReason?: string, companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): Observable<Reservation> {
     let params = `?status=${status}`;
     if (rejectionReason) params += `&rejectionReason=${encodeURIComponent(rejectionReason)}`;
+    if (companyType)     params += `&companyType=${companyType}`;
 
     return this.http.patch<ReservationResponse>(`${this.API_URL}/${id}/status${params}`, {}).pipe(
       map(dto => {
@@ -275,8 +276,8 @@ export class AdminReservationService {
     );
   }
 
-  confirmReservation(id: string): Observable<Reservation> {
-    return this.updateStatus(id, 'CONFIRMED').pipe(
+  confirmReservation(id: string, companyType?: 'DUNES_INSOLITES' | 'ROUTE_INSOLITE'): Observable<Reservation> {
+    return this.updateStatus(id, 'CONFIRMED', undefined, companyType).pipe(
       tap(updated => this.addNotification({
         partnerId:     updated.partnerId ?? 'unknown',
         type:          'reservation_status',

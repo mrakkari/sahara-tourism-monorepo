@@ -80,8 +80,8 @@ styles: [`
       font-size: 0.875rem; 
       margin: 0; 
   }
-    .notification-button { position: relative; width: 44px; height: 44px; border-radius: 12px; background: white; border: 1px solid rgba(0,0,0,0.05); transition: all 0.2s; }
-    .notification-button:hover { background: #f8fafc; border-color: #f59e0b; }
+    .notification-button { position: relative; width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); transition: all 0.2s; }
+    .notification-button:hover { background: rgba(255,255,255,0.15); border-color: rgba(197,155,61,0.45); }
     .notification-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
     .notification-icon { font-size: 1.25rem; }
     .notification-panel { display: flex; align-items: center; }

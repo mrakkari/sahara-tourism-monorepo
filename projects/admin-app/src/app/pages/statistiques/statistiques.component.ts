@@ -100,6 +100,9 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
       x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
       y: { grid: { display: false } },
     },
+    datasets: {
+      bar: { maxBarThickness: 36 },
+    },
   };
 
   readonly doughnutChartOptions: ChartConfiguration<'doughnut'>['options'] = {
@@ -135,16 +138,24 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
     elements: { point: { radius: 0 } },
   };
 
-  // ── Source color map ───────────────────────────────────────────────────────
+  // ── Source color map (all keys lowercase for case-insensitive lookup) ────────
   private readonly SOURCE_COLORS: Record<string, string> = {
-    Airbnb:       '#ff385c',
-    GetYourGuide: '#f97316',
-    Booking:      '#0071c2',
-    TripAdvisor:  '#00aa6c',
-    Email:        '#64748b',
-    App:          '#10b981',
-    Partenaire:   '#8b5cf6',
-    Direct:       '#3b82f6',
+    airbnb:        '#ff385c',
+    getyourguide:  '#f97316',
+    booking:       '#0071c2',
+    tripadvisor:   '#00aa6c',
+    email:         '#6366f1',
+    mail:          '#6366f1',
+    app:           '#10b981',
+    partenaire:    '#8b5cf6',
+    direct:        '#3b82f6',
+    whatsapp:      '#25d366',
+    whatsup:       '#25d366',
+    facebook:      '#1877f2',
+    instagram:     '#e1306c',
+    phone:         '#f59e0b',
+    téléphone:     '#f59e0b',
+    telephone:     '#f59e0b',
   };
 
   private readonly CHART_COLORS = [
@@ -422,7 +433,11 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
   }
 
   getSourceColor(source: string): string {
-    return this.SOURCE_COLORS[source] ?? '#64748b';
+    const key = source.toLowerCase().trim();
+    if (this.SOURCE_COLORS[key]) return this.SOURCE_COLORS[key];
+    // stable fallback color based on source name so each unknown source is distinct
+    const idx = source.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % this.CHART_COLORS.length;
+    return this.CHART_COLORS[idx];
   }
 
   formatCurrency(value: number): string {
