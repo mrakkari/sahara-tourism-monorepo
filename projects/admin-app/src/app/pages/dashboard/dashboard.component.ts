@@ -532,21 +532,24 @@ export class DashboardComponent implements OnInit {
   setTimeout(() => win.print(), 500);
 }
   getDisplayNames(r: Reservation): { label: string; badge: 'hebergement' | 'tour' | 'extra' }[] {
+    const aggregateByName = (names: string[], badge: 'hebergement' | 'tour' | 'extra') => {
+      const counts = new Map<string, number>();
+      for (const n of names) counts.set(n, (counts.get(n) ?? 0) + 1);
+      return Array.from(counts.entries()).map(([name, count]) => ({
+        label: count > 1 ? `${name} *${count}` : name,
+        badge
+      }));
+    };
     switch (r.reservationType) {
       case 'HEBERGEMENT':
-        return (r.tourTypes ?? []).map(t => ({ label: t.name, badge: 'hebergement' as const }));
-  
+        return aggregateByName((r.tourTypes ?? []).map(t => t.name), 'hebergement');
       case 'TOURS':
         return (r.tours ?? []).map(t => ({ label: t.name, badge: 'tour' as const }));
-  
       case 'EXTRAS':
-        // Show only active extras (already filtered in mapToReservation, but guard anyway)
         return (r.extras ?? []).filter(e => e.isActive).map(e => ({ label: e.name, badge: 'extra' as const }));
-  
       default:
-        // Fallback for old data that may not have reservationType yet
         if (r.tourTypes?.length) {
-          return r.tourTypes.map(t => ({ label: t.name, badge: 'hebergement' as const }));
+          return aggregateByName(r.tourTypes.map(t => t.name), 'hebergement');
         }
         return [{ label: 'N/A', badge: 'hebergement' as const }];
     }

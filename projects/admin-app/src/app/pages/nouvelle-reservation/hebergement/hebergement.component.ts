@@ -12,13 +12,12 @@ import { PaymentModalComponent } from '../../../../../../shared/src/lib/componen
 import { PaymentRequest } from '../../../../../../shared/src/models/transaction.model';
 import { SourceService } from '../../../core/services/source.service';
 import { SourceResponse } from '../../../../../../shared/src/models/reservation-api.model';
-import { RepartitionRequest, TenteType } from '../../../../../../shared/src/models/reservation-api.model';
-
+import { TenteType } from '../../../../../../shared/src/models/reservation-api.model';
 
 @Component({
   selector: 'app-hebergement',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule,PaymentModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, PaymentModalComponent],
   templateUrl: './hebergement.component.html',
   styleUrls: ['./hebergement.component.scss'],
   animations: [
@@ -32,55 +31,54 @@ import { RepartitionRequest, TenteType } from '../../../../../../shared/src/mode
 })
 export class HebergementComponent implements OnInit {
 
-
   form!: FormGroup;
   isSubmitting = false;
 
-  users: UserResponse[]    = [];
-  tourTypes: TourType[]    = [];
-  extras: ExtraResponse[]  = [];
+  users: UserResponse[]   = [];
+  tourTypes: TourType[]   = [];
+  extras: ExtraResponse[] = [];
   participants: ParticipantRequest[] = [];
 
   isLoadingUsers     = false;
   isLoadingTourTypes = false;
   isLoadingExtras    = false;
 
-  selectedExtras: Record<string, number> = {};
+  extraItems: { extraId: string; quantity: number; activityDate: string; displayDate: string }[] = [];
 
-  // pricing preview
-  discountAmount  = 0;
-  appliedPromo    = '';
-  promoApplied    = false;
-  promoError      = false;
-  promoMessage    = '';
+  // Indexed by FormArray position (parallel arrays)
+  tourTypeDisplayDates: string[]  = [];
+  tourRepartitions: ({ tenteType: TenteType; numberOfTentes: number }[])[] = [];
+  tourTypeRepeatCounts: number[]  = [];
+  tourTypeDateWarnings: string[]  = [];
+
+  discountAmount = 0;
+  appliedPromo   = '';
+  promoApplied   = false;
+  promoError     = false;
+  promoMessage   = '';
 
   showPaymentModal  = false;
   initialPayment: PaymentRequest | null = null;
+  submitError = '';
   sources: SourceResponse[] = [];
   isLoadingSources = false;
 
-  checkInDateDisplay  = '';
-  checkOutDateDisplay = '';
-  checkInDateError    = '';
-  checkOutDateError   = '';
-  tourRepartitions: Record<string, { tenteType: TenteType; numberOfTentes: number }[]> = {};
+  repartitionError = '';
 
   tenteTypes: { value: TenteType; label: string; capacity: number }[] = [
-    { value: 'SINGLE',  label: 'Tente Simple (1 pers.)',  capacity: 1 },
-    { value: 'DOUBLE',  label: 'Tente Double (2 pers.)',  capacity: 2 },
-    { value: 'TRIPLE',  label: 'Tente Triple (3 pers.)',  capacity: 3 },
-    { value: 'X4',      label: 'Tente ×4 (4 pers.)',     capacity: 4 },
-    { value: 'X5',      label: 'Tente ×5 (5 pers.)',     capacity: 5 },
-    { value: 'X6',      label: 'Tente ×6 (6 pers.)',     capacity: 6 },
-    { value: 'X7',      label: 'Tente ×7 (7 pers.)',     capacity: 7 },
+    { value: 'SINGLE', label: 'Tente Simple (1 pers.)',  capacity: 1 },
+    { value: 'DOUBLE', label: 'Tente Double (2 pers.)',  capacity: 2 },
+    { value: 'TRIPLE', label: 'Tente Triple (3 pers.)',  capacity: 3 },
+    { value: 'X4',     label: 'Tente ×4 (4 pers.)',     capacity: 4 },
+    { value: 'X5',     label: 'Tente ×5 (5 pers.)',     capacity: 5 },
+    { value: 'X6',     label: 'Tente ×6 (6 pers.)',     capacity: 6 },
+    { value: 'X7',     label: 'Tente ×7 (7 pers.)',     capacity: 7 },
   ];
-  repartitions: { tenteType: TenteType; numberOfTentes: number }[] = [];
-  repartitionError = '';
 
   constructor(
     private fb: FormBuilder,
     private reservationService: ReservationService,
-    private sourceService: SourceService, 
+    private sourceService: SourceService,
     private router: Router
   ) {}
 
@@ -91,6 +89,7 @@ export class HebergementComponent implements OnInit {
     this.loadExtras();
     this.loadSources();
   }
+
   loadSources(): void {
     this.isLoadingSources = true;
     this.sourceService.getAll().subscribe({
@@ -98,92 +97,11 @@ export class HebergementComponent implements OnInit {
       error: () => this.isLoadingSources = false
     });
   }
-  onDateTextInput(event: Event, field: string): void {
-    const input = event.target as HTMLInputElement;
-    const val   = input.value;
-
-    if (field === 'checkInDate')  this.checkInDateError  = '';
-    if (field === 'checkOutDate') this.checkOutDateError = '';
-
-    if (val.length === 10 && val[2] === '/' && val[5] === '/') {
-      const [d, m, y] = val.split('/');
-      const iso  = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-      const date = new Date(iso);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (isNaN(date.getTime()) || +d > 31 || +m > 12) {
-        const err = '⚠️ Date invalide.';
-        if (field === 'checkInDate')  this.checkInDateError  = err;
-        if (field === 'checkOutDate') this.checkOutDateError = err;
-        this.form.get(field)?.setValue('', { emitEvent: false });
-      } else if (field === 'checkInDate' && date < today) {
-        this.checkInDateError = '⚠️ La date doit être dans le futur.';
-        this.form.get(field)?.setValue('', { emitEvent: false });
-      } else {
-        this.form.get(field)?.setValue(iso, { emitEvent: true });
-      }
-    } else {
-      this.form.get(field)?.setValue('', { emitEvent: false });
-    }
-
-    if (field === 'checkInDate')  this.checkInDateDisplay  = val;
-    if (field === 'checkOutDate') this.checkOutDateDisplay = val;
-  }
-
-  onDatePickerChange(event: Event, field: string): void {
-    const iso = (event.target as HTMLInputElement).value;
-    if (!iso) return;
-
-    const date  = new Date(iso);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (field === 'checkInDate')  this.checkInDateError  = '';
-    if (field === 'checkOutDate') this.checkOutDateError = '';
-
-    if (field === 'checkInDate' && date < today) {
-      this.checkInDateError = '⚠️ La date doit être dans le futur.';
-      this.form.get(field)?.setValue('', { emitEvent: false });
-      this.checkInDateDisplay = '';
-      return;
-    }
-
-    this.form.get(field)?.setValue(iso, { emitEvent: true });
-    const display = this.toDisplayDate(iso);
-
-    if (field === 'checkInDate')  this.checkInDateDisplay  = display;
-    if (field === 'checkOutDate') this.checkOutDateDisplay = display;
-
-    const wrapper   = (event.target as HTMLElement).closest('.date-wrapper');
-    const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
-    if (textInput) textInput.value = display;
-  }
-
-  openPicker(event: Event): void {
-    event.preventDefault();
-    event.stopPropagation();
-    const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
-    const picker  = wrapper?.querySelector('.date-picker') as HTMLInputElement;
-    if (picker) {
-      picker.style.pointerEvents = 'auto';
-      const today = new Date().toISOString().split('T')[0];
-      picker.min = today;
-      picker.showPicker?.();
-      setTimeout(() => { picker.style.pointerEvents = 'none'; }, 500);
-    }
-  }
-
-  // ─── Form ──────────────────────────────────────────────────────
 
   private buildForm(): void {
     this.form = this.fb.group({
       userId:          ['', Validators.required],
       sourceId:        ['', Validators.required],
-      checkInDate:     ['', Validators.required],
-      checkOutDate:    ['', Validators.required],
-      numberOfAdults:  [2, [Validators.required, Validators.min(1)]],
-      numberOfChildren:[0, Validators.min(0)],
       groupLeaderName: [''],
       groupName:       [''],
       demandeSpecial:  [''],
@@ -191,12 +109,62 @@ export class HebergementComponent implements OnInit {
       tourTypes:       this.fb.array([]),
     });
   }
-  max(a: number, b: number): number {
-    return Math.max(a, b);
-    }
 
   get tourTypesArray(): FormArray { return this.form.get('tourTypes') as FormArray; }
-  get isMulti(): boolean { return this.tourTypesArray.length > 1; }
+
+  // ─── Computed dates & people ───────────────────────────────────
+
+  get checkInDate(): string {
+    const dates = this.tourTypesArray.controls
+      .map(c => c.get('activityDate')?.value as string)
+      .filter(d => !!d);
+    if (dates.length === 0) return '';
+    return dates.reduce((min, d) => d < min ? d : min);
+  }
+
+  get checkOutDate(): string {
+    let maxDate = '';
+    this.tourTypesArray.controls.forEach((c, i) => {
+      const base = c.get('activityDate')?.value as string;
+      if (!base) return;
+      const repeat = this.tourTypeRepeatCounts[i] ?? 1;
+      const dt = new Date(base);
+      dt.setDate(dt.getDate() + repeat - 1);
+      const last = dt.toISOString().split('T')[0];
+      if (!maxDate || last > maxDate) maxDate = last;
+    });
+    if (!maxDate) return '';
+    const d = new Date(maxDate);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }
+
+  get globalAdults(): number {
+    const checkIn = this.checkInDate;
+    if (!checkIn) return 0;
+    return this.tourTypesArray.controls
+      .filter(c => c.get('activityDate')?.value === checkIn)
+      .reduce((sum, c) => sum + (+(c.get('numberOfAdults')?.value) || 0), 0);
+  }
+
+  get globalChildren(): number {
+    const checkIn = this.checkInDate;
+    if (!checkIn) return 0;
+    return this.tourTypesArray.controls
+      .filter(c => c.get('activityDate')?.value === checkIn)
+      .reduce((sum, c) => sum + (+(c.get('numberOfChildren')?.value) || 0), 0);
+  }
+
+  // Aliases used by participants and extras quantity limits
+  get adults():   number { return this.globalAdults; }
+  get children(): number { return this.globalChildren; }
+
+  get nights(): number {
+    if (!this.checkInDate || !this.checkOutDate) return 0;
+    return Math.max(0, Math.ceil(
+      (new Date(this.checkOutDate).getTime() - new Date(this.checkInDate).getTime()) / 86_400_000
+    ));
+  }
 
   // ─── Loaders ───────────────────────────────────────────────────
 
@@ -219,11 +187,7 @@ export class HebergementComponent implements OnInit {
   loadExtras(): void {
     this.isLoadingExtras = true;
     this.reservationService.getActiveExtras().subscribe({
-      next: e => {
-        this.extras = e;
-        e.forEach(ex => this.selectedExtras[ex.extraId] = 0);
-        this.isLoadingExtras = false;
-      },
+      next: e => { this.extras = e; this.isLoadingExtras = false; },
       error: () => this.isLoadingExtras = false
     });
   }
@@ -234,9 +198,7 @@ export class HebergementComponent implements OnInit {
     return this.users.find(u => u.userId === this.form.get('userId')?.value);
   }
 
-  isPartner(): boolean {
-    return this.getSelectedUser()?.role === 'PARTENAIRE';
-  }
+  isPartner(): boolean { return this.getSelectedUser()?.role === 'PARTENAIRE'; }
 
   adultPrice(tt: TourType): number {
     return this.isPartner() ? tt.partnerAdultPrice : tt.passengerAdultPrice;
@@ -246,98 +208,287 @@ export class HebergementComponent implements OnInit {
     return this.isPartner() ? tt.partnerChildPrice : tt.passengerChildPrice;
   }
 
-  // ─── Tour type selection ────────────────────────────────────────
+  // ─── Tour type management ──────────────────────────────────────
 
-  isTourSelected(id: string): boolean {
-    return this.tourTypesArray.controls.some(c => c.get('tourTypeId')?.value === id);
+  onAddTourType(id: string): void {
+    if (!id) return;
+    const tt = this.tourTypes.find(t => t.tourTypeId === id);
+    if (!tt) return;
+    this.tourTypesArray.push(this.fb.group({
+      tourTypeId:       [tt.tourTypeId],
+      name:             [tt.name],
+      numberOfAdults:   [2, [Validators.required, Validators.min(1)]],
+      numberOfChildren: [0, Validators.min(0)],
+      activityDate:     ['', Validators.required],
+    }));
+    this.tourTypeDisplayDates.push('');
+    this.tourRepartitions.push([]);
+    this.tourTypeRepeatCounts.push(1);
+    this.tourTypeDateWarnings.push('');
   }
 
-  toggleTourType(tt: TourType): void {
-    const idx = this.tourTypesArray.controls.findIndex(c => c.get('tourTypeId')?.value === tt.tourTypeId);
-    if (idx >= 0) {
-      this.tourTypesArray.removeAt(idx);
-    } else {
-      this.tourTypesArray.push(this.fb.group({
-        tourTypeId:       [tt.tourTypeId],
-        name:             [tt.name],
-        numberOfAdults:   [this.form.get('numberOfAdults')?.value ?? 2],
-        numberOfChildren: [this.form.get('numberOfChildren')?.value ?? 0],
-      }));
-    }
+  onRemoveTourType(index: number): void {
+    this.tourTypesArray.removeAt(index);
+    this.tourTypeDisplayDates.splice(index, 1);
+    this.tourRepartitions.splice(index, 1);
+    this.tourTypeRepeatCounts.splice(index, 1);
+    this.tourTypeDateWarnings.splice(index, 1);
+    this.validateRepartition();
+    if (this.participants.length > 0) this.initParticipants();
   }
 
-  getTourFG(id: string): FormGroup | null {
-    const c = this.tourTypesArray.controls.find(c => c.get('tourTypeId')?.value === id);
-    return c ? (c as FormGroup) : null;
+  setRepeatCount(index: number, count: number): void {
+    this.tourTypeRepeatCounts[index] = Math.max(1, Math.min(30, count || 1));
+    // Revalidate dates for all other activities when repeats change
+    this.tourTypesArray.controls.forEach((ctrl, j) => {
+      if (j === index) return;
+      const date = ctrl.get('activityDate')?.value as string;
+      if (!date) return;
+      const blocked = this.getBlockedDates(j);
+      this.tourTypeDateWarnings[j] = blocked.has(date)
+        ? `⚠️ Cette date est occupée par la répétition d'une autre activité.`
+        : '';
+    });
+  }
+
+  getRepeatEndDate(index: number): string {
+    const base = this.tourTypesArray.at(index)?.get('activityDate')?.value as string;
+    const repeat = this.tourTypeRepeatCounts[index] ?? 1;
+    if (!base || repeat <= 1) return '';
+    const dt = new Date(base);
+    dt.setDate(dt.getDate() + repeat - 1);
+    return this.toDisplayDate(dt.toISOString().split('T')[0]);
+  }
+
+  getBlockedDates(excludeIndex: number): Set<string> {
+    const blocked = new Set<string>();
+    this.tourTypesArray.controls.forEach((ctrl, i) => {
+      if (i === excludeIndex) return;
+      const base = ctrl.get('activityDate')?.value as string;
+      const repeat = this.tourTypeRepeatCounts[i] ?? 1;
+      if (!base || repeat <= 1) return;
+      for (let d = 0; d < repeat; d++) {
+        const dt = new Date(base);
+        dt.setDate(dt.getDate() + d);
+        blocked.add(dt.toISOString().split('T')[0]);
+      }
+    });
+    return blocked;
   }
 
   getTourByTypeId(id: string): TourType | undefined {
     return this.tourTypes.find(t => t.tourTypeId === id);
   }
 
-  isAllocationValid(): boolean {
-    if (!this.isMulti) return true;
-    const sumA = this.tourTypesArray.controls.reduce((s,c) => s + (+(c.get('numberOfAdults')?.value)||0), 0);
-    const sumC = this.tourTypesArray.controls.reduce((s,c) => s + (+(c.get('numberOfChildren')?.value)||0), 0);
-    return sumA === this.adults && sumC === this.children;
-  }
-
-  allocationMessage(): string {
-    if (!this.isMulti) return '';
-    const diffA = this.adults   - this.tourTypesArray.controls.reduce((s,c)=>s+(+(c.get('numberOfAdults')?.value)||0),0);
-    const diffC = this.children - this.tourTypesArray.controls.reduce((s,c)=>s+(+(c.get('numberOfChildren')?.value)||0),0);
-    const msgs: string[] = [];
-    if (diffA > 0) msgs.push(`${diffA} adulte(s) non assigné(s)`);
-    if (diffA < 0) msgs.push(`Trop d'adultes (+${-diffA})`);
-    if (diffC > 0) msgs.push(`${diffC} enfant(s) non assigné(s)`);
-    if (diffC < 0) msgs.push(`Trop d'enfants (+${-diffC})`);
-    return msgs.join(' · ');
-  }
-
-  // ─── Counters ──────────────────────────────────────────────────
-
-  get adults():   number { return +(this.form.get('numberOfAdults')?.value)   || 0; }
-  get children(): number { return +(this.form.get('numberOfChildren')?.value) || 0; }
-  get nights():   number {
-    const ci = this.form.get('checkInDate')?.value;
-    const co = this.form.get('checkOutDate')?.value;
-    if (!ci || !co) return 0;
-    return Math.max(0, Math.ceil((new Date(co).getTime() - new Date(ci).getTime()) / 86_400_000));
-  }
-
-  updateCount(field: 'numberOfAdults' | 'numberOfChildren', delta: number): void {
+  updateActivityCount(index: number, field: 'numberOfAdults' | 'numberOfChildren', delta: number): void {
+    const ctrl = this.tourTypesArray.at(index);
     const min = field === 'numberOfAdults' ? 1 : 0;
-    this.form.get(field)?.setValue(Math.max(min, (+(this.form.get(field)?.value) || 0) + delta));
-    if (this.participants.length > 0) {
-      this.initParticipants();
+    const current = +(ctrl?.get(field)?.value) || 0;
+    ctrl?.get(field)?.setValue(Math.max(min, current + delta));
+    this.validateRepartition();
+    if (this.participants.length > 0) this.initParticipants();
+  }
+
+  // ─── Activity date handlers (indexed by FormArray position) ────
+
+  onTourTypeDateTextInput(event: Event, index: number): void {
+    const input = event.target as HTMLInputElement;
+    const val = input.value;
+    if (val.length === 10 && val[2] === '/' && val[5] === '/') {
+      const [d, m, y] = val.split('/');
+      const iso = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      const date = new Date(iso);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      if (!isNaN(date.getTime()) && +d <= 31 && +m <= 12 && date >= today) {
+        if (this.getBlockedDates(index).has(iso)) {
+          this.tourTypeDateWarnings[index] = `⚠️ Cette date est occupée par la répétition d'une autre activité.`;
+          this.tourTypesArray.at(index)?.get('activityDate')?.setValue('', { emitEvent: false });
+        } else {
+          this.tourTypeDateWarnings[index] = '';
+          this.tourTypesArray.at(index)?.get('activityDate')?.setValue(iso, { emitEvent: true });
+        }
+      } else {
+        this.tourTypeDateWarnings[index] = '';
+        this.tourTypesArray.at(index)?.get('activityDate')?.setValue('', { emitEvent: false });
+      }
+    } else {
+      this.tourTypeDateWarnings[index] = '';
+      this.tourTypesArray.at(index)?.get('activityDate')?.setValue('', { emitEvent: false });
     }
+    this.tourTypeDisplayDates[index] = val;
+    if (this.participants.length > 0) this.initParticipants();
+  }
+
+  onTourTypeDatePickerChange(event: Event, index: number): void {
+    const iso = (event.target as HTMLInputElement).value;
+    if (!iso) return;
+    if (this.getBlockedDates(index).has(iso)) {
+      this.tourTypeDateWarnings[index] = `⚠️ Cette date est occupée par la répétition d'une autre activité.`;
+      const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
+      const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
+      if (textInput) textInput.value = '';
+      this.tourTypeDisplayDates[index] = '';
+      return;
+    }
+    this.tourTypeDateWarnings[index] = '';
+    this.tourTypesArray.at(index)?.get('activityDate')?.setValue(iso, { emitEvent: true });
+    const display = this.toDisplayDate(iso);
+    this.tourTypeDisplayDates[index] = display;
+    const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
+    const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
+    if (textInput) textInput.value = display;
+    if (this.participants.length > 0) this.initParticipants();
   }
 
   // ─── Extras ────────────────────────────────────────────────────
 
-  toggleExtra(id: string): void { this.selectedExtras[id] = this.selectedExtras[id] > 0 ? 0 : 1; }
-  adjustExtra(id: string, d: number): void {
-    const n = (this.selectedExtras[id]||0) + d;
-    if (n >= 1 && n <= this.adults + this.children) this.selectedExtras[id] = n;
+  getExtraInfo(extraId: string): ExtraResponse | undefined {
+    return this.extras.find(e => e.extraId === extraId);
   }
-  isExtraSelected(id: string): boolean { return (this.selectedExtras[id]||0) > 0; }
-  extraQty(id: string): number { return this.selectedExtras[id]||0; }
+
+  onAddExtra(id: string): void {
+    if (!id) return;
+    this.extraItems.push({ extraId: id, quantity: 1, activityDate: '', displayDate: '' });
+  }
+
+  onRemoveExtra(index: number): void {
+    this.extraItems.splice(index, 1);
+  }
+
+  adjustExtra(index: number, delta: number): void {
+    const item = this.extraItems[index];
+    const max = this.adults + this.children;
+    item.quantity = Math.max(1, Math.min(item.quantity + delta, max > 0 ? max : 99));
+  }
+
+  onExtraDateTextInput(event: Event, index: number): void {
+    const input = event.target as HTMLInputElement;
+    const val = input.value;
+    if (val.length === 10 && val[2] === '/' && val[5] === '/') {
+      const [d, m, y] = val.split('/');
+      const iso = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      const date = new Date(iso);
+      const checkIn  = this.checkInDate  ? new Date(this.checkInDate)  : null;
+      const checkOut = this.checkOutDate ? new Date(this.checkOutDate) : null;
+      const valid = !isNaN(date.getTime()) && +d <= 31 && +m <= 12;
+      const inRange = !checkIn || !checkOut || (date >= checkIn && date <= checkOut);
+      this.extraItems[index].activityDate = (valid && inRange) ? iso : '';
+    } else {
+      this.extraItems[index].activityDate = '';
+    }
+    this.extraItems[index].displayDate = val;
+  }
+
+  onExtraDatePickerChange(event: Event, index: number): void {
+    const iso = (event.target as HTMLInputElement).value;
+    if (!iso) return;
+    const date     = new Date(iso);
+    const checkIn  = this.checkInDate  ? new Date(this.checkInDate)  : null;
+    const checkOut = this.checkOutDate ? new Date(this.checkOutDate) : null;
+    const inRange  = !checkIn || !checkOut || (date >= checkIn && date <= checkOut);
+
+    const display = this.toDisplayDate(iso);
+    this.extraItems[index].displayDate = display;
+    const wrapper   = (event.target as HTMLElement).closest('.date-wrapper');
+    const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
+    if (textInput) textInput.value = inRange ? display : '';
+
+    this.extraItems[index].activityDate = inRange ? iso : '';
+  }
+
+  hasExtraDuplicates(): boolean {
+    const seen = new Set<string>();
+    for (const item of this.extraItems) {
+      const key = `${item.extraId}:${item.activityDate || 'none'}`;
+      if (seen.has(key)) return true;
+      seen.add(key);
+    }
+    return false;
+  }
+
+  // ─── Repartitions per activity ─────────────────────────────────
+
+  getActivityRepartitions(index: number): { tenteType: TenteType; numberOfTentes: number }[] {
+    return this.tourRepartitions[index] ?? [];
+  }
+
+  addRepartitionForActivity(index: number): void {
+    if (!this.tourRepartitions[index]) this.tourRepartitions[index] = [];
+    this.tourRepartitions[index].push({ tenteType: 'SINGLE', numberOfTentes: 1 });
+    this.validateRepartition();
+  }
+
+  removeRepartitionForActivity(activityIndex: number, repIndex: number): void {
+    this.tourRepartitions[activityIndex].splice(repIndex, 1);
+    this.validateRepartition();
+  }
+
+  setActivityRepartitionCount(activityIndex: number, repIndex: number, count: number): void {
+    this.tourRepartitions[activityIndex][repIndex].numberOfTentes = Math.max(1, count);
+    this.validateRepartition();
+  }
+
+  setActivityRepartitionType(activityIndex: number, repIndex: number, tenteType: TenteType): void {
+    this.tourRepartitions[activityIndex][repIndex].tenteType = tenteType;
+    this.validateRepartition();
+  }
+
+  validateRepartition(): void {
+    for (let i = 0; i < this.tourTypesArray.length; i++) {
+      const reps = this.tourRepartitions[i] ?? [];
+      if (reps.length === 0) continue;
+      const ctrl = this.tourTypesArray.at(i);
+      const total = (+(ctrl?.get('numberOfAdults')?.value) || 0)
+                  + (+(ctrl?.get('numberOfChildren')?.value) || 0);
+      const repTotal = reps.reduce((sum, r) => sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0);
+      if (repTotal !== total) {
+        const name = ctrl?.get('name')?.value ?? `activité ${i + 1}`;
+        this.repartitionError = `⚠️ La répartition de "${name}" couvre ${repTotal} pers. — l'activité en a ${total}.`;
+        return;
+      }
+    }
+    this.repartitionError = '';
+  }
+
+  isRepartitionValid(): boolean {
+    for (let i = 0; i < this.tourTypesArray.length; i++) {
+      const reps = this.tourRepartitions[i] ?? [];
+      if (reps.length === 0) continue;
+      const ctrl = this.tourTypesArray.at(i);
+      const total = (+(ctrl?.get('numberOfAdults')?.value) || 0)
+                  + (+(ctrl?.get('numberOfChildren')?.value) || 0);
+      const repTotal = reps.reduce((sum, r) => sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0);
+      if (repTotal !== total) return false;
+    }
+    return true;
+  }
+
+  getTenteLabel(type: TenteType): string {
+    return this.tenteTypes.find(t => t.value === type)?.label ?? type;
+  }
+
+  getTenteCapacity(type: TenteType): number {
+    return this.tenteTypes.find(t => t.value === type)?.capacity ?? 0;
+  }
 
   // ─── Pricing ───────────────────────────────────────────────────
 
   tourTypesTotal(): number {
-    const n = Math.max(1, this.nights);
-    return this.tourTypesArray.controls.reduce((sum, ctrl) => {
+    return this.tourTypesArray.controls.reduce((sum, ctrl, i) => {
       const tt = this.getTourByTypeId(ctrl.get('tourTypeId')?.value);
       if (!tt) return sum;
-      const a = this.isMulti ? (+(ctrl.get('numberOfAdults')?.value)||0)   : this.adults;
-      const c = this.isMulti ? (+(ctrl.get('numberOfChildren')?.value)||0) : this.children;
-      return sum + (a * this.adultPrice(tt) + c * this.childPrice(tt)) * n;
+      const a = +(ctrl.get('numberOfAdults')?.value)   || 0;
+      const c = +(ctrl.get('numberOfChildren')?.value) || 0;
+      const repeat = this.tourTypeRepeatCounts[i] ?? 1;
+      return sum + (a * this.adultPrice(tt) + c * this.childPrice(tt)) * repeat;
     }, 0);
   }
 
   extrasTotal(): number {
-    return this.extras.reduce((s, e) => s + (this.selectedExtras[e.extraId]||0) * e.unitPrice, 0);
+    return this.extraItems.reduce((s, item) => {
+      const info = this.getExtraInfo(item.extraId);
+      return s + (info ? item.quantity * info.unitPrice : 0);
+    }, 0);
   }
 
   baseTotal():  number { return this.tourTypesTotal() + this.extrasTotal(); }
@@ -359,58 +510,67 @@ export class HebergementComponent implements OnInit {
   // ─── Validation ────────────────────────────────────────────────
 
   canSubmit(): boolean {
+    const allActivitiesValid = this.tourTypesArray.controls
+      .every(c => !!c.get('activityDate')?.value && (+(c.get('numberOfAdults')?.value) || 0) >= 1);
+    const allExtraDates = this.extraItems.every(item => !!item.activityDate);
+    const noDateWarnings = this.tourTypeDateWarnings.every(w => !w);
     return !!this.form.get('userId')?.value
-      && !!this.form.get('sourceId')?.value 
-      && !!this.form.get('checkInDate')?.value
-      && !!this.form.get('checkOutDate')?.value
-      && this.nights > 0
-      && this.adults >= 1
+      && !!this.form.get('sourceId')?.value
       && this.tourTypesArray.length > 0
-      && this.isAllocationValid()
-      && this.isRepartitionValid();
+      && allActivitiesValid
+      && this.isRepartitionValid()
+      && allExtraDates
+      && !this.hasExtraDuplicates()
+      && noDateWarnings;
   }
-
-  showGroupName(): boolean { return this.adults + this.children > 2; }
 
   // ─── Submit ────────────────────────────────────────────────────
 
   onSubmit(): void {
     if (!this.canSubmit()) return;
     this.isSubmitting = true;
-
+    this.submitError = '';
     const fv = this.form.value;
 
-    const tourTypesPayload = this.tourTypesArray.controls.map(c => ({
-      tourTypeId:       c.get('tourTypeId')?.value as string,
-      numberOfAdults:   this.isMulti ? (+(c.get('numberOfAdults')?.value) || 0) : this.adults,
-      numberOfChildren: this.isMulti ? (+(c.get('numberOfChildren')?.value) || 0) : this.children,
-    }));
+    const tourTypesPayload: {
+      tourTypeId: string; numberOfAdults: number; numberOfChildren: number;
+      activityDate: string; repartitions?: { tenteType: TenteType; numberOfTentes: number }[];
+    }[] = [];
+    this.tourTypesArray.controls.forEach((c, i) => {
+      const base    = c.get('activityDate')?.value as string;
+      const repeat  = this.tourTypeRepeatCounts[i] ?? 1;
+      const reps    = (this.tourRepartitions[i] ?? []).length > 0 ? this.tourRepartitions[i] : undefined;
+      for (let d = 0; d < repeat; d++) {
+        const dt = new Date(base);
+        dt.setDate(dt.getDate() + d);
+        tourTypesPayload.push({
+          tourTypeId:       c.get('tourTypeId')?.value as string,
+          numberOfAdults:   +(c.get('numberOfAdults')?.value)   || 0,
+          numberOfChildren: +(c.get('numberOfChildren')?.value) || 0,
+          activityDate:     dt.toISOString().split('T')[0],
+          repartitions:     reps,
+        });
+      }
+    });
 
-    const extrasPayload = this.extras
-      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
-      .map(e => ({ extraId: e.extraId, quantity: this.selectedExtras[e.extraId] }));
+    const extrasPayload = this.extraItems.map(item => ({
+      extraId:      item.extraId,
+      quantity:     item.quantity,
+      activityDate: item.activityDate || undefined,
+    }));
 
     const participantsPayload: ParticipantRequest[] = this.hasParticipants()
       ? this.participants.filter(p => p.fullName.trim() !== '')
       : [];
 
-    // ── Build repartitions payload ────────────────────────────────
-    let repartitionsPayload: RepartitionRequest[] | undefined;
-
-    if (this.isMulti && Object.keys(this.tourRepartitions).length > 0) {
-      repartitionsPayload = Object.values(this.tourRepartitions).flat();
-    } else if (!this.isMulti && this.repartitions.length > 0) {
-      repartitionsPayload = this.repartitions;
-    }
-
     const request: ReservationRequest = {
       userId:           fv.userId,
       sourceId:         fv.sourceId,
       reservationType:  'HEBERGEMENT',
-      checkInDate:      fv.checkInDate,
-      checkOutDate:     fv.checkOutDate,
-      numberOfAdults:   this.adults,
-      numberOfChildren: this.children,
+      checkInDate:      this.checkInDate,
+      checkOutDate:     this.checkOutDate,
+      numberOfAdults:   this.globalAdults,
+      numberOfChildren: this.globalChildren,
       groupLeaderName:  fv.groupLeaderName || undefined,
       groupName:        fv.groupName       || undefined,
       demandeSpecial:   fv.demandeSpecial  || undefined,
@@ -419,68 +579,60 @@ export class HebergementComponent implements OnInit {
       extras:           extrasPayload.length > 0 ? extrasPayload : undefined,
       participants:     participantsPayload.length > 0 ? participantsPayload : undefined,
       initialPayment:   this.initialPayment ?? undefined,
-      repartitions:     repartitionsPayload,
     };
 
     this.reservationService.createReservation(request).subscribe({
       next: () => { this.isSubmitting = false; this.router.navigate(['/reservations']); },
-      error: err => { console.error(err); this.isSubmitting = false; }
+      error: err => {
+        console.error(err);
+        this.isSubmitting = false;
+        const status = err?.status;
+        if (status === 400) {
+          const detail = err?.error?.message || err?.error?.error;
+          this.submitError = detail
+            ? `⚠️ ${detail}`
+            : '⚠️ Données invalides — vérifiez que les dates des extras sont comprises entre l\'arrivée et le départ.';
+        } else if (status === 409) {
+          this.submitError = '⚠️ Conflit — une réservation similaire existe déjà pour ces dates.';
+        } else if (!status || status >= 500) {
+          this.submitError = '⚠️ Erreur serveur — veuillez réessayer dans quelques instants.';
+        } else {
+          this.submitError = `⚠️ Une erreur est survenue (code ${status}). Veuillez réessayer.`;
+        }
+      }
     });
   }
 
-  openPaymentModal(): void  { this.showPaymentModal = true; }
-  closePaymentModal(): void { this.showPaymentModal = false; }
+  // ─── Date utilities ────────────────────────────────────────────
 
-  onPaymentConfirmed(payment: PaymentRequest): void {
-     this.initialPayment = payment;
-     this.showPaymentModal = false;
-  }
-
-  removeInitialPayment(): void {
-    this.initialPayment = null;
-  }
-
-  paymentMethodLabel(method: string): string {
-     const labels: Record<string, string> = {
-       CASH: 'Espèces', CREDIT_CARD: 'Carte de crédit',
-       DEBIT_CARD: 'Carte de débit', BANK_TRANSFER: 'Virement bancaire',
-       ONLINE: 'En ligne', CHEQUE: 'Chèque',
-     };
-     return labels[method] ?? method;
-  }
-  onAddTourType(id: string): void {
-    if (!id) return;
-    const tt = this.tourTypes.find(t => t.tourTypeId === id);
-    if (!tt || this.isTourSelected(id)) return;
-    this.tourTypesArray.push(this.fb.group({
-      tourTypeId:       [tt.tourTypeId],
-      name:             [tt.name],
-      numberOfAdults:   [this.form.get('numberOfAdults')?.value ?? 2],
-      numberOfChildren: [this.form.get('numberOfChildren')?.value ?? 0],
-    }));
+  openPicker(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
+    const picker  = wrapper?.querySelector('.date-picker') as HTMLInputElement;
+    if (picker) {
+      picker.style.pointerEvents = 'auto';
+      const today = new Date().toISOString().split('T')[0];
+      picker.min = today;
+      picker.showPicker?.();
+      setTimeout(() => { picker.style.pointerEvents = 'none'; }, 500);
+    }
   }
 
-  onRemoveTourType(id: string): void {
-    const idx = this.tourTypesArray.controls.findIndex(c => c.get('tourTypeId')?.value === id);
-    if (idx >= 0) this.tourTypesArray.removeAt(idx);
+  toDisplayDate(val: string): string {
+    if (!val || !val.includes('-')) return val;
+    const [y, m, d] = val.split('-');
+    return `${d}/${m}/${y}`;
   }
 
-  onAddExtra(id: string): void {
-    if (!id) return;
-    this.selectedExtras[id] = 1;
-  }
+  // ─── Participants ──────────────────────────────────────────────
 
-  onRemoveExtra(id: string): void {
-    this.selectedExtras[id] = 0;
-  }
-
-  getSelectedExtras(): ExtraResponse[] {
-    return this.extras.filter(e => (this.selectedExtras[e.extraId] || 0) > 0);
-  }
   initParticipants(): void {
+    const a = this.globalAdults;
+    const c = this.globalChildren;
     this.participants = [
-      ...Array(this.adults).fill(null).map(() => ({ fullName: '', age: 18, isAdult: true })),
-      ...Array(this.children).fill(null).map(() => ({ fullName: '', age: 8, isAdult: false }))
+      ...Array(a).fill(null).map(() => ({ fullName: '', age: 18, isAdult: true })),
+      ...Array(c).fill(null).map(() => ({ fullName: '', age: 8,  isAdult: false }))
     ];
   }
 
@@ -497,165 +649,32 @@ export class HebergementComponent implements OnInit {
   hasParticipants(): boolean {
     return this.participants.some(p => p.fullName.trim() !== '');
   }
+
+  // ─── Payment ───────────────────────────────────────────────────
+
+  openPaymentModal(): void  { this.showPaymentModal = true; }
+  closePaymentModal(): void { this.showPaymentModal = false; }
+
+  onPaymentConfirmed(payment: PaymentRequest): void {
+    this.initialPayment = payment;
+    this.showPaymentModal = false;
+  }
+
+  removeInitialPayment(): void { this.initialPayment = null; }
+
+  paymentMethodLabel(method: string): string {
+    const labels: Record<string, string> = {
+      CASH: 'Espèces', CREDIT_CARD: 'Carte de crédit',
+      DEBIT_CARD: 'Carte de débit', BANK_TRANSFER: 'Virement bancaire',
+      ONLINE: 'En ligne', CHEQUE: 'Chèque',
+    };
+    return labels[method] ?? method;
+  }
+
   getSelectedSourceName(): string {
     const id = this.form.get('sourceId')?.value;
     return this.sources.find(s => s.sourceId === id)?.name ?? '';
   }
-  // Convert dd/MM/yyyy → yyyy-MM-dd for the backend
-  toIsoDate(val: string): string {
-    if (!val || !val.includes('/')) return val;
-    const [d, m, y] = val.split('/');
-    return `${y}-${m}-${d}`;
-  }
 
-  // Convert yyyy-MM-dd → dd/MM/yyyy for display
-  toDisplayDate(val: string): string {
-    if (!val || !val.includes('-')) return val;
-    const [y, m, d] = val.split('-');
-    return `${d}/${m}/${y}`;
-  }
-  addRepartition(tenteType: TenteType): void {
-    if (!tenteType) return;
-    const exists = this.repartitions.find(r => r.tenteType === tenteType);
-    if (exists) return;
-    this.repartitions.push({ tenteType, numberOfTentes: 1 });
-    this.validateRepartition();
-  }
-
-  removeRepartition(tenteType: TenteType): void {
-    this.repartitions = this.repartitions.filter(r => r.tenteType !== tenteType);
-    this.validateRepartition();
-  }
-
-  adjustRepartitionCount(tenteType: TenteType, delta: number): void {
-    const r = this.repartitions.find(r => r.tenteType === tenteType);
-    if (!r) return;
-    r.numberOfTentes = Math.max(1, r.numberOfTentes + delta);
-    this.validateRepartition();
-  }
-
-  getTenteLabel(type: TenteType): string {
-    return this.tenteTypes.find(t => t.value === type)?.label ?? type;
-  }
-
-  getTenteCapacity(type: TenteType): number {
-    const found = this.tenteTypes.find(t => t.value === type);
-    console.log('getTenteCapacity:', type, found); 
-    return found?.capacity ?? 0;
-  }
-
-  getRepartitionTotal(): number {
-    return this.repartitions.reduce((sum, r) =>
-      sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0);
-  }
-
-  validateRepartition(): void {
-    if (this.isMulti) {
-      // ── Only validate tourTypes that HAVE repartitions ──
-      for (const [tourTypeId, reps] of Object.entries(this.tourRepartitions)) {
-        if (reps.length === 0) continue;
-
-        const ctrl = this.tourTypesArray.controls.find(
-          c => c.get('tourTypeId')?.value === tourTypeId
-        );
-        if (!ctrl) continue;
-
-        const tourAdults   = +(ctrl.get('numberOfAdults')?.value)   || 0;
-        const tourChildren = +(ctrl.get('numberOfChildren')?.value) || 0;
-        const tourTotal    = tourAdults + tourChildren;
-
-        const repTotal = reps.reduce(
-          (sum, r) => sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0
-        );
-
-        if (repTotal !== tourTotal) {
-          this.repartitionError =
-            `⚠️ La répartition de "${ctrl.get('name')?.value ?? tourTypeId}" ` +
-            `couvre ${repTotal} personne(s) — l'activité en a ${tourTotal}.`;
-          return;
-        }
-      }
-      this.repartitionError = '';
-
-    } else {
-      // ── Single tourType mode ──
-      if (this.repartitions.length === 0) { this.repartitionError = ''; return; }
-
-      const total    = this.getRepartitionTotal();
-      const expected = this.adults + this.children;
-
-      this.repartitionError = total !== expected
-        ? `⚠️ La répartition couvre ${total} personne(s) — le groupe en a ${expected}.`
-        : '';
-    }
-  }
-
-  isRepartitionValid(): boolean {
-    if (this.isMulti) {
-      for (const [tourTypeId, reps] of Object.entries(this.tourRepartitions)) {
-        if (reps.length === 0) continue;
-
-        const ctrl = this.tourTypesArray.controls.find(
-          c => c.get('tourTypeId')?.value === tourTypeId
-        );
-        if (!ctrl) continue;
-
-        const tourTotal = (+(ctrl.get('numberOfAdults')?.value) || 0)
-                        + (+(ctrl.get('numberOfChildren')?.value) || 0);
-
-        const repTotal = reps.reduce(
-          (sum, r) => sum + r.numberOfTentes * this.getTenteCapacity(r.tenteType), 0
-        );
-
-        if (repTotal !== tourTotal) return false;
-      }
-      return true;
-    }
-
-    if (this.repartitions.length === 0) return true;
-    return this.getRepartitionTotal() === this.adults + this.children;
-  }
-  isTenteSelected(tenteType: TenteType): boolean {
-    return this.repartitions.some(r => r.tenteType === tenteType);
-  }
-
-  
-  getTourRepartition(tourTypeId: string): { tenteType: TenteType; numberOfTentes: number }[] {
-    return this.getTourRepartitions(tourTypeId);
-  }
-
-  addRepartitionForTour(tourTypeId: string): void {
-    if (!this.tourRepartitions[tourTypeId]) {
-      this.tourRepartitions[tourTypeId] = [];
-    }
-    this.tourRepartitions[tourTypeId].push({ tenteType: 'SINGLE', numberOfTentes: 1 }); // ← was DOUBLE
-    this.validateRepartition();
-  }
-
-  removeRepartitionForTour(tourTypeId: string, index: number): void {
-    if (this.tourRepartitions[tourTypeId]) {
-      this.tourRepartitions[tourTypeId].splice(index, 1);
-      if (this.tourRepartitions[tourTypeId].length === 0) {
-        delete this.tourRepartitions[tourTypeId];
-      }
-    }
-    this.validateRepartition();
-  }
-
-  setRepartitionCount(tourTypeId: string, index: number, count: number): void {
-    if (this.tourRepartitions[tourTypeId]?.[index]) {
-      this.tourRepartitions[tourTypeId][index].numberOfTentes = Math.max(1, count);
-      this.validateRepartition();
-    }
-  }
-
-  setRepartitionType(tourTypeId: string, index: number, tenteType: TenteType): void {
-    if (this.tourRepartitions[tourTypeId]?.[index]) {
-      this.tourRepartitions[tourTypeId][index].tenteType = tenteType;
-      this.validateRepartition();
-    }
-  }
-  getTourRepartitions(tourTypeId: string): { tenteType: TenteType; numberOfTentes: number }[] {
-    return this.tourRepartitions[tourTypeId] ?? [];
-  }
+  max(a: number, b: number): number { return Math.max(a, b); }
 }

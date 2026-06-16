@@ -22,6 +22,7 @@ export interface TourTypeSnapshot {
   numberOfChildren: number;
   totalPrice: number;
   numberOfNights?: number | null;
+  activityDate?: string | null;
 }
 
 export interface TourSnapshot {
@@ -50,6 +51,7 @@ export interface Extra {
   unitPrice: number;
   totalPrice: number;
   isActive: boolean;
+  activityDate?: string | null;
 }
 
 export interface ExtraCatalog {
@@ -114,6 +116,7 @@ export interface RepartitionSnapshot {
   numberOfTentes: number;
   capacityPerTente: number;
   totalPersonnes: number;
+  reservationTourTypeId?: string | null;
 }
 
 export interface Reservation {

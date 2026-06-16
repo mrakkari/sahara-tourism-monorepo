@@ -122,6 +122,7 @@ export class ResCampingService {
         unitPrice:          e.unitPrice,
         totalPrice:         e.totalPrice,
         isActive:           e.isActive,
+        activityDate:       e.activityDate,
       }));
 
     // ── Participants ──────────────────────────────────────────
@@ -143,6 +144,7 @@ export class ResCampingService {
       numberOfChildren:      t.numberOfChildren,
       totalPrice:            t.totalPrice,
       numberOfNights:        t.numberOfNights ?? null,
+      activityDate:          t.activityDate,
     }));
 
     // ── Tours (TOURS type) ────────────────────────────────────
@@ -179,11 +181,12 @@ export class ResCampingService {
       transactions,
     };
     const repartitions = (dto.repartitions ?? []).map(r => ({
-      repartitionId:    r.repartitionId,
-      tenteType:        r.tenteType,
-      numberOfTentes:   r.numberOfTentes,
-      capacityPerTente: r.capacityPerTente,
-      totalPersonnes:   r.totalPersonnes,
+      repartitionId:         r.repartitionId,
+      tenteType:             r.tenteType,
+      numberOfTentes:        r.numberOfTentes,
+      capacityPerTente:      r.capacityPerTente,
+      totalPersonnes:        r.totalPersonnes,
+      reservationTourTypeId: r.reservationTourTypeId,
     }));
 
     return {
@@ -383,11 +386,14 @@ export class ResCampingService {
   addExtraToReservation(
     reservationId: string,
     extraId: string,
-    quantity: number
+    quantity: number,
+    activityDate?: string
   ): Observable<Reservation> {
+    const body: Record<string, unknown> = { reservationId, extraId, quantity };
+    if (activityDate) body['activityDate'] = activityDate;
     return this.http.post<ReservationResponse>(
       `${this.API_BASE}/reservation-extras`,
-      { reservationId, extraId, quantity }
+      body
     ).pipe(
       map(dto => {
         const updated = this.mapToReservation(dto);

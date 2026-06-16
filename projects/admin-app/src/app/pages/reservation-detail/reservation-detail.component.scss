@@ -45,6 +45,7 @@ h1 {
   margin-left: 2rem; /* Add this line to shift it right */
   background: linear-gradient(135deg, #1E293B, #334155);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .reservation-id {
@@ -730,11 +731,156 @@ $blue:    #3b82f6;
 .tt-name { font-size: 0.95rem; color: $dark; display: block; margin-bottom: 4px; }
 .tt-duration { font-size: 0.78rem; color: $amber; font-weight: 600; }
 .tt-desc  { font-size: 0.8rem; color: $gray; margin: 4px 0 0; }
+.tt-activity-date {
+  display: inline-block;
+  font-size: 0.78rem;
+  color: #3B82F6;
+  font-weight: 500;
+  margin-top: 5px;
+}
 
 .tt-right {
   text-align: right;
   .tt-people { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; color: $gray; }
   .tt-total  { font-size: 1rem; font-weight: 700; color: $dark; margin-top: 4px; display: block; }
+}
+
+.tt-repartitions {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  .tt-rep-header {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #92400e;
+    margin-bottom: 6px;
+  }
+  .tt-rep-list { display: flex; flex-direction: column; gap: 4px; }
+  .tt-rep-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 6px 12px;
+    .rep-left { display: flex; align-items: center; gap: 8px; }
+    .rep-icon { font-size: 0.9rem; }
+    .rep-info { display: flex; flex-direction: column; }
+    .rep-type { font-size: 0.82rem; font-weight: 600; color: #1e293b; }
+    .rep-detail { font-size: 0.75rem; color: #64748b; }
+    .rep-total { font-size: 0.82rem; font-weight: 600; color: #92400e; }
+  }
+}
+
+// ── Extras service date inline label ──────────────────────────
+
+.extras-service-date {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: $amber;
+}
+
+// ── Embedded extras within a date block ───────────────────────
+
+.date-extras {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #c4b5fd;
+
+  &--standalone {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+.date-title-sep {
+  color: #94a3b8;
+  font-weight: 300;
+}
+
+.nights-badge {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1A3A5C;
+  background: #EEF2F7;
+  border: 1px solid rgba(26, 58, 92, 0.2);
+  padding: 2px 9px;
+  border-radius: 50px;
+  vertical-align: middle;
+}
+
+.date-extras-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #5b21b6;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.date-extra-subdate {
+  padding: 5px 12px;
+  background: rgba(26, 58, 92, 0.04);
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1A3A5C;
+  margin-bottom: 6px;
+  margin-top: 4px;
+}
+
+.date-extra-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  margin-bottom: 6px;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.date-extra-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-extra-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.date-extra-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.date-extra-qty {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #5b21b6;
+  white-space: nowrap;
+}
+
+.date-extra-price {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
 }
 
 // ── Tour snapshot (TOURS) ──────────────────────────────────────
@@ -793,6 +939,13 @@ $blue:    #3b82f6;
 .extra-left { flex: 1; }
 .extra-name { font-size: 0.88rem; font-weight: 600; color: $dark; display: block; }
 .extra-meta { font-size: 0.78rem; color: $gray; }
+.extra-activity-date {
+  display: inline-block;
+  font-size: 0.78rem;
+  color: #3B82F6;
+  font-weight: 500;
+  margin-top: 3px;
+}
 .extra-price { font-size: 0.95rem; font-weight: 700; color: $dark; white-space: nowrap; }
 
 .extras-total-row {

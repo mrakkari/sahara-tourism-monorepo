@@ -389,17 +389,17 @@ export class GroupsComponent implements OnInit {
     if (!r.repartitions || r.repartitions.length === 0) return ['—'];
 
     const labelMap: Record<string, string> = {
-      SINGLE: 'SQL',
-      DOUBLE: 'DBL',
-      TRIPLE: 'TRP',
-      X4: '4*PAX',
-      X5: '5*PAX',
-      X6: '6*PAX',
-      X7: '7*PAX',
+      SINGLE: 'SQL', DOUBLE: 'DBL', TRIPLE: 'TRP',
+      X4: '4*PAX', X5: '5*PAX', X6: '6*PAX', X7: '7*PAX',
     };
 
-    return r.repartitions.map(rep =>
-      `${rep.numberOfTentes} ${labelMap[rep.tenteType] ?? rep.tenteType}`
+    // Aggregate by tent type to avoid repeating the same line N times for N nights
+    const totals = new Map<string, number>();
+    for (const rep of r.repartitions) {
+      totals.set(rep.tenteType, (totals.get(rep.tenteType) ?? 0) + rep.numberOfTentes);
+    }
+    return Array.from(totals.entries()).map(
+      ([type, count]) => `${count} ${labelMap[type] ?? type}`
     );
   }
 
@@ -411,9 +411,16 @@ export class GroupsComponent implements OnInit {
       };
 
     const rows = this.todayReservations.map(r => {
-      const repartition = (r.repartitions && r.repartitions.length > 0)
-        ? r.repartitions.map(rep => `${rep.numberOfTentes} ${labelMap[rep.tenteType] ?? rep.tenteType}`).join('<br>')
-        : '—';
+      let repartition = '—';
+      if (r.repartitions && r.repartitions.length > 0) {
+        const totals = new Map<string, number>();
+        for (const rep of r.repartitions) {
+          totals.set(rep.tenteType, (totals.get(rep.tenteType) ?? 0) + rep.numberOfTentes);
+        }
+        repartition = Array.from(totals.entries())
+          .map(([t, n]) => `${n} ${labelMap[t] ?? t}`)
+          .join('<br>');
+      }
 
       const type = this.getTypeLabel(r);
       const tourNames = this.getTourNames(r).join(', ') || '—';

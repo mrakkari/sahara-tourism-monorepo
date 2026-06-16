@@ -21,6 +21,8 @@ export interface TourTypeSelectionRequest {
   tourTypeId: string;
   numberOfAdults: number;
   numberOfChildren: number;
+  activityDate: string;
+  repartitions?: { tenteType: TenteType; numberOfTentes: number }[];
 }
 
 export interface TourSelectionRequest {
@@ -36,6 +38,7 @@ export interface ParticipantRequest {
 export interface ReservationExtraRequest {
   extraId: string;
   quantity: number;
+  activityDate?: string;
 }
 export interface RepartitionRequest {
   tenteType: TenteType;
@@ -44,6 +47,7 @@ export interface RepartitionRequest {
 
 export interface RepartitionResponse {
   repartitionId: string;
+  reservationTourTypeId?: string | null;
   tenteType: TenteType;
   numberOfTentes: number;
   capacityPerTente: number;
@@ -99,6 +103,7 @@ export interface ReservationTourTypeResponse {
   numberOfChildren: number;
   totalPrice: number;
   numberOfNights?: number | null;
+  activityDate?: string | null;
 }
 
 export interface ReservationTourResponse {
@@ -131,6 +136,7 @@ export interface ReservationExtraResponse {
   unitPrice: number;
   totalPrice: number;
   isActive: boolean;
+  activityDate?: string | null;
 }
 export interface SourceResponse {
   sourceId: string;

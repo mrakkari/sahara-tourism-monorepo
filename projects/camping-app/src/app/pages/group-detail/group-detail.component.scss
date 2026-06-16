@@ -779,6 +779,30 @@ app-glass-card {
   margin-bottom: 10px;
 }
 
+.date-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  .qty-label { white-space: nowrap; }
+
+  .premium-input {
+    flex: 1;
+    margin-bottom: 0;
+  }
+}
+
+.extra-date-error {
+  font-size: 0.78rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 5px 10px;
+  margin-bottom: 8px;
+}
+
 .cart-item {
   display: flex;
   align-items: center;
@@ -795,6 +819,7 @@ app-glass-card {
 
   .cart-name  { flex: 1; font-weight: 600; color: var(--slate); }
   .cart-qty   { color: var(--slate-lt); font-size: 0.78rem; }
+  .cart-date  { font-size: 0.72rem; color: var(--terra); font-weight: 500; }
   .cart-price { font-weight: 700; color: var(--terra); }
 }
 
@@ -1205,6 +1230,229 @@ app-glass-card {
 
     strong { color: var(--slate); font-weight: 700; }
   }
+}
+
+// ── Inline group size ─────────────────────────────────────────────
+
+.group-size-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+
+  .v { display: inline; }
+  .s { display: inline; margin-top: 0; }
+}
+
+// ── Per-date blocks ───────────────────────────────────────────────
+
+.date-block-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--sand-dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.date-block-label {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: var(--terra);
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: 0.02em;
+}
+
+.date-range-sep {
+  color: var(--slate-xlt);
+  font-weight: 300;
+}
+
+.date-nights-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--terra);
+  background: var(--terra-xlt);
+  border: 1px solid rgba(26, 58, 92, 0.2);
+  padding: 3px 10px;
+  border-radius: 50px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+// Activities within a date block
+.date-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.date-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--terra-xlt);
+  border: 1px solid rgba(26, 58, 92, 0.14);
+  border-radius: var(--radius-sm);
+}
+
+.date-act-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-act-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--terra);
+}
+
+.date-act-dur {
+  font-size: 0.75rem;
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.date-act-people {
+  font-size: 0.8rem;
+  color: var(--slate-lt);
+  white-space: nowrap;
+}
+
+.date-act-price {
+  font-weight: 700;
+  color: var(--terra);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+// Extras within a date block
+.date-extras-block {
+  margin-bottom: 14px;
+  border: 1px solid rgba(212, 130, 10, 0.2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+
+  &.date-extras-standalone {
+    border-color: rgba(26, 58, 92, 0.14);
+  }
+}
+
+.date-extras-title {
+  padding: 8px 14px;
+  background: var(--amber-lt);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+
+  .date-extras-standalone & {
+    background: var(--terra-xlt);
+    color: var(--terra);
+  }
+}
+
+.date-extra-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: #fff;
+  border-top: 1px solid var(--sand-mid);
+
+  &:first-of-type { border-top: none; }
+}
+
+.date-extra-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-extra-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--slate);
+}
+
+.date-extra-dur {
+  font-size: 0.72rem;
+  color: var(--slate-lt);
+}
+
+.date-extra-qty {
+  font-size: 0.8rem;
+  color: var(--slate-lt);
+  white-space: nowrap;
+}
+
+.date-extra-price {
+  font-weight: 700;
+  color: var(--slate);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.date-extra-subdate {
+  padding: 6px 14px;
+  background: rgba(26, 58, 92, 0.04);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--terra);
+  border-top: 1px solid var(--sand-mid);
+}
+
+.ex-date {
+  font-size: 0.72rem;
+  color: var(--terra);
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+// Compact repartitions within a date block
+.date-rep-compact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sand-mid);
+  margin-top: 10px;
+}
+
+.date-rep-pill {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--terra);
+  background: var(--terra-xlt);
+  border: 1px solid rgba(26, 58, 92, 0.2);
+  padding: 2px 9px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+.date-rep-sep {
+  color: var(--slate-xlt);
+  font-size: 0.75rem;
+  font-weight: 400;
+  user-select: none;
+}
+
+.date-rep-total-pill {
+  font-size: 0.78rem;
+  color: var(--slate-lt);
+  white-space: nowrap;
 }
 
 // ── Company Selection Popup ───────────────────────────────────────

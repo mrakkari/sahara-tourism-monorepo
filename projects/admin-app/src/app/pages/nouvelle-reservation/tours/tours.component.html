@@ -156,22 +156,40 @@
               <label>Ajouter un extra</label>
               <select class="input" (change)="onAddExtra($any($event.target).value); $any($event.target).value = ''">
                 <option value="">— Choisir un extra —</option>
-                <option *ngFor="let e of extras"
-                        [value]="e.extraId"
-                        [disabled]="isExtraSelected(e.extraId)">
-                  {{ e.name }}
-                </option>
+                <option *ngFor="let e of extras" [value]="e.extraId">{{ e.name }}</option>
               </select>
             </div>
-            <div class="selected-extras" *ngIf="getSelectedExtras().length > 0">
-              <div class="selected-extra-row" *ngFor="let e of getSelectedExtras()">
-                <span class="sel-extra-name">{{ e.name }}</span>
-                <div class="sel-extra-ctrl">
-                  <button type="button" (click)="adjustExtra(e.extraId, -1)" [disabled]="extraQty(e.extraId) <= 1">−</button>
-                  <span>{{ extraQty(e.extraId) }}</span>
-                  <button type="button" (click)="adjustExtra(e.extraId, 1)" [disabled]="extraQty(e.extraId) >= adults + children">+</button>
+            <div class="selected-extras" *ngIf="extraItems.length > 0">
+              <div class="selected-extra-block" *ngFor="let item of extraItems; let i = index">
+                <div class="selected-extra-row">
+                  <span class="sel-extra-name">{{ getExtraInfo(item.extraId)?.name }}</span>
+                  <div class="sel-extra-ctrl">
+                    <button type="button" (click)="adjustExtra(i, -1)" [disabled]="item.quantity <= 1">−</button>
+                    <span>{{ item.quantity }}</span>
+                    <button type="button" (click)="adjustExtra(i, 1)"
+                            [disabled]="item.quantity >= adults + children && adults + children > 0">+</button>
+                  </div>
+                  <button type="button" class="sel-extra-remove" (click)="onRemoveExtra(i)">✕</button>
                 </div>
-                <button type="button" class="sel-extra-remove" (click)="onRemoveExtra(e.extraId)">✕</button>
+                <div class="activity-date-row">
+                  <label class="activity-date-label">📅 Date de l'extra <span class="optional">(optionnel)</span></label>
+                  <div class="date-wrapper">
+                    <input type="text" class="input date-display"
+                           [value]="item.displayDate"
+                           placeholder="jj/mm/aaaa"
+                           maxlength="10"
+                           (input)="onExtraDateTextInput($event, i)">
+                    <input type="date" class="input date-picker"
+                           [value]="item.activityDate"
+                           [min]="form.get('serviceDate')?.value"
+                           (change)="onExtraDatePickerChange($event, i)">
+                    <span class="date-icon" (click)="openPicker($event, form.get('serviceDate')?.value)">📅</span>
+                  </div>
+                  <p class="field-hint" *ngIf="form.get('serviceDate')?.value && !item.dateError && item.displayDate.length < 10">
+                    ≥ {{ toDisplayDate(form.get('serviceDate')?.value) }}
+                  </p>
+                  <p class="date-error" *ngIf="item.dateError">{{ item.dateError }}</p>
+                </div>
               </div>
             </div>
           </div>

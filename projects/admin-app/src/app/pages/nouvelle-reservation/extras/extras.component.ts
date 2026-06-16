@@ -167,8 +167,8 @@ export class ExtrasComponent implements OnInit {
 
   canSubmit(): boolean {
     return !!this.form.get('userId')?.value
-      && !!this.form.get('sourceId')?.value 
-      && !!this.form.get('serviceDate')?.value      
+      && !!this.form.get('sourceId')?.value
+      && !!this.form.get('serviceDate')?.value
       && this.numberOfPeople >= 1
       && this.hasExtras();
   }
@@ -182,7 +182,11 @@ export class ExtrasComponent implements OnInit {
 
     const extrasPayload = this.extras
       .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
-      .map(e => ({ extraId: e.extraId, quantity: this.selectedExtras[e.extraId] }));
+      .map(e => ({
+        extraId: e.extraId,
+        quantity: this.selectedExtras[e.extraId],
+        activityDate: fv.serviceDate as string,
+      }));
 
     const request: ReservationRequest = {
       userId:           fv.userId,
@@ -225,7 +229,6 @@ export class ExtrasComponent implements OnInit {
     return labels[method] ?? method;
   }
   onAddExtra(id: string): void {
-
     if (!id) return;
     this.selectedExtras[id] = this.numberOfPeople;
   }

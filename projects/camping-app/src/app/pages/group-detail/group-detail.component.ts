@@ -10,7 +10,7 @@ import { forkJoin } from 'rxjs';
 import { ResCampingService } from '../../services/res-camping.service';
 import { NotificationService, ToastService } from '../../../../../shared/src/public-api';
 
-import { Reservation, Extra, ExtraCatalog } from '../../models/reservation.model';
+import { Reservation, Extra, ExtraCatalog, TourTypeSnapshot, RepartitionSnapshot } from '../../models/reservation.model';
 import { PaymentMethod, PAYMENT_METHOD_LABELS, Currency } from '../../../../../shared/src/models/transaction.model';
 
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
@@ -40,7 +40,8 @@ export class GroupDetailComponent implements OnInit {
   showExtraForm = false;
   extrasCatalog: ExtraCatalog[] = [];
   selectedExtraId: string | null = null;
-  pendingExtras:   { catalog: ExtraCatalog; quantity: number }[] = [];
+  extraDateError = '';
+  pendingExtras:   { catalog: ExtraCatalog; quantity: number; activityDate: string }[] = [];
 
   paymentForm!:       FormGroup;
   isRecordingPayment = false;
@@ -64,7 +65,10 @@ export class GroupDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.extraForm   = this.fb.group({ quantity: [1, [Validators.required, Validators.min(1)]] });
+    this.extraForm   = this.fb.group({
+      quantity:     [1, [Validators.required, Validators.min(1)]],
+      activityDate: ['']
+    });
     this.paymentForm = this.fb.group({
       amount:        [null, [Validators.required, Validators.min(0.01)]],
       paymentMethod: ['CASH', Validators.required],
@@ -175,7 +179,8 @@ export class GroupDetailComponent implements OnInit {
   onExtraSelected(extraId: string): void {
     if (this.isExtraInCart(extraId)) return;
     this.selectedExtraId = extraId;
-    this.extraForm.patchValue({ quantity: 1 });
+    this.extraForm.patchValue({ quantity: 1, activityDate: '' });
+    this.extraDateError = '';
     this.calculateExtraTotal();
   }
 
@@ -188,12 +193,18 @@ export class GroupDetailComponent implements OnInit {
 
   addToCart(): void {
     if (!this.selectedExtra || this.extraForm.invalid) return;
-    const quantity = this.extraForm.get('quantity')?.value || 1;
+    const quantity     = this.extraForm.get('quantity')?.value || 1;
+    const activityDate = (this.extraForm.get('activityDate')?.value || '') as string;
+    if (this.isHebergement() && !activityDate) {
+      this.extraDateError = '⚠️ La date du service est obligatoire.';
+      return;
+    }
+    this.extraDateError = '';
     const existing = this.pendingExtras.find(e => e.catalog.extraId === this.selectedExtra!.extraId);
-    if (existing) { existing.quantity = quantity; }
-    else          { this.pendingExtras.push({ catalog: this.selectedExtra, quantity }); }
+    if (existing) { existing.quantity = quantity; existing.activityDate = activityDate; }
+    else          { this.pendingExtras.push({ catalog: this.selectedExtra, quantity, activityDate }); }
     this.selectedExtraId = null;
-    this.extraForm.patchValue({ quantity: 1 });
+    this.extraForm.patchValue({ quantity: 1, activityDate: '' });
     this.extraTotal = 0;
   }
 
@@ -204,7 +215,9 @@ export class GroupDetailComponent implements OnInit {
   submitExtras(): void {
     if (!this.reservation || this.pendingExtras.length === 0) return;
     forkJoin(this.pendingExtras.map(e =>
-      this.resCampingService.addExtraToReservation(this.reservation!.id, e.catalog.extraId, e.quantity)
+      this.resCampingService.addExtraToReservation(
+        this.reservation!.id, e.catalog.extraId, e.quantity, e.activityDate || undefined
+      )
     )).subscribe({
       next: () => {
         const count = this.pendingExtras.length;
@@ -212,7 +225,11 @@ export class GroupDetailComponent implements OnInit {
         this.toastService.showSuccess(`✅ ${count} extra(s) ajouté(s).`);
         this.loadReservation(this.reservation!.id);
       },
-      error: err => { console.error(err); this.toastService.showError('❌ Erreur.'); this.loadReservation(this.reservation!.id); }
+      error: err => {
+        const msg = err?.error?.message ?? err?.message ?? 'Erreur lors de l\'ajout des extras.';
+        this.toastService.showError(`❌ ${msg}`);
+        this.loadReservation(this.reservation!.id);
+      }
     });
   }
 
@@ -282,5 +299,117 @@ export class GroupDetailComponent implements OnInit {
     return (this.reservation?.repartitions ?? [])
       .reduce((sum, r) => sum + r.totalPersonnes, 0);
   }
-  
+
+  isHebergement(): boolean {
+    return this.reservation?.reservationType === 'HEBERGEMENT' || !this.reservation?.reservationType;
+  }
+
+  isExtras(): boolean {
+    return this.reservation?.reservationType === 'EXTRAS';
+  }
+
+  getUniqueDates(): string[] {
+    const dates = (this.reservation?.tourTypes ?? [])
+      .filter(tt => !!tt.activityDate)
+      .map(tt => tt.activityDate as string);
+    return [...new Set(dates)].sort();
+  }
+
+  getAllUniqueDates(): string[] {
+    const tourDates = (this.reservation?.tourTypes ?? [])
+      .filter(tt => !!tt.activityDate)
+      .map(tt => tt.activityDate as string);
+    const extraDates = (this.reservation?.extras ?? [])
+      .filter(e => !!e.activityDate)
+      .map(e => e.activityDate as string);
+    return [...new Set([...tourDates, ...extraDates])].sort();
+  }
+
+  getDateGroups(): { startDate: string; endDate: string; dates: string[] }[] {
+    const allDates = this.getAllUniqueDates();
+    if (allDates.length === 0) return [];
+
+    const sig = (date: string): string => {
+      const acts = this.getActivitiesForDate(date);
+      return acts.length === 0 ? `__noact__${date}` : acts.map(a => a.name).sort().join('|');
+    };
+
+    const nextDay = (iso: string): string => {
+      const d = new Date(iso);
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    };
+
+    const groups: { startDate: string; endDate: string; dates: string[] }[] = [];
+    let cur: { startDate: string; endDate: string; dates: string[] } | null = null;
+    let curSig = '';
+
+    for (const date of allDates) {
+      const s = sig(date);
+      if (cur && s === curSig && nextDay(cur.endDate) === date) {
+        cur.dates.push(date);
+        cur.endDate = date;
+      } else {
+        if (cur) groups.push(cur);
+        cur = { startDate: date, endDate: date, dates: [date] };
+        curSig = s;
+      }
+    }
+    if (cur) groups.push(cur);
+    return groups;
+  }
+
+  hasActivitiesOnDate(date: string): boolean {
+    return (this.reservation?.tourTypes ?? []).some(tt => tt.activityDate === date);
+  }
+
+  getActivitiesForDate(date: string): TourTypeSnapshot[] {
+    return (this.reservation?.tourTypes ?? []).filter(tt => tt.activityDate === date);
+  }
+
+  getExtrasForDate(date: string): Extra[] {
+    return (this.reservation?.extras ?? []).filter(e => e.activityDate === date);
+  }
+
+  getExtrasForDates(dates: string[]): Extra[] {
+    return dates.flatMap(d => this.getExtrasForDate(d));
+  }
+
+  getTenteAbbr(tenteType: string): string {
+    const map: Record<string, string> = {
+      SINGLE: 'SQL', DOUBLE: 'DBL', TRIPLE: 'TRP',
+      X4: 'X4', X5: 'X5', X6: 'X6', X7: 'X7',
+    };
+    return map[tenteType] ?? tenteType;
+  }
+
+  private aggregateDateRepartitions(reps: RepartitionSnapshot[]): { tenteType: string; numberOfTentes: number; capacityPerTente: number; totalPersonnes: number }[] {
+    const map = new Map<string, { numberOfTentes: number; capacityPerTente: number; totalPersonnes: number }>();
+    for (const r of reps) {
+      const key = r.tenteType;
+      const existing = map.get(key) ?? { numberOfTentes: 0, capacityPerTente: r.capacityPerTente, totalPersonnes: 0 };
+      map.set(key, {
+        numberOfTentes: existing.numberOfTentes + r.numberOfTentes,
+        capacityPerTente: r.capacityPerTente,
+        totalPersonnes: existing.totalPersonnes + r.totalPersonnes,
+      });
+    }
+    return Array.from(map.entries()).map(([tenteType, d]) => ({ tenteType, ...d }));
+  }
+
+  getAggregatedRepartitionsForDate(date: string): { tenteType: string; numberOfTentes: number; capacityPerTente: number; totalPersonnes: number }[] {
+    const ids = new Set(
+      (this.reservation?.tourTypes ?? [])
+        .filter(tt => tt.activityDate === date)
+        .map(tt => tt.reservationTourTypeId)
+    );
+    const reps = (this.reservation?.repartitions ?? [])
+      .filter(r => r.reservationTourTypeId && ids.has(r.reservationTourTypeId));
+    return this.aggregateDateRepartitions(reps);
+  }
+
+  getAggregatedTotalForDate(date: string): number {
+    return this.getAggregatedRepartitionsForDate(date).reduce((s, r) => s + r.totalPersonnes, 0);
+  }
+
 }

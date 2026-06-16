@@ -9,6 +9,7 @@ import {
   ReservationTourTypeResponse,
   ReservationTourResponse,
   ReservationExtraResponse,
+  RepartitionResponse,
   ParticipantResponse,
   GuideResponse,
   ChauffeurResponse
@@ -434,6 +435,111 @@ export class ReservationDetailComponent implements OnInit {
         && status !== 'REJECTED'
         && status !== 'COMPLETED';
   }
+  getUniqueDates(): string[] {
+    const dates = this.tourTypes
+      .filter(tt => !!tt.activityDate)
+      .map(tt => tt.activityDate as string);
+    return [...new Set(dates)].sort();
+  }
+
+  getAllUniqueDates(): string[] {
+    const tourDates = this.tourTypes
+      .filter(tt => !!tt.activityDate)
+      .map(tt => tt.activityDate as string);
+    const extraDates = this.extras
+      .filter(e => !!e.activityDate)
+      .map(e => e.activityDate as string);
+    return [...new Set([...tourDates, ...extraDates])].sort();
+  }
+
+  hasActivitiesOnDate(date: string): boolean {
+    return this.tourTypes.some(tt => tt.activityDate === date);
+  }
+
+  getExtrasForDate(date: string): ReservationExtraResponse[] {
+    return this.extras.filter(e => e.activityDate === date);
+  }
+
+  getExtrasForDates(dates: string[]): ReservationExtraResponse[] {
+    return dates.flatMap(d => this.getExtrasForDate(d));
+  }
+
+  getActivitiesForDate(date: string): ReservationTourTypeResponse[] {
+    return this.tourTypes.filter(tt => tt.activityDate === date);
+  }
+
+  getDateGroups(): { startDate: string; endDate: string; dates: string[] }[] {
+    const allDates = this.getAllUniqueDates();
+    if (allDates.length === 0) return [];
+
+    const sig = (date: string): string => {
+      const acts = this.getActivitiesForDate(date);
+      return acts.length === 0 ? `__noact__${date}` : acts.map(a => a.name).sort().join('|');
+    };
+
+    const nextDay = (iso: string): string => {
+      const d = new Date(iso);
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    };
+
+    const groups: { startDate: string; endDate: string; dates: string[] }[] = [];
+    let cur: { startDate: string; endDate: string; dates: string[] } | null = null;
+    let curSig = '';
+
+    for (const date of allDates) {
+      const s = sig(date);
+      if (cur && s === curSig && nextDay(cur.endDate) === date) {
+        cur.dates.push(date);
+        cur.endDate = date;
+      } else {
+        if (cur) groups.push(cur);
+        cur = { startDate: date, endDate: date, dates: [date] };
+        curSig = s;
+      }
+    }
+    if (cur) groups.push(cur);
+    return groups;
+  }
+
+  private aggregateRepartitions(reps: RepartitionResponse[]): { tenteType: string; numberOfTentes: number; capacityPerTente: number; totalPersonnes: number }[] {
+    const map = new Map<string, { numberOfTentes: number; capacityPerTente: number; totalPersonnes: number }>();
+    for (const r of reps) {
+      const key = r.tenteType as string;
+      const existing = map.get(key) ?? { numberOfTentes: 0, capacityPerTente: r.capacityPerTente, totalPersonnes: 0 };
+      map.set(key, {
+        numberOfTentes: existing.numberOfTentes + r.numberOfTentes,
+        capacityPerTente: r.capacityPerTente,
+        totalPersonnes: existing.totalPersonnes + r.totalPersonnes
+      });
+    }
+    return Array.from(map.entries()).map(([tenteType, d]) => ({ tenteType, ...d }));
+  }
+
+  getAggregatedRepartitionsForDate(date: string): { tenteType: string; numberOfTentes: number; capacityPerTente: number; totalPersonnes: number }[] {
+    const ids = new Set(
+      this.tourTypes
+        .filter(tt => tt.activityDate === date)
+        .map(tt => tt.reservationTourTypeId)
+    );
+    const reps = (this.reservation?.repartitions ?? [])
+      .filter(r => r.reservationTourTypeId && ids.has(r.reservationTourTypeId));
+    return this.aggregateRepartitions(reps);
+  }
+
+  getAggregatedTotalForDate(date: string): number {
+    return this.getAggregatedRepartitionsForDate(date).reduce((s, r) => s + r.totalPersonnes, 0);
+  }
+
+  getOrphanRepartitions(): { tenteType: string; numberOfTentes: number; capacityPerTente: number; totalPersonnes: number }[] {
+    const reps = (this.reservation?.repartitions ?? []).filter(r => !r.reservationTourTypeId);
+    return this.aggregateRepartitions(reps);
+  }
+
+  getOrphanTotal(): number {
+    return this.getOrphanRepartitions().reduce((s, r) => s + r.totalPersonnes, 0);
+  }
+
   getTenteLabel(tenteType: string): string {
     const map: Record<string, string> = {
       SINGLE: 'Tente Simple (1 pers.)',
@@ -447,8 +553,4 @@ export class ReservationDetailComponent implements OnInit {
     return map[tenteType] ?? tenteType;
   }
 
-  getTotalRepartitionPersonnes(): number {
-    return (this.reservation?.repartitions ?? [])
-      .reduce((sum, r) => sum + r.totalPersonnes, 0);
-  }
 }

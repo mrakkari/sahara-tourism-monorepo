@@ -374,7 +374,7 @@ select.input   { cursor: pointer; }
   margin-bottom: 12px;
 }
 
-.sum-row {
+.sum-row, .breakdown-row {
   display: flex;
   justify-content: space-between;
   font-size: 0.88rem;
@@ -395,6 +395,18 @@ select.input   { cursor: pointer; }
   color: $gray;
 
   strong { font-size: 1.4rem; color: $dark; font-weight: 800; }
+}
+
+.submit-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  margin-bottom: 10px;
+  line-height: 1.4;
 }
 
 .btn-submit {
@@ -625,6 +637,48 @@ select.input   { cursor: pointer; }
   }
 }
 
+.date-repeat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .date-wrapper { flex: 1; }
+}
+
+.repeat-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+
+  .repeat-label { font-size: 1rem; }
+
+  .repeat-input {
+    width: 64px;
+    text-align: center;
+    padding: 8px 6px;
+  }
+
+  .repeat-unit {
+    font-size: 0.78rem;
+    color: #64748b;
+    white-space: nowrap;
+  }
+}
+
+.repeat-hint {
+  margin-top: 5px;
+  font-weight: 600;
+  color: #1A3A5C;
+
+  .repeat-note {
+    font-weight: 400;
+    font-style: italic;
+    color: #64748b;
+    font-size: 0.75rem;
+  }
+}
+
 .date-error {
   font-size: 0.78rem;
   color: #dc2626;
@@ -762,6 +816,38 @@ select.input   { cursor: pointer; }
   background: #e0f2fe;
   border-color: #bae6fd;
   color: #0369a1;
+}
+
+// ── Per-activity entry card ────────────────────────────────────
+
+.activity-entry-card {
+  border: 1.5px solid $border;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: #fff;
+  transition: border-color 0.2s;
+
+  &:hover { border-color: #93c5fd; }
+}
+
+.activity-people-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.counter-card.compact {
+  padding: 10px 12px;
+
+  .cl-icon { font-size: 1rem; }
+
+  strong { font-size: 0.82rem; }
+  small  { font-size: 0.70rem; }
+
+  .counter-ctrl button { width: 26px; height: 26px; font-size: 0.95rem; }
+  .counter-ctrl span   { font-size: 0.95rem; }
 }
 
 .btn-submit {

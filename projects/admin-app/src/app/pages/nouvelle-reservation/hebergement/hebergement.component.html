@@ -4,7 +4,7 @@
     <a routerLink="/reservations" class="back-link">← Réservations</a>
     <div class="header-text">
       <h1>🏕️ Hébergement — Séjour camping</h1>
-      <p class="subtitle">Réservez un séjour avec activités et tours d'aventure</p>
+      <p class="subtitle">Chaque activité a sa propre date et ses propres participants</p>
     </div>
   </div>
 
@@ -34,6 +34,7 @@
             </div>
           </div>
         </div>
+
         <!-- Source -->
         <div class="card">
           <div class="card-header">
@@ -46,251 +47,161 @@
             <div class="field" style="margin-bottom:0">
               <label>Origine de la réservation</label>
               <div *ngIf="isLoadingSources" class="loading">Chargement…</div>
-              <select
-                *ngIf="!isLoadingSources"
-                formControlName="sourceId"
-                class="input">
+              <select *ngIf="!isLoadingSources" formControlName="sourceId" class="input">
                 <option value="">— Choisir une source —</option>
-                <option *ngFor="let s of sources" [value]="s.sourceId">
-                  {{ s.name }}
-                </option>
+                <option *ngFor="let s of sources" [value]="s.sourceId">{{ s.name }}</option>
               </select>
             </div>
           </div>
         </div>
 
-        <!-- Dates & Groupe -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">
-              <span class="title-icon">📅</span>
-              Dates &amp; Groupe <span class="req">*</span>
-            </div>
-          </div>
-          <div class="card-body">
-          <div class="row-2">
-            <div class="field">
-              <label>Date d'arrivée</label>
-              <div class="date-wrapper">
-                <input type="text"
-                      class="input date-display"
-                      [value]="checkInDateDisplay"
-                      placeholder="jj/mm/aaaa"
-                      maxlength="10"
-                      (input)="onDateTextInput($event, 'checkInDate')">
-                <input type="date"
-                      class="input date-picker"
-                      formControlName="checkInDate"
-                      (change)="onDatePickerChange($event, 'checkInDate')">
-                <span class="date-icon" (click)="openPicker($event)">📅</span>
-              </div>
-              <p class="date-error" *ngIf="checkInDateError">{{ checkInDateError }}</p>
-            </div>
-
-            <div class="field">
-              <label>Date de départ</label>
-              <div class="date-wrapper">
-                <input type="text"
-                      class="input date-display"
-                      [value]="checkOutDateDisplay"
-                      placeholder="jj/mm/aaaa"
-                      maxlength="10"
-                      (input)="onDateTextInput($event, 'checkOutDate')">
-                <input type="date"
-                      class="input date-picker"
-                      formControlName="checkOutDate"
-                      (change)="onDatePickerChange($event, 'checkOutDate')">
-                <span class="date-icon" (click)="openPicker($event)">📅</span>
-              </div>
-              <p class="date-error" *ngIf="checkOutDateError">{{ checkOutDateError }}</p>
-            </div>
-          </div>
-                        <div class="nights-chip" *ngIf="nights > 0">
-              🌙 {{ nights }} nuit{{ nights > 1 ? 's' : '' }}
-            </div>
-            <div class="counters">
-              <div class="counter-card">
-                <div class="counter-left">
-                  <div class="cl-icon">🧑</div>
-                  <div>
-                    <strong>Adultes</strong>
-                    <small>12 ans et +</small>
-                  </div>
-                </div>
-                <div class="counter-ctrl">
-                  <button type="button" (click)="updateCount('numberOfAdults',-1)" [disabled]="adults<=1">−</button>
-                  <span>{{ adults }}</span>
-                  <button type="button" (click)="updateCount('numberOfAdults',1)">+</button>
-                </div>
-              </div>
-              <div class="counter-card">
-                <div class="counter-left">
-                  <div class="cl-icon">🧒</div>
-                  <div>
-                    <strong>Enfants</strong>
-                    <small>Moins de 12 ans</small>
-                  </div>
-                </div>
-                <div class="counter-ctrl">
-                  <button type="button" (click)="updateCount('numberOfChildren',-1)" [disabled]="children<=0">−</button>
-                  <span>{{ children }}</span>
-                  <button type="button" (click)="updateCount('numberOfChildren',1)">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tour Types — dropdown, multi-select -->
-        <!-- Tour Types — dropdown, multi-select -->
+        <!-- Activities -->
         <div class="card">
           <div class="card-header">
             <div class="card-title">
               <span class="title-icon">🗺️</span>
-              Types d'activités <span class="req">*</span>
+              Activités <span class="req">*</span>
             </div>
+            <p class="card-desc">Chaque activité a sa propre date, adultes et enfants. Le même type peut être ajouté plusieurs fois.</p>
           </div>
           <div class="card-body">
             <div *ngIf="isLoadingTourTypes" class="loading">Chargement des activités…</div>
             <div *ngIf="!isLoadingTourTypes">
 
-              <!-- Dropdown -->
+              <!-- Dropdown to add activity -->
               <div class="field">
                 <label>Ajouter une activité</label>
                 <select class="input"
                         (change)="onAddTourType($any($event.target).value); $any($event.target).value = ''">
                   <option value="">— Choisir une activité —</option>
-                  <option *ngFor="let tt of tourTypes"
-                          [value]="tt.tourTypeId"
-                          [disabled]="isTourSelected(tt.tourTypeId)">
+                  <option *ngFor="let tt of tourTypes" [value]="tt.tourTypeId">
                     {{ tt.name }}
                   </option>
                 </select>
               </div>
 
-              <!-- Selected tour types list -->
+              <!-- Activity entries -->
               <div class="selected-extras" *ngIf="tourTypesArray.length > 0">
-                <ng-container *ngFor="let ctrl of tourTypesArray.controls">
+                <ng-container *ngFor="let ctrl of tourTypesArray.controls; let i = index">
 
-                  <!-- Tour type row -->
-                  <div class="selected-extra-row">
-                    <span class="sel-extra-name">
-                      {{ getTourByTypeId(ctrl.get('tourTypeId')?.value)?.name }}
-                    </span>
+                  <div class="activity-entry-card">
 
-                    <!-- Per-tour allocation (only when multi) -->
-                    <div class="sel-extra-ctrl" *ngIf="isMulti" [formGroup]="$any(ctrl)">
-                      <span style="font-size:0.75rem;color:#64748b">Ad.</span>
-                      <button type="button"
-                              (click)="ctrl.get('numberOfAdults')?.setValue(max(0,(ctrl.get('numberOfAdults')?.value||0)-1))">−</button>
-                      <span>{{ ctrl.get('numberOfAdults')?.value || 0 }}</span>
-                      <button type="button"
-                              (click)="ctrl.get('numberOfAdults')?.setValue((ctrl.get('numberOfAdults')?.value||0)+1)">+</button>
-                      <span style="font-size:0.75rem;color:#64748b;margin-left:8px">Enf.</span>
-                      <button type="button"
-                              (click)="ctrl.get('numberOfChildren')?.setValue(max(0,(ctrl.get('numberOfChildren')?.value||0)-1))">−</button>
-                      <span>{{ ctrl.get('numberOfChildren')?.value || 0 }}</span>
-                      <button type="button"
-                              (click)="ctrl.get('numberOfChildren')?.setValue((ctrl.get('numberOfChildren')?.value||0)+1)">+</button>
-                    </div>
-
-                    <button type="button" class="sel-extra-remove"
-                            (click)="onRemoveTourType(ctrl.get('tourTypeId')?.value)">✕</button>
-                  </div>
-
-                 <!-- ── Repartition rows — shown per tourType when multi ── -->
-                  <div class="repartition-inline" *ngIf="isMulti">
-
-                    <div class="repartition-row"
-                        *ngFor="let rep of getTourRepartitions(ctrl.get('tourTypeId')?.value); let ri = index">
-                      <span class="rep-label">⛺</span>
-                      <input type="number"
-                            class="input rep-number"
-                            [value]="rep.numberOfTentes"
-                            min="1"
-                            (input)="setRepartitionCount(ctrl.get('tourTypeId')?.value, ri, +$any($event.target).value)">
-                      <select class="input rep-select"
-                              [value]="rep.tenteType"
-                              (change)="setRepartitionType(ctrl.get('tourTypeId')?.value, ri, $any($event.target).value)">
-                        <option *ngFor="let t of tenteTypes" [value]="t.value">{{ t.label }}</option>
-                      </select>
-                      <span class="rep-total">
-                        = {{ rep.numberOfTentes * getTenteCapacity(rep.tenteType) }} pers.
+                    <!-- Header row: name + remove -->
+                    <div class="selected-extra-row">
+                      <span class="sel-extra-name">
+                        {{ ctrl.get('name')?.value }}
                       </span>
-                      <button type="button" class="sel-extra-remove"
-                              (click)="removeRepartitionForTour(ctrl.get('tourTypeId')?.value, ri)">✕</button>
+                      <button type="button" class="sel-extra-remove" (click)="onRemoveTourType(i)">✕</button>
                     </div>
 
-                    <button type="button"
-                            class="btn-add-repartition"
-                            (click)="addRepartitionForTour(ctrl.get('tourTypeId')?.value)">
-                      + Ajouter une tente
-                    </button>
+                    <!-- Date + Repeat -->
+                    <div class="activity-date-row" [formGroup]="$any(ctrl)">
+                      <label class="activity-date-label">📅 Date de l'activité <span class="req">*</span></label>
+                      <div class="date-repeat-row">
+                        <div class="date-wrapper">
+                          <input type="text" class="input date-display"
+                                 [value]="tourTypeDisplayDates[i] || ''"
+                                 placeholder="jj/mm/aaaa"
+                                 maxlength="10"
+                                 (input)="onTourTypeDateTextInput($event, i)">
+                          <input type="date" class="input date-picker"
+                                 formControlName="activityDate"
+                                 (change)="onTourTypeDatePickerChange($event, i)">
+                          <span class="date-icon" (click)="openPicker($event)">📅</span>
+                        </div>
+                        <div class="repeat-group">
+                          <label class="repeat-label">🔁</label>
+                          <input type="number" class="input repeat-input"
+                                 [value]="tourTypeRepeatCounts[i]"
+                                 min="1" max="30"
+                                 (input)="setRepeatCount(i, +$any($event.target).value)">
+                          <span class="repeat-unit">nuit(s)</span>
+                        </div>
+                      </div>
+                      <p class="date-error" *ngIf="tourTypeDateWarnings[i]">{{ tourTypeDateWarnings[i] }}</p>
+                      <p class="field-hint repeat-hint"
+                         *ngIf="tourTypeRepeatCounts[i] > 1 && ctrl.get('activityDate')?.value">
+                        📅 {{ tourTypeDisplayDates[i] }} → {{ getRepeatEndDate(i) }}
+                        <span class="repeat-note">&nbsp;— les extras ne sont pas répétés automatiquement</span>
+                      </p>
+                    </div>
 
-                  </div>
+                    <!-- Adults & Children -->
+                    <div class="activity-people-row">
+                      <div class="counter-card compact">
+                        <div class="counter-left">
+                          <div class="cl-icon">🧑</div>
+                          <div><strong>Adultes</strong><small>12 ans +</small></div>
+                        </div>
+                        <div class="counter-ctrl">
+                          <button type="button"
+                                  (click)="updateActivityCount(i, 'numberOfAdults', -1)"
+                                  [disabled]="(ctrl.get('numberOfAdults')?.value || 0) <= 1">−</button>
+                          <span>{{ ctrl.get('numberOfAdults')?.value || 0 }}</span>
+                          <button type="button" (click)="updateActivityCount(i, 'numberOfAdults', 1)">+</button>
+                        </div>
+                      </div>
+                      <div class="counter-card compact">
+                        <div class="counter-left">
+                          <div class="cl-icon">🧒</div>
+                          <div><strong>Enfants</strong><small>Moins 12 ans</small></div>
+                        </div>
+                        <div class="counter-ctrl">
+                          <button type="button"
+                                  (click)="updateActivityCount(i, 'numberOfChildren', -1)"
+                                  [disabled]="(ctrl.get('numberOfChildren')?.value || 0) <= 0">−</button>
+                          <span>{{ ctrl.get('numberOfChildren')?.value || 0 }}</span>
+                          <button type="button" (click)="updateActivityCount(i, 'numberOfChildren', 1)">+</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Repartition per activity -->
+                    <div class="repartition-inline">
+                      <div class="repartition-title">⛺ Répartition des tentes <span class="optional">optionnel</span></div>
+
+                      <div class="repartition-row"
+                           *ngFor="let rep of getActivityRepartitions(i); let ri = index">
+                        <span class="rep-label">⛺</span>
+                        <input type="number" class="input rep-number"
+                               [value]="rep.numberOfTentes"
+                               min="1"
+                               (input)="setActivityRepartitionCount(i, ri, +$any($event.target).value)">
+                        <select class="input rep-select"
+                                [value]="rep.tenteType"
+                                (change)="setActivityRepartitionType(i, ri, $any($event.target).value)">
+                          <option *ngFor="let t of tenteTypes" [value]="t.value">{{ t.label }}</option>
+                        </select>
+                        <span class="rep-total">= {{ rep.numberOfTentes * getTenteCapacity(rep.tenteType) }} pers.</span>
+                        <button type="button" class="sel-extra-remove"
+                                (click)="removeRepartitionForActivity(i, ri)">✕</button>
+                      </div>
+
+                      <button type="button" class="btn-add-repartition"
+                              (click)="addRepartitionForActivity(i)">
+                        + Ajouter une tente
+                      </button>
+                    </div>
+
+                  </div><!-- /activity-entry-card -->
 
                 </ng-container>
 
-                <div class="alloc-warn" *ngIf="isMulti && allocationMessage()">
-                  ⚠️ {{ allocationMessage() }}
-                </div>
-
-                <!-- Repartition validation error -->
-                <div class="alloc-warn" *ngIf="repartitionError">
-                  {{ repartitionError }}
-                </div>
+                <div class="alloc-warn" *ngIf="repartitionError">{{ repartitionError }}</div>
               </div>
 
-              <!-- Single tourType — show repartition below -->
-              <div class="repartition-single" *ngIf="tourTypesArray.length === 1">
-                <div class="repartition-title">⛺ Répartition des tentes <span class="optional">optionnel</span></div>
-
-                <div class="field">
-                  <label>Ajouter un type de tente</label>
-                  <select class="input"
-                          (change)="addRepartition($any($event.target).value); $any($event.target).value = ''">
-                    <option value="">— Choisir un type —</option>
-                    <option *ngFor="let t of tenteTypes"
-                            [value]="t.value"
-                            [disabled]="isTenteSelected(t.value)">
-                      {{ t.label }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="selected-extras" *ngIf="repartitions.length > 0">
-                  <div class="selected-extra-row" *ngFor="let r of repartitions">
-                    <span class="sel-extra-name">
-                      {{ getTenteLabel(r.tenteType) }}
-                      <span class="tente-sub">→ {{ r.numberOfTentes * getTenteCapacity(r.tenteType) }} pers.</span>
-                    </span>
-                    <div class="sel-extra-ctrl">
-                      <button type="button"
-                              (click)="adjustRepartitionCount(r.tenteType, -1)"
-                              [disabled]="r.numberOfTentes <= 1">−</button>
-                      <span>{{ r.numberOfTentes }}</span>
-                      <button type="button"
-                              (click)="adjustRepartitionCount(r.tenteType, 1)">+</button>
-                    </div>
-                    <button type="button" class="sel-extra-remove"
-                            (click)="removeRepartition(r.tenteType)">✕</button>
-                  </div>
-
-                  <div class="repartition-total"
-                      [class.valid]="isRepartitionValid()"
-                      [class.invalid]="!isRepartitionValid()">
-                    <span>Total répartition</span>
-                    <strong>{{ getRepartitionTotal() }} / {{ adults + children }} personnes</strong>
-                  </div>
-
-                  <div class="alloc-warn" *ngIf="repartitionError">{{ repartitionError }}</div>
-                </div>
+              <!-- Computed stay info -->
+              <div class="nights-chip" *ngIf="checkInDate && checkOutDate">
+                📅 {{ toDisplayDate(checkInDate) }} → {{ toDisplayDate(checkOutDate) }}
+                &nbsp;·&nbsp; 🌙 {{ nights }} nuit{{ nights > 1 ? 's' : '' }}
+                &nbsp;·&nbsp; 👥 {{ globalAdults }} ad. · {{ globalChildren }} enf. (arrivée)
               </div>
 
             </div>
           </div>
         </div>
-        <!-- Extras — dropdown multi-select -->
+
+        <!-- Extras -->
         <div class="card" *ngIf="extras.length > 0">
           <div class="card-header">
             <div class="card-title">
@@ -304,26 +215,49 @@
               <select class="input"
                       (change)="onAddExtra($any($event.target).value); $any($event.target).value = ''">
                 <option value="">— Choisir un extra —</option>
-                <option *ngFor="let e of extras"
-                        [value]="e.extraId"
-                        [disabled]="isExtraSelected(e.extraId)">
-                  {{ e.name }}
-                </option>
+                <option *ngFor="let e of extras" [value]="e.extraId">{{ e.name }}</option>
               </select>
             </div>
-            <div class="selected-extras" *ngIf="getSelectedExtras().length > 0">
-              <div class="selected-extra-row" *ngFor="let e of getSelectedExtras()">
-                <span class="sel-extra-name">{{ e.name }}</span>
-                <div class="sel-extra-ctrl">
-                  <button type="button" (click)="adjustExtra(e.extraId,-1)" [disabled]="extraQty(e.extraId)<=1">−</button>
-                  <span>{{ extraQty(e.extraId) }}</span>
-                  <button type="button" (click)="adjustExtra(e.extraId,1)" [disabled]="extraQty(e.extraId)>=adults+children">+</button>
+            <div class="selected-extras" *ngIf="extraItems.length > 0">
+              <div class="selected-extra-block" *ngFor="let item of extraItems; let i = index">
+                <div class="selected-extra-row">
+                  <span class="sel-extra-name">{{ getExtraInfo(item.extraId)?.name }}</span>
+                  <div class="sel-extra-ctrl">
+                    <button type="button" (click)="adjustExtra(i, -1)" [disabled]="item.quantity <= 1">−</button>
+                    <span>{{ item.quantity }}</span>
+                    <button type="button" (click)="adjustExtra(i, 1)"
+                            [disabled]="item.quantity >= adults + children && adults + children > 0">+</button>
+                  </div>
+                  <button type="button" class="sel-extra-remove" (click)="onRemoveExtra(i)">✕</button>
                 </div>
-                <button type="button" class="sel-extra-remove" (click)="onRemoveExtra(e.extraId)">✕</button>
+                <div class="activity-date-row">
+                  <label class="activity-date-label">📅 Date de l'extra <span class="req">*</span></label>
+                  <div class="date-wrapper">
+                    <input type="text" class="input date-display"
+                           [value]="item.displayDate"
+                           placeholder="jj/mm/aaaa"
+                           maxlength="10"
+                           (input)="onExtraDateTextInput($event, i)">
+                    <input type="date" class="input date-picker"
+                           [value]="item.activityDate"
+                           [min]="checkInDate"
+                           [max]="checkOutDate"
+                           (change)="onExtraDatePickerChange($event, i)">
+                    <span class="date-icon" (click)="openPicker($event)">📅</span>
+                  </div>
+                  <p class="field-hint" *ngIf="checkInDate && checkOutDate && !item.activityDate && item.displayDate.length < 10">
+                    Entre {{ toDisplayDate(checkInDate) }} et {{ toDisplayDate(checkOutDate) }}
+                  </p>
+                  <p class="date-error" *ngIf="item.displayDate.length === 10 && !item.activityDate">
+                    ⚠️ Date hors de la période ({{ toDisplayDate(checkInDate) }} — {{ toDisplayDate(checkOutDate) }})
+                  </p>
+                </div>
+              </div>
+              <div class="alloc-warn group-warn" *ngIf="hasExtraDuplicates()">
+                ⚠️ Deux extras identiques ont la même date — chaque extra doit avoir une date unique.
               </div>
             </div>
           </div>
-          
         </div>
 
         <!-- Informations & Promo -->
@@ -347,7 +281,8 @@
             </div>
             <div class="field">
               <label>Demandes spéciales</label>
-              <textarea class="input" formControlName="demandeSpecial" rows="3" placeholder="Régime, accessibilité, anniversaire…"></textarea>
+              <textarea class="input" formControlName="demandeSpecial" rows="3"
+                        placeholder="Régime, accessibilité, anniversaire…"></textarea>
             </div>
             <div class="promo-row">
               <input type="text" class="input" formControlName="promoCode" placeholder="Code promo">
@@ -358,6 +293,7 @@
             </p>
           </div>
         </div>
+
         <!-- Participants -->
         <div class="card">
           <div class="card-header">
@@ -369,66 +305,53 @@
           <div class="card-body">
 
             <div *ngIf="participants.length === 0" class="participants-empty">
-              <p class="pay-hint">Renseignez les noms et âges de chaque participant.</p>
-              <button type="button" class="btn-add-payment" (click)="initParticipants()">
+              <p class="pay-hint">Renseignez les noms et âges de chaque participant (arrivants le {{ toDisplayDate(checkInDate) }}).</p>
+              <button type="button" class="btn-add-payment"
+                      [disabled]="!checkInDate"
+                      (click)="initParticipants()">
                 + Ajouter les participants
               </button>
             </div>
 
             <div *ngIf="participants.length > 0">
-
-              <!-- Adults -->
-              <p class="participants-group-label">Adultes ({{ adults }})</p>
+              <p class="participants-group-label">Adultes ({{ globalAdults }})</p>
               <div class="participant-row"
-                  *ngFor="let p of participants.slice(0, adults); let i = index">
+                   *ngFor="let p of participants.slice(0, globalAdults); let i = index">
                 <div class="participant-index">{{ i + 1 }}</div>
                 <div class="field participant-name">
-                  <input type="text"
-                        class="input"
-                        placeholder="Nom complet"
-                        [value]="p.fullName"
-                        (input)="updateParticipantName(i, $any($event.target).value)">
+                  <input type="text" class="input" placeholder="Nom complet"
+                         [value]="p.fullName"
+                         (input)="updateParticipantName(i, $any($event.target).value)">
                 </div>
                 <div class="field participant-age">
-                  <input type="number"
-                        class="input"
-                        placeholder="Âge"
-                        min="12" max="120"
-                        [value]="p.age"
-                        (input)="updateParticipantAge(i, +$any($event.target).value)">
+                  <input type="number" class="input" placeholder="Âge" min="12" max="120"
+                         [value]="p.age"
+                         (input)="updateParticipantAge(i, +$any($event.target).value)">
                 </div>
                 <span class="participant-badge adult">Adulte</span>
               </div>
 
-              <!-- Children -->
-              <p class="participants-group-label" *ngIf="children > 0">Enfants ({{ children }})</p>
+              <p class="participants-group-label" *ngIf="globalChildren > 0">Enfants ({{ globalChildren }})</p>
               <div class="participant-row"
-                  *ngFor="let p of participants.slice(adults, adults + children); let i = index">
-                <div class="participant-index">{{ adults + i + 1 }}</div>
+                   *ngFor="let p of participants.slice(globalAdults, globalAdults + globalChildren); let i = index">
+                <div class="participant-index">{{ globalAdults + i + 1 }}</div>
                 <div class="field participant-name">
-                  <input type="text"
-                        class="input"
-                        placeholder="Nom complet"
-                        [value]="p.fullName"
-                        (input)="updateParticipantName(adults + i, $any($event.target).value)">
+                  <input type="text" class="input" placeholder="Nom complet"
+                         [value]="p.fullName"
+                         (input)="updateParticipantName(globalAdults + i, $any($event.target).value)">
                 </div>
                 <div class="field participant-age">
-                  <input type="number"
-                        class="input"
-                        placeholder="Âge"
-                        min="0" max="11"
-                        [value]="p.age"
-                        (input)="updateParticipantAge(adults + i, +$any($event.target).value)">
+                  <input type="number" class="input" placeholder="Âge" min="0" max="11"
+                         [value]="p.age"
+                         (input)="updateParticipantAge(globalAdults + i, +$any($event.target).value)">
                 </div>
                 <span class="participant-badge child">Enfant</span>
               </div>
 
-              <button type="button" class="btn-remove-payment"
-                      style="margin-top:8px"
+              <button type="button" class="btn-remove-payment" style="margin-top:8px"
                       (click)="participants = []">
                 ✕ Effacer la liste
               </button>
-
             </div>
           </div>
         </div>
@@ -457,14 +380,31 @@
               <div class="sum-row" *ngIf="getSelectedUser()">
                 <span>🤝 Client</span><span>{{ getSelectedUser()?.name }}</span>
               </div>
+              <div class="sum-row" *ngIf="checkInDate">
+                <span>📅 Arrivée</span><span>{{ toDisplayDate(checkInDate) }}</span>
+              </div>
+              <div class="sum-row" *ngIf="checkOutDate">
+                <span>📅 Départ</span><span>{{ toDisplayDate(checkOutDate) }}</span>
+              </div>
               <div class="sum-row" *ngIf="nights > 0">
                 <span>🌙 Durée</span><span>{{ nights }} nuit{{ nights > 1 ? 's' : '' }}</span>
               </div>
-              <div class="sum-row">
-                <span>👥 Groupe</span><span>{{ adults }} ad. · {{ children }} enf.</span>
-              </div>
               <div class="sum-row" *ngIf="tourTypesArray.length > 0">
-                <span>🗺️ Activités</span><span>{{ tourTypesArray.length }} sélectionnée(s)</span>
+                <span>🗺️ Activités</span><span>{{ tourTypesArray.length }} entrée(s)</span>
+              </div>
+              <div class="sum-row" *ngIf="globalAdults + globalChildren > 0">
+                <span>👥 Arrivants</span><span>{{ globalAdults }} ad. · {{ globalChildren }} enf.</span>
+              </div>
+            </div>
+
+            <div class="sum-breakdown" *ngIf="tourTypesTotal() > 0">
+              <div class="breakdown-row">
+                <span>Activités</span>
+                <span>{{ tourTypesTotal() | number:'1.0-0' }} TND</span>
+              </div>
+              <div class="breakdown-row" *ngIf="extrasTotal() > 0">
+                <span>Extras</span>
+                <span>{{ extrasTotal() | number:'1.0-0' }} TND</span>
               </div>
             </div>
           </div>
@@ -475,6 +415,7 @@
           </div>
 
           <div class="sum-footer">
+            <div class="submit-error" *ngIf="submitError">{{ submitError }}</div>
             <button class="btn-submit" [disabled]="!canSubmit() || isSubmitting" (click)="onSubmit()">
               <ng-container *ngIf="!isSubmitting">✅ Créer la réservation</ng-container>
               <ng-container *ngIf="isSubmitting">⏳ Création en cours…</ng-container>
@@ -484,7 +425,6 @@
             </p>
           </div>
 
-          <!-- Payment — under recap -->
           <div class="sum-payment">
             <div class="sum-payment-title">
               <span>💳</span> Paiement initial

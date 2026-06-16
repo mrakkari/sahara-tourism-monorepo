@@ -43,7 +43,7 @@ export class ToursComponent implements OnInit {
   isLoadingTours  = false;
   isLoadingExtras = false;
 
-  selectedExtras: Record<string, number> = {};
+  extraItems: { extraId: string; quantity: number; activityDate: string; displayDate: string; dateError: string }[] = [];
   showPaymentModal  = false;
   initialPayment: PaymentRequest | null = null;
   sources: SourceResponse[] = [];
@@ -109,11 +109,7 @@ export class ToursComponent implements OnInit {
   loadExtras(): void {
     this.isLoadingExtras = true;
     this.reservationService.getActiveExtras().subscribe({
-      next: e => {
-        this.extras = e;
-        e.forEach(ex => this.selectedExtras[ex.extraId] = 0);
-        this.isLoadingExtras = false;
-      },
+      next: e => { this.extras = e; this.isLoadingExtras = false; },
       error: () => this.isLoadingExtras = false
     });
   }
@@ -146,13 +142,56 @@ export class ToursComponent implements OnInit {
 
   // ─── Extras ────────────────────────────────────────────────────
 
-  toggleExtra(id: string): void { this.selectedExtras[id] = this.selectedExtras[id] > 0 ? 0 : 1; }
-  adjustExtra(id: string, d: number): void {
-    const n = (this.selectedExtras[id] || 0) + d;
-    if (n >= 1 && n <= this.adults + this.children) this.selectedExtras[id] = n;
+  getExtraInfo(extraId: string) { return this.extras.find(e => e.extraId === extraId); }
+
+  onAddExtra(id: string): void {
+    if (!id) return;
+    this.extraItems.push({ extraId: id, quantity: 1, activityDate: '', displayDate: '', dateError: '' });
   }
-  isExtraSelected(id: string): boolean { return (this.selectedExtras[id] || 0) > 0; }
-  extraQty(id: string): number { return this.selectedExtras[id] || 0; }
+
+  onRemoveExtra(index: number): void { this.extraItems.splice(index, 1); }
+
+  adjustExtra(index: number, delta: number): void {
+    const item = this.extraItems[index];
+    const max = this.adults + this.children;
+    item.quantity = Math.max(1, Math.min(item.quantity + delta, max > 0 ? max : 99));
+  }
+
+  onExtraDateTextInput(event: Event, index: number): void {
+    const input = event.target as HTMLInputElement;
+    const val = input.value;
+    this.extraItems[index].dateError = '';
+    if (val.length === 10 && val[2] === '/' && val[5] === '/') {
+      const [d, m, y] = val.split('/');
+      const iso = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      const date = new Date(iso);
+      const valid = !isNaN(date.getTime()) && +d <= 31 && +m <= 12;
+      const serviceIso = this.form.get('serviceDate')?.value as string;
+      const minDate = serviceIso ? new Date(serviceIso) : null;
+      if (!valid) {
+        this.extraItems[index].activityDate = '';
+      } else if (minDate && date < minDate) {
+        this.extraItems[index].activityDate = '';
+        this.extraItems[index].dateError = `⚠️ Doit être ≥ ${this.toDisplayDate(serviceIso)}`;
+      } else {
+        this.extraItems[index].activityDate = iso;
+      }
+    } else {
+      this.extraItems[index].activityDate = '';
+    }
+    this.extraItems[index].displayDate = val;
+  }
+
+  onExtraDatePickerChange(event: Event, index: number): void {
+    const iso = (event.target as HTMLInputElement).value;
+    if (!iso) return;
+    this.extraItems[index].activityDate = iso;
+    const display = this.toDisplayDate(iso);
+    this.extraItems[index].displayDate = display;
+    const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
+    const textInput = wrapper?.querySelector('.date-display') as HTMLInputElement;
+    if (textInput) textInput.value = display;
+  }
 
   // ─── Pricing ───────────────────────────────────────────────────
 
@@ -163,20 +202,23 @@ export class ToursComponent implements OnInit {
   }
 
   extrasTotal(): number {
-    return this.extras.reduce((s, e) => s + (this.selectedExtras[e.extraId] || 0) * e.unitPrice, 0);
+    return this.extraItems.reduce((s, item) => {
+      const info = this.getExtraInfo(item.extraId);
+      return s + (info ? item.quantity * info.unitPrice : 0);
+    }, 0);
   }
 
   finalTotal(): number { return this.tourTotal() + this.extrasTotal(); }
 
   // ─── Validation ────────────────────────────────────────────────
 
-    canSubmit(): boolean {
+  canSubmit(): boolean {
     return !!this.form.get('userId')?.value
         && !!this.form.get('sourceId')?.value
         && !!this.form.get('selectedTourId')?.value
-        && !!this.form.get('serviceDate')?.value    // ← was departureDate
+        && !!this.form.get('serviceDate')?.value
         && this.adults >= 1;
-    }
+  }
 
   showGroupName(): boolean { return this.adults + this.children > 2; }
 
@@ -187,9 +229,11 @@ export class ToursComponent implements OnInit {
     this.isSubmitting = true;
     const fv = this.form.value;
 
-    const extrasPayload = this.extras
-      .filter(e => (this.selectedExtras[e.extraId] || 0) > 0)
-      .map(e => ({ extraId: e.extraId, quantity: this.selectedExtras[e.extraId] }));
+    const extrasPayload = this.extraItems.map(item => ({
+      extraId:      item.extraId,
+      quantity:     item.quantity,
+      activityDate: item.activityDate || undefined,
+    }));
 
     const participantsPayload: ParticipantRequest[] = this.hasParticipants()
       ? this.participants.filter(p => p.fullName.trim() !== '')
@@ -292,16 +336,15 @@ export class ToursComponent implements OnInit {
     }
   }
 
-  openPicker(event: Event): void {
+  openPicker(event: Event, minDate?: string): void {
     event.preventDefault();
     event.stopPropagation();
     const wrapper = (event.target as HTMLElement).closest('.date-wrapper');
     const picker  = wrapper?.querySelector('.date-picker') as HTMLInputElement;
     if (picker) {
       picker.style.pointerEvents = 'auto';
-      // Set min date to today to block past dates in the calendar too
       const today = new Date().toISOString().split('T')[0];
-      picker.min = today;
+      picker.min = minDate ?? today;
       picker.showPicker?.();
       setTimeout(() => { picker.style.pointerEvents = 'none'; }, 500);
     }
@@ -331,23 +374,6 @@ export class ToursComponent implements OnInit {
       ONLINE: 'En ligne', CHEQUE: 'Chèque',
     };
     return labels[method] ?? method;
-  }
-  onExtraQtyChange(id: string, value: string): void {
-    const n = Math.max(0, Math.min(+value, this.adults + this.children));
-    this.selectedExtras[id] = n;
-  }
-
-  onAddExtra(id: string): void {
-    if (!id) return;
-    this.selectedExtras[id] = 1;
-  }
-
-  onRemoveExtra(id: string): void {
-    this.selectedExtras[id] = 0;
-  }
-
-  getSelectedExtras(): ExtraResponse[] {
-    return this.extras.filter(e => (this.selectedExtras[e.extraId] || 0) > 0);
   }
 
   initParticipants(): void {

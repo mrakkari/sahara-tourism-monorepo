@@ -43,8 +43,10 @@
 
           <div class="info-box">
             <span class="l">Taille du groupe</span>
-            <span class="v">{{ reservation.numberOfPeople }} <em>pers.</em></span>
-            <span class="s">{{ reservation.adults }} Ad · {{ reservation.children }} Enf</span>
+            <div class="group-size-row">
+              <span class="v">{{ reservation.numberOfPeople }} <em>pers.</em></span>
+              <span class="s">{{ reservation.adults }} Ad · {{ reservation.children }} Enf</span>
+            </div>
           </div>
 
           <div class="info-box">
@@ -56,7 +58,6 @@
             <span class="l">Chef de Groupe</span>
             <span class="v leader">{{ reservation.groupLeaderName || reservation.groupInfo?.groupLeaderName || '—' }}</span>
           </div>
-
 
           <div class="info-box" *ngIf="reservation.groupName">
             <span class="l">Nom du Groupe</span>
@@ -81,7 +82,6 @@
             </div>
           </div>
 
-
           <!-- TOURS / EXTRAS single date -->
           <div class="info-box" *ngIf="reservation.reservationType === 'TOURS' || reservation.reservationType === 'EXTRAS'">
             <span class="l">Date du service</span>
@@ -92,17 +92,19 @@
             <span class="l">⚠️ Demande Spéciale</span>
             <span class="v">{{ reservation.demandeSpecial }}</span>
           </div>
+
           <div class="info-box" *ngIf="reservation.source">
             <span class="l">Source</span>
             <span class="v source-chip">{{ reservation.source }}</span>
           </div>
 
-
         </div>
-        <!-- Répartition des tentes — HEBERGEMENT only -->
+
+        <!-- Répartition des tentes — shown only when no per-date blocks -->
         <div class="info-box full repartition-box"
             *ngIf="(reservation.reservationType === 'HEBERGEMENT' || !reservation.reservationType)
-                    && reservation.repartitions && reservation.repartitions.length > 0">
+                    && reservation.repartitions && reservation.repartitions.length > 0
+                    && getAllUniqueDates().length === 0">
           <span class="l">⛺ Répartition des tentes</span>
 
           <div class="repartition-list">
@@ -128,6 +130,80 @@
         </div>
 
       </app-glass-card>
+
+      <!-- ── Per-date blocks (HEBERGEMENT with dates) ────────── -->
+      <ng-container *ngIf="isHebergement() && getDateGroups().length > 0">
+        <app-glass-card *ngFor="let group of getDateGroups()">
+
+          <div class="date-block-header">
+            <span class="date-block-label">
+              📅 {{ formatDate(group.startDate) }}<ng-container *ngIf="group.startDate !== group.endDate"><span class="date-range-sep"> → </span>{{ formatDate(group.endDate) }}</ng-container>
+            </span>
+            <span class="date-nights-badge" *ngIf="group.dates.length > 1">{{ group.dates.length }} nuits</span>
+          </div>
+
+          <!-- Activities for this group -->
+          <div *ngIf="hasActivitiesOnDate(group.startDate)" class="date-activities-list">
+            <div class="date-activity-item" *ngFor="let tt of getActivitiesForDate(group.startDate)">
+              <div class="date-act-info">
+                <strong class="date-act-name">{{ tt.name }}</strong>
+                <span class="date-act-dur">
+                  ⏱ {{ group.dates.length > 1 ? group.dates.length + ' nuits' : (tt.duration || '1 nuit') }}
+                </span>
+              </div>
+              <span class="date-act-people">{{ tt.numberOfAdults }} Ad. · {{ tt.numberOfChildren }} Enf.</span>
+              <span class="date-act-price">{{ tt.totalPrice * group.dates.length | number:'1.0-0' }} {{ reservation.currency }}</span>
+            </div>
+          </div>
+
+          <!-- Extras for all dates in this group -->
+          <div *ngIf="getExtrasForDates(group.dates).length > 0" class="date-extras-block"
+               [class.date-extras-standalone]="!hasActivitiesOnDate(group.startDate)">
+            <div class="date-extras-title">✨ Extras</div>
+
+            <!-- Single date: no sub-header -->
+            <ng-container *ngIf="group.dates.length === 1">
+              <div class="date-extra-row" *ngFor="let e of getExtrasForDate(group.startDate)">
+                <div class="date-extra-info">
+                  <strong class="date-extra-name">{{ e.name }}</strong>
+                  <span class="date-extra-dur" *ngIf="e.duration">⏱ {{ e.duration }}</span>
+                </div>
+                <span class="date-extra-qty">{{ e.quantity }} pers.</span>
+                <span class="date-extra-price">{{ e.totalPrice | number:'1.0-0' }} {{ reservation.currency }}</span>
+              </div>
+            </ng-container>
+
+            <!-- Multi-date: group extras by date with sub-headers -->
+            <ng-container *ngIf="group.dates.length > 1">
+              <ng-container *ngFor="let d of group.dates">
+                <ng-container *ngIf="getExtrasForDate(d).length > 0">
+                  <div class="date-extra-subdate">📅 {{ formatDate(d) }}</div>
+                  <div class="date-extra-row" *ngFor="let e of getExtrasForDate(d)">
+                    <div class="date-extra-info">
+                      <strong class="date-extra-name">{{ e.name }}</strong>
+                      <span class="date-extra-dur" *ngIf="e.duration">⏱ {{ e.duration }}</span>
+                    </div>
+                    <span class="date-extra-qty">{{ e.quantity }} pers.</span>
+                    <span class="date-extra-price">{{ e.totalPrice | number:'1.0-0' }} {{ reservation.currency }}</span>
+                  </div>
+                </ng-container>
+              </ng-container>
+            </ng-container>
+
+          </div>
+
+          <!-- Compact repartitions -->
+          <div *ngIf="hasActivitiesOnDate(group.startDate) && getAggregatedRepartitionsForDate(group.startDate).length > 0"
+               class="date-rep-compact">
+            <ng-container *ngFor="let r of getAggregatedRepartitionsForDate(group.startDate); let last = last">
+              <span class="date-rep-pill">{{ r.numberOfTentes }} {{ getTenteAbbr(r.tenteType) }}</span>
+              <span class="date-rep-sep" *ngIf="!last">·</span>
+            </ng-container>
+            <span class="date-rep-total-pill">· {{ getAggregatedTotalForDate(group.startDate) }}/{{ reservation.numberOfPeople }} pers.</span>
+          </div>
+
+        </app-glass-card>
+      </ng-container>
 
       <!-- ── Participants ─────────────────────────────────────── -->
       <app-glass-card class="participants-section">
@@ -219,6 +295,13 @@
                   </div>
                 </div>
               </div>
+              <div class="date-picker-row" *ngIf="isHebergement()">
+                <span class="qty-label">Date du service</span>
+                <input type="date" formControlName="activityDate" class="premium-input"
+                       [attr.min]="reservation.checkInDate"
+                       [attr.max]="reservation.checkOutDate">
+              </div>
+              <p class="extra-date-error" *ngIf="extraDateError">{{ extraDateError }}</p>
               <button class="btn-action primary btn-full" type="button"
                       [disabled]="extraForm.invalid" (click)="addToCart()">
                 + Ajouter au panier
@@ -235,6 +318,7 @@
               <div class="cart-item" *ngFor="let item of pendingExtras">
                 <span class="cart-name">{{ item.catalog.name }}</span>
                 <span class="cart-qty">× {{ item.quantity }} pers.</span>
+                <span class="cart-date" *ngIf="item.activityDate">📅 {{ formatDate(item.activityDate) }}</span>
                 <span class="cart-price">{{ item.catalog.unitPrice * item.quantity | number:'1.2-2' }} TND</span>
                 <button class="btn-del-cart" type="button" (click)="removeFromCart(item.catalog.extraId)">×</button>
               </div>
@@ -257,6 +341,7 @@
             <div class="ex-info">
               <span class="ex-name">{{ extra.name }}</span>
               <span class="ex-calc">{{ extra.quantity }} × {{ extra.unitPrice }} TND</span>
+              <span class="ex-date" *ngIf="extra.activityDate">📅 {{ formatDate(extra.activityDate) }}</span>
             </div>
             <div class="ex-total">{{ extra.totalPrice }} TND</div>
             <button class="btn-del" *ngIf="reservation.status === 'checked_in'"
